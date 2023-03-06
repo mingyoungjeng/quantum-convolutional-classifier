@@ -1,0 +1,36 @@
+\input{template/header.tex}
+
+\begin{document}
+
+% This is the table of contents, list of figures, list of tables, formatted correctly.
+% romanpages ~ pages numbered by roman numerals
+\begin{romanpages}
+	\maketitle
+	
+	\begin{abstract}
+		TBD
+	\end{abstract}
+
+	\begin{acknowledgementslong}
+		Acknowledgements go here.
+	\end{acknowledgementslong}
+
+	\tableofcontents{}
+	\listoffigures
+	\listoftables
+\end{romanpages}
+
+\chapter{Introduction}
+\chapter{Background}
+\chapter{Methods}
+\chapter{Results and Analysis}
+\chapter{Conclusion}
+
+% Bibliography, default style from former template.
+\global\long\def\bibname{References}
+\bibliographystyle{unsrt}
+\bibliography{refs}
+
+% \appendix
+
+\end{document}

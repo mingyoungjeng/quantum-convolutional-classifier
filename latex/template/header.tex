@@ -1,0 +1,65 @@
+\documentclass[12pt,english,letterpaper]{template/kuthesis}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathptmx}
+\renewcommand{\sfdefault}{lmss}
+\renewcommand{\ttdefault}{lmtt}
+\usepackage{geometry}
+\geometry{verbose,tmargin=1in,bmargin=1in,lmargin=1in,rmargin=1in}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+\usepackage{color}
+\usepackage{babel}
+\usepackage{url}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{setspace}
+\usepackage{import}
+\usepackage[authoryear]{natbib}
+\doublespacing
+\usepackage[unicode=true,
+ bookmarks=true,bookmarksnumbered=false,bookmarksopen=false,
+ breaklinks=true,pdfborder={0 0 0},pdfborderstyle={},backref=false,colorlinks=true]
+ {hyperref}
+\hypersetup{pdftitle={University of Kansas Thesis Template},
+ pdfauthor={Anonymous},
+ pdfsubject={A Thesis},
+ urlcolor={black},citecolor={black},allcolors={black}}
+\makeatletter
+% used to align decimals in tables according to APA style
+\usepackage{dcolumn}
+\usepackage{booktabs}
+% Don't change this block, probably.
+% This handles code input. Included here just for completion.
+\usepackage{listings}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This is the stuff you should edit.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\title{Some Title}
+\author{Author}
+% Optional priorcreds field
+% Leave blank if you don't want to list prior credits
+% \priorcreds{B.M. Caffeine}{B.S. in Caffeine}
+\priorcreds{}
+\dept{Department of Mixed Intentions}
+\degreetitle{Master/PhD of Whatever}
+\papertype{Thesis} % or Dissertation 
+%  It is required to have 7 entries, even if some are empty, i.e., {}  for committee and role
+\committee{Member Name 1}{Member Name 2}{Member Name 3}{Member Name 4}{Member 5 has a long name}{Member 6}{}
+\role{Chairperson}{Co-Chair}{Some description}{No Role}{}{External Reviewer}{}
+\@printd@testrue
+% BOTH dates must be included. 
+\datedefended{July 02, 2019}
+ % Since the date will likely be unknown, this keeps the blank line from floating above the "Date Approved: " line late signing.
+\dateapproved{\textcolor{white}{blank}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% After \makeatother, you put the packages you need. 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% This is definitely a hack, and I know what it does, but not how to put it somewhere else. This likely has to do with how the .cls file is handled, which I did not create. -AB
+\makeatother
+
+% Individual user defined packages can go here.
+
