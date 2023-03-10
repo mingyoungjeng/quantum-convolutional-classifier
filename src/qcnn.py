@@ -63,34 +63,17 @@ class QCNN:
         )
 
         total_params = (15 + 2) * 3
-        # params = self.rng.standard_normal(total_params, requires_grad=True)
-        # opt = qml.NesterovMomentumOptimizer(stepsize=0.01)
-        # loss_history = []
-
-        # for i, (X_batch, Y_batch) in enumerate(training_dataloader):
-        #     # print(self.cost(params, X_batch.numpy(), Y_batch.numpy()))
-        #     params, cost_new = opt.step_and_cost(
-        #         lambda v: self.cost(v, X_batch.numpy(), Y_batch.numpy()), params
-        #     )
-        #     loss_history.append(cost_new)
-        #     if i % 10 == 0:
-        #         print(f"iteration: {i}/{len(training_dataloader)}, cost: {cost_new}")
-
-        # return loss_history, params
+        initial_params = torch.randn(total_params, requires_grad=True)
 
         optimal_params = train(
-            self.qnode, optimizer, training_dataloader, cost_fn, total_params
+            self.qnode,
+            optimizer,
+            training_dataloader,
+            cost_fn,
+            initial_parameters=initial_params,
         )
 
         accuracy = test(
             self.qnode, optimal_params, testing_dataloader=testing_dataloader
         )
         return accuracy
-
-        # dims = np.stack(
-        #     [
-        #         np.pad(range(end - size, end), (0, max(dims_q) - size), constant_values=-1)
-        #         for size, end in zip(dims_q, np.cumsum(dims_q))
-        #     ],
-        #     axis=1,
-        # )

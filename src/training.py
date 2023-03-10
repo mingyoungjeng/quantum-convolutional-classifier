@@ -1,16 +1,22 @@
 import torch
-import numpy as np
 
 
 # TODO: detect a plateau
-def train(fn, optimizer, training_dataloader, cost_fn, total_params):
-    params = torch.randn(total_params, requires_grad=True)
+def train(
+    fn, optimizer, training_dataloader, cost_fn, initial_parameters=None, total_params=0
+):
+    params = (
+        torch.randn(total_params, requires_grad=True)
+        if initial_parameters is None
+        else initial_parameters
+    )
     opt = optimizer([params], lr=0.01, momentum=0.9, nesterov=True)
+
     for i, (data, labels) in enumerate(training_dataloader):
         opt.zero_grad()
         predictions = fn(params, data)
 
-        if predictions.dim() == 1:
+        if predictions.dim() == 1:  # Makes sure batch is 2D array
             predictions = predictions.unsqueeze(0)
 
         loss = cost_fn(predictions, labels)
