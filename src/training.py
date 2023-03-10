@@ -1,9 +1,36 @@
-def train(fn, opt, train_dataloader, cost_fn, initial_params=None):
-    params = initial_params
-    for i, batch in enumerate(train_dataloader):
-        data, labels = batch
+import torch
+import numpy as np
+
+
+# TODO: detect a plateau
+def train(fn, optimizer, training_dataloader, cost_fn, total_params):
+    params = torch.randn(total_params, requires_grad=True)
+    opt = optimizer([params], lr=0.01, momentum=0.9, nesterov=True)
+    for i, (data, labels) in enumerate(training_dataloader):
         opt.zero_grad()
-        outputs = [fn(params, d) for d in data]
-        loss = cost_fn(outputs, labels)
+        predictions = fn(params, data)
+
+        if predictions.dim() == 1:
+            predictions = predictions.unsqueeze(0)
+
+        loss = cost_fn(predictions, labels)
         loss.backward()
         opt.step()
+
+        if (i % 100 == 0) or i == len(training_dataloader) - 1:
+            print(f"iteration: {i}/{len(training_dataloader)}, cost: {loss:.03f}")
+
+    return params
+
+
+def test(fn, params, testing_dataloader):
+    correct = 0
+    total = 0
+
+    with torch.no_grad():
+        for data, labels in testing_dataloader:
+            predictions = torch.argmax(fn(params, data))
+            correct += torch.count_nonzero(predictions == labels)
+            total += len(data)
+
+    return correct / total

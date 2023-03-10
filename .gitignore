@@ -2,3 +2,4 @@
 .env/*
 **/.ipynb_checkpoint/*
 **/data/*
+**/__pycache__/*
