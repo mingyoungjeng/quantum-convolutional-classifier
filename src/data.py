@@ -1,10 +1,10 @@
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Any
 from torch.utils.data import Dataset, DataLoader, Subset
 import numpy as np
 
 
 def load_dataset(
-    dataset: Dataset, transform=None, classes: Sequence = None, batch_size: int = 1
+    dataset: Dataset, transform=None, classes: Sequence[Any] = None, batch_size: int = 1
 ) -> Tuple[DataLoader, DataLoader]:
     for is_train in [True, False]:
         data = dataset(

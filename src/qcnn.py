@@ -1,4 +1,5 @@
-from typing import Sequence
+from typing import Sequence, Callable
+from numbers import Number
 
 # import numpy as np
 import torch
@@ -21,11 +22,11 @@ class QCNN:
         dims_q = [int(np.ceil(np.log2(dim))) for dim in dims]
         self.num_qubits = sum(dims_q)
 
-        device = qml.device("default.qubit", wires=np.sum(dims_q))
+        device = qml.device("default.qubit", wires=self.num_qubits)
         self.qnode = qml.QNode(self.circuit, device, interface="torch")
 
     def circuit(
-        self, params: Sequence[float], psi_in: Sequence[float] = None
+        self, params: Sequence[Number], psi_in: Sequence[Number] = None
     ) -> Sequence[float]:
         if psi_in is None:
             psi_in = np.asarray([1, 0])
@@ -50,7 +51,12 @@ class QCNN:
             loss = loss + c_entropy
         return -1 * loss
 
-    def run(self, dataset: Dataset, optimizer: Optimizer, cost_fn):
+    def run(
+        self,
+        dataset: Dataset,
+        optimizer: Optimizer,
+        cost_fn: Callable[[Sequence[Number], Sequence[Number]], Number],
+    ):
         transform = transforms.Compose(
             [
                 transforms.Resize(self.dims),
@@ -62,7 +68,16 @@ class QCNN:
             dataset, transform, batch_size=4, classes=[0, 1]
         )
 
-        total_params = (15 + 2) * 3
+        dims_q = [int(np.ceil(np.log2(dim))) for dim in self.dims]
+        dims = np.stack(
+            [
+                range(base_qubit, base_qubit + min(dims_q))
+                for base_qubit in np.pad(np.cumsum(dims_q[:-1]), (1, 0))
+            ],
+            axis=1,
+        )
+
+        total_params = (15 + 2) * 4
         initial_params = torch.randn(total_params, requires_grad=True)
 
         optimal_params = train(

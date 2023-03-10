@@ -1,9 +1,20 @@
+from typing import Callable, Sequence, Union
+from numbers import Number
+
 import torch
+from torch import Tensor
+from torch.utils.data import DataLoader
+from torch.optim import Optimizer
 
 
 # TODO: detect a plateau
 def train(
-    fn, optimizer, training_dataloader, cost_fn, initial_parameters=None, total_params=0
+    fn: Callable[[Sequence[Number], Sequence[Number]], Sequence[Number]],
+    optimizer: Optimizer,
+    training_dataloader: DataLoader,
+    cost_fn: Callable[[Sequence[Number], Sequence[Number]], Number],
+    initial_parameters: Union[Tensor, None] = None,
+    total_params: int = 0,
 ):
     params = (
         torch.randn(total_params, requires_grad=True)
@@ -19,24 +30,28 @@ def train(
         if predictions.dim() == 1:  # Makes sure batch is 2D array
             predictions = predictions.unsqueeze(0)
 
-        loss = cost_fn(predictions, labels)
-        loss.backward()
+        cost = cost_fn(predictions, labels)
+        cost.backward()
         opt.step()
 
         if (i % 100 == 0) or i == len(training_dataloader) - 1:
-            print(f"iteration: {i}/{len(training_dataloader)}, cost: {loss:.03f}")
+            print(f"{i}/{len(training_dataloader)}: {cost:.03f} cost")
 
     return params
 
 
-def test(fn, params, testing_dataloader):
+def test(
+    fn: Callable[[Sequence[Number], Sequence[Number]], Sequence[Number]],
+    params: Sequence[Number],
+    testing_dataloader: DataLoader,
+):
     correct = 0
     total = 0
 
     with torch.no_grad():
         for data, labels in testing_dataloader:
             predictions = torch.argmax(fn(params, data))
-            correct += torch.count_nonzero(predictions == labels)
+            correct += torch.count_nonzero(predictions == labels).numpy()
             total += len(data)
 
     return correct / total
