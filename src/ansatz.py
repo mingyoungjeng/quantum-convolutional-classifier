@@ -55,18 +55,21 @@ def pooling(params: Sequence[float], target: int, wires: Sequence[int]):
 
 
 def qcnn_ansatz(params, dims_q):
+    rows = len(dims_q) + 1
+    cycles = int(len(params) / rows)
+
     # Most significant qubit per dimension
     max_q = np.cumsum(dims_q)
 
     # Least significant qubit per dimension
-    root_q = np.pad(max_q[:-1], (1, 0))
+    root_q = max_q - cycles
 
     # Qubits that have been measured
     meas_q = []
 
     # Cycle between convolution and pooling
     for i, layer_params in enumerate(params):
-        j = i % (len(dims_q) + 1)  # Index of the cycle
+        j = i % rows  # Index of the cycle
         if j == 0:  # Performs convolution between dimensions
             # TODO: might do something different for final convolution
             convolution(layer_params, root_q)
