@@ -54,25 +54,16 @@ def pooling(params: Sequence[float], target: int, wires: Sequence[int]):
     qml.cond(qml.measure(target) == 0, convolution)(params, wires)
 
 
-def qcnn_ansatz(params, dims_q):
-    rows = len(dims_q) + 1
-    cycles = int(len(params) / rows)
-
-    # Most significant qubit per dimension
-    max_q = np.cumsum(dims_q)
-
-    # Least significant qubit per dimension
-    root_q = max_q - cycles
-
-    # Qubits that have been measured
-    meas_q = []
+def qcnn_ansatz(params: Sequence[float], dims_q: Sequence[int], num_classes: int = 2):
+    offset = len(params) // (len(dims_q) + 1)
+    offset += np.ceil(np.ceil(np.log2(num_classes)) / len(dims_q)) - 1
+    wires = np.stack([range(max_q - int(offset), max_q) for max_q in np.cumsum(dims_q)])
 
     # Cycle between convolution and pooling
     for i, layer_params in enumerate(params):
-        j = i % rows  # Index of the cycle
-        if j == 0:  # Performs convolution between dimensions
-            # TODO: might do something different for final convolution
-            convolution(layer_params, root_q)
+        j, k = np.divmod(i, len(dims_q) + 1)
+        if k == 0:  # Performs convolution between dimensions
+            convolution(layer_params, wires.T[j])
         else:  # Performs pooling on a given dimension
             meas_q.append(root_q[j - 1])  # This qubit is getting measured
             root_q[j - 1] += 1  # Queue next lowest qubit
