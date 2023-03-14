@@ -3,7 +3,7 @@ from itertools import zip_longest, tee
 from pennylane import numpy as np
 
 
-# Unitary Ansatze for Convolutional Layer
+# Unitary Ansatz for Convolutional Layer
 def U_SU4(params, wires):  # 15 params, 2 qubit
     qml.U3(params[0], params[1], params[2], wires=wires[0])
     qml.U3(params[3], params[4], params[5], wires=wires[1])
@@ -62,11 +62,13 @@ def pooling(V, params, iterable):
     return controlled
 
 
-def qcnn_ansatz(params, wires):
+# total_params = (15 + 2) * num_layers
+def qcnn_ansatz(params, dims_q, *_, **__):
+    wires = range(sum(dims_q))
     while len(wires) > 1:
         convolution(U_SU4, params[:U_params], wires)
         wires = pooling(
-            pooling_ansatz3, params[U_params : U_params + pool_params], wires
+            pooling_ansatz, params[U_params : U_params + pool_params], wires
         )
         params = params[U_params + pool_params :]
 

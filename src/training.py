@@ -34,8 +34,8 @@ def train(
         cost.backward()
         opt.step()
 
-        if (i % 100 == 0) or i == len(training_dataloader) - 1:
-            print(f"{i}/{len(training_dataloader)}: {cost:.03f} cost")
+        # if (i == 0) or ((i + 1) % 100 == 0) or (i + 1 == len(training_dataloader)):
+        #     print(f"{i+1}/{len(training_dataloader)}: {cost=:.03f}")
 
     return params
 
@@ -50,7 +50,10 @@ def test(
 
     with torch.no_grad():
         for data, labels in testing_dataloader:
-            predictions = torch.argmax(fn(params, data))
+            predictions = fn(params, data)
+            if predictions.dim() == 1:  # Makes sure batch is 2D array
+                predictions = predictions.unsqueeze(0)
+            predictions = torch.argmax(predictions, 1)
             correct += torch.count_nonzero(predictions == labels).numpy()
             total += len(data)
 
