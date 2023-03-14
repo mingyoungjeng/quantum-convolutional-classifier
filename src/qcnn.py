@@ -71,16 +71,7 @@ class QCNN:
         )
 
         conv_params = 6 * len(self.dims_q) * self.num_layers
-        pool_params = int(
-            6
-            * len(self.dims_q)
-            * (self.num_layers - 1)
-            * (
-                self.num_layers / 2
-                - (np.log2(len(self.classes)) // -len(self.dims_q))
-                - 1
-            )
-        )
+        pool_params = 3 * len(self.dims_q) * (self.num_layers - 1)
         print(conv_params + pool_params)
         initial_params = torch.randn(conv_params + pool_params, requires_grad=True)
 
