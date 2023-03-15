@@ -63,36 +63,36 @@ def qcnn_ansatz(
     dims_q: Sequence[int],
     num_layers: int = 1,
     num_classes: int = 2,
-):
+) -> Sequence[int]:
     max_wires = np.cumsum(dims_q)
     offset = -int(np.log2(num_classes) // -len(dims_q))  # Ceiling division
     wires = max_wires - offset
 
-    for i in reversed(range(num_layers)):
+    for i in reversed(range(1, num_layers)):  # Final behavior has different behavior
         # Apply convolution layer:
         conv_params, params = np.split(params, [6 * len(wires)])
         # print(f"layer {i}: {len(conv_params)}-param convolution on wires {wires - i}")
         convolution(conv_params, wires - i)
 
-        # Don't apply pooling on final layer
-        if i == 0:
-            break
-
         # Apply pooling layers
-        for j, (target_wire, max_wire) in enumerate(zip(wires, max_wires)):
+        for j, target_wire in enumerate(wires):
             pool_params, params = np.split(params, [3])
             # print(
-            #     f"layer {i}: {len(pool_params)}-param pool {j} on wires {target_wire-i, range(target_wire-i+1, max_wire)}"
+            #     f"layer {i}: {len(pool_params)}-param pool {j} on wires {target_wire-i, target_wire-i+1}"
             # )
             pooling(pool_params, target_wire - i, target_wire - i + 1)
 
     # Qubits to measure
-    # Only measure the minimum required number of qubits
     meas = np.array(
         [
             np.arange(target_wire, max_wire)
             for target_wire, max_wire in zip(wires, max_wires)
         ]
-    ).flatten(order="F")[: int(np.ceil(np.log2(num_classes)))]
-    meas.sort()
-    return meas
+    ).flatten(order="F")
+
+    # Final layer of convolution
+    conv_params = params[: 6 * len(meas)]
+    convolution(conv_params, np.sort(meas))
+
+    # Return the minimum required number of qubits to measure in order
+    return np.sort(meas[: int(np.ceil(np.log2(num_classes)))])

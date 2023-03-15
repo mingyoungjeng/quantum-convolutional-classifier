@@ -27,12 +27,19 @@ class QCNN:
         self.dims_q = [int(np.ceil(np.log2(dim))) for dim in dims]
         self.num_qubits = sum(self.dims_q)
 
+        self.num_layers = 1  # min(self.dims_q)
+        self.classes = [0, 1] if classes is None else classes
+        if self.num_qubits < len(self.classes):
+            print(f"Error: Not enough qubits to represent all classes")
+
+        # TODO: any better formula?
+        self.max_layers = min(self.dims_q) + int(
+            np.log2(len(self.classes)) // -len(self.dims_q)
+        )
+
         self.ansatz = qcnn_ansatz if ansatz is None else ansatz
         device = qml.device("default.qubit", wires=self.num_qubits)
         self.qnode = qml.QNode(self.circuit, device, interface="torch")
-
-        self.num_layers = 5  # min(self.dims_q)
-        self.classes = [0, 1] if classes is None else classes
 
     def circuit(
         self, params: Sequence[Number], psi_in: Sequence[Number] = None
@@ -70,22 +77,33 @@ class QCNN:
             dataset, transform, batch_size=4, classes=self.classes
         )
 
-        conv_params = 6 * len(self.dims_q) * self.num_layers
-        pool_params = 3 * len(self.dims_q) * (self.num_layers - 1)
-        print(conv_params + pool_params)
-        initial_params = torch.randn(conv_params + pool_params, requires_grad=True)
+        parameters = torch.empty(0, requires_grad=True)
+        for num_layers in 1 + np.arange(self.max_layers):
+            self.num_layers = num_layers
 
-        optimal_params = train(
-            self.qnode,
-            optimizer,
-            training_dataloader,
-            cost_fn,
-            initial_parameters=initial_params,
-        )
+            conv_params = 6 * len(self.dims_q) * self.num_layers
+            pool_params = 3 * len(self.dims_q) * (self.num_layers - 1)
+            total_params = conv_params + pool_params
+            # print(total_params)
 
-        accuracy = test(
-            self.qnode, optimal_params, testing_dataloader=testing_dataloader
-        )
+            new_params = torch.randn(total_params, requires_grad=True)
+
+            with torch.no_grad():
+                new_params *= 2 * torch.pi
+
+                if len(parameters) > 0:
+                    new_params[-len(parameters) :] = parameters
+
+            parameters = train(
+                self.qnode,
+                optimizer,
+                training_dataloader,
+                cost_fn,
+                initial_parameters=new_params,
+            )
+
+        accuracy = test(self.qnode, parameters, testing_dataloader)
+
         return accuracy
 
 
