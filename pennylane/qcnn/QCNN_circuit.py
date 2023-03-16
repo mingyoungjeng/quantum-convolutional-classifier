@@ -33,7 +33,7 @@ def QCNN_structure(U, params, wires):
     while len(wires) > 1:
         convolution(U, params[:U_params], wires)
         wires = pooling(
-            unitary.pooling_ansatz3, params[U_params : U_params + pool_params], wires
+            unitary.pooling_ansatz, params[U_params : U_params + pool_params], wires
         )
         params = params[U_params + pool_params :]
 

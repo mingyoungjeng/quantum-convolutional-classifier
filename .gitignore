@@ -3,3 +3,5 @@
 **/.ipynb_checkpoint/*
 **/data/*
 **/__pycache__/*
+*.pyc
+pennylane/qcnn/result/*

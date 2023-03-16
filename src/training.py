@@ -23,6 +23,7 @@ def train(
     )
     opt = optimizer([params], lr=0.01, momentum=0.9, nesterov=True)
 
+    print(f"{len(params)=}")
     for i, (data, labels) in enumerate(training_dataloader):
         opt.zero_grad()
         predictions = fn(params, data)

@@ -78,11 +78,21 @@ class QCNN:
         )
 
         parameters = torch.empty(0, requires_grad=True)
-        for num_layers in 1 + np.arange(self.max_layers):
-            self.num_layers = num_layers
+        for num_layers in 1 + np.arange(1):
+            self.num_layers = self.max_layers
 
             conv_params = 6 * len(self.dims_q) * self.num_layers
-            pool_params = 3 * len(self.dims_q) * (self.num_layers - 1)
+            # pool_params = 3 * len(self.dims_q) * (self.num_layers - 1)
+            pool_params = int(
+                6
+                * len(self.dims_q)
+                * (self.num_layers - 1)
+                * (
+                    self.num_layers / 2
+                    - (np.log2(len(self.classes)) // -len(self.dims_q))
+                    - 1
+                )
+            )
             total_params = conv_params + pool_params
             # print(total_params)
 

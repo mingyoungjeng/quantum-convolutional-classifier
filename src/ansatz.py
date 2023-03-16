@@ -55,7 +55,7 @@ def pooling(params: Sequence[Number], target: int, wires: Sequence[int]):
         target (int): high-frequency qubit to measure
         wires (Sequence[int]): low-frequency qubits to act upon
     """
-    qml.cond(qml.measure(target) == 0, qml.U3)(*params, wires)
+    qml.cond(qml.measure(target) == 0, convolution)(params, wires)
 
 
 def qcnn_ansatz(
@@ -75,12 +75,18 @@ def qcnn_ansatz(
         convolution(conv_params, wires - i)
 
         # Apply pooling layers
-        for j, target_wire in enumerate(wires):
-            pool_params, params = np.split(params, [3])
+        for j, (target_wire, max_wire) in enumerate(zip(wires, max_wires)):
+            # pool_params, params = np.split(params, [6 * ])
+            # # print(
+            # #     f"layer {i}: {len(pool_params)}-param pool {j} on wires {target_wire-i, target_wire-i+1}"
+            # # )
+            # pooling(pool_params, target_wire - i, target_wire - i + 1)
+
+            pool_params, params = np.split(params, [6 * (offset + i - 1)])
             # print(
-            #     f"layer {i}: {len(pool_params)}-param pool {j} on wires {target_wire-i, target_wire-i+1}"
+            #     f"layer {i}: {len(pool_params)}-param pool {j} on wires {target_wire-i, range(target_wire-i+1, max_wire)}"
             # )
-            pooling(pool_params, target_wire - i, target_wire - i + 1)
+            pooling(pool_params, target_wire - i, range(target_wire - i + 1, max_wire))
 
     # Qubits to measure
     meas = np.array(
