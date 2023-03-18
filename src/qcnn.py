@@ -10,7 +10,7 @@ import pennylane as qml
 
 # from pennylane import numpy as np
 from pennylane.templates.embeddings import AmplitudeEmbedding
-from ansatz import qcnn_ansatz
+from ansatz.ansatz import qcnn_ansatz
 from data import load_dataset
 from training import train, test
 
@@ -78,10 +78,10 @@ class QCNN:
         )
 
         parameters = torch.empty(0, requires_grad=True)
-        for num_layers in 1 + np.arange(1):
-            self.num_layers = self.max_layers
+        for num_layers in 1 + np.arange(self.max_layers):
+            self.num_layers = num_layers
 
-            conv_params = 6 * len(self.dims_q) * self.num_layers
+            conv_params = 6 * min(self.dims_q) * self.num_layers
             # pool_params = 3 * len(self.dims_q) * (self.num_layers - 1)
             pool_params = int(
                 6

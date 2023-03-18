@@ -1,5 +1,5 @@
 from qcnn import QCNN
-from ansatz_old import qcnn_ansatz
+from ansatz.ansatz_old import qcnn_ansatz
 
 from typing import Sequence, Callable
 from numbers import Number
