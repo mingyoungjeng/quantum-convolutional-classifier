@@ -114,7 +114,7 @@ def total_params(dims_q: Sequence[int], num_layers: int = 1, num_classes: int = 
         pool_params
         * len(dims_q)
         * (num_layers - 1)
-        * (num_layers / 2 - (np.log2(num_classes // -len(dims_q)) - 1))
+        * (num_layers / 2 - (np.log2(num_classes) // -len(dims_q)) - 1)
     )
 
     return n_conv_params + n_pool_params
