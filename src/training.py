@@ -17,20 +17,18 @@ def train(
     total_params: int = 0,
 ):
     params = (
-        torch.randn(total_params, requires_grad=True)
+        torch.randn(
+            total_params, pin_memory=torch.cuda.is_available(), requires_grad=True
+        )
         if initial_parameters is None
         else initial_parameters
     )
     opt = optimizer([params], lr=0.01, momentum=0.9, nesterov=True)
 
-    # print(f"{len(params)=}")
+    print(f"{len(params)=}")
     for i, (data, labels) in enumerate(training_dataloader):
         opt.zero_grad()
         predictions = fn(params, data)
-
-        if predictions.dim() == 1:  # Makes sure batch is 2D array
-            predictions = predictions.unsqueeze(0)
-
         cost = cost_fn(predictions, labels)
         cost.backward()
         opt.step()
@@ -41,6 +39,7 @@ def train(
     return params
 
 
+@torch.no_grad()
 def test(
     fn: Callable[[Sequence[Number], Sequence[Number]], Sequence[Number]],
     params: Sequence[Number],
@@ -49,13 +48,10 @@ def test(
     correct = 0
     total = 0
 
-    with torch.no_grad():
-        for data, labels in testing_dataloader:
-            predictions = fn(params, data)
-            if predictions.dim() == 1:  # Makes sure batch is 2D array
-                predictions = predictions.unsqueeze(0)
-            predictions = torch.argmax(predictions, 1)
-            correct += torch.count_nonzero(predictions == labels).numpy()
-            total += len(data)
+    for data, labels in testing_dataloader:
+        predictions = fn(params, data)
+        predictions = torch.argmax(predictions, 1)
+        correct += torch.count_nonzero(predictions == labels).numpy()
+        total += len(data)
 
     return correct / total

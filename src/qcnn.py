@@ -4,13 +4,14 @@ from numbers import Number
 import numpy as np
 import torch
 import torchvision.transforms as transforms
+import torch.nn.functional as F
 from torch.utils.data import Dataset
 from torch.optim import Optimizer
 import pennylane as qml
 
 # from pennylane import numpy as np
 from pennylane.templates.embeddings import AmplitudeEmbedding
-from ansatz.ansatz import qcnn_ansatz
+from ansatz.simple import qcnn_ansatz, total_params
 from data import load_dataset
 from training import train, test
 
@@ -20,6 +21,7 @@ class QCNN:
         self,
         dims: Sequence[int],
         ansatz: Callable = None,
+        params_fn: Callable = None,
         classes: Sequence[int] = None,
     ) -> None:
         self.rng = np.random.default_rng()
@@ -38,8 +40,16 @@ class QCNN:
         )
 
         self.ansatz = qcnn_ansatz if ansatz is None else ansatz
+        self.total_params = total_params if params_fn is None else params_fn
         device = qml.device("default.qubit", wires=self.num_qubits)
         self.qnode = qml.QNode(self.circuit, device, interface="torch")
+
+        global use_cuda
+        use_cuda = torch.cuda.is_available()
+
+        global DEVICE
+        DEVICE = torch.device("cuda" if use_cuda else "cpu")
+        print(f"Using {DEVICE} device")
 
     def circuit(
         self, params: Sequence[Number], psi_in: Sequence[Number] = None
@@ -60,6 +70,29 @@ class QCNN:
         # TODO: subject to change if meas qubits don't need to be entangled
         return qml.probs(meas)
 
+    def predict(self, *args, **kwargs) -> torch.Tensor:
+        result = self.qnode(*args, **kwargs)
+
+        if result.dim() == 1:  # Makes sure batch is 2D array
+            result = result.unsqueeze(0)
+
+        # Parity implementation
+        num_classes = len(self.classes)
+        predictions = torch.empty((len(result), num_classes), pin_memory=use_cuda)
+        for i, probs in enumerate(result):
+            num_rows = torch.tensor([len(probs) // num_classes] * num_classes)
+            num_rows[: len(probs) % num_classes] += 1
+
+            pred = F.pad(probs, (0, max(num_rows) * num_classes - len(probs)))
+            pred = probs.reshape(max(num_rows), num_classes)
+            pred = torch.sum(pred, 0)
+            pred /= num_rows
+            pred /= sum(pred)
+
+            predictions[i] = pred
+
+        return predictions
+
     def run(
         self,
         dataset: Dataset,
@@ -77,26 +110,15 @@ class QCNN:
             dataset, transform, batch_size=4, classes=self.classes
         )
 
-        parameters = torch.empty(0, requires_grad=True)
+        parameters = torch.empty(0, pin_memory=use_cuda, requires_grad=True)
         for num_layers in 1 + np.arange(self.max_layers):
             self.num_layers = num_layers
 
-            conv_params = 6 * min(self.dims_q) * self.num_layers
-            # pool_params = 3 * len(self.dims_q) * (self.num_layers - 1)
-            pool_params = int(
-                6
-                * len(self.dims_q)
-                * (self.num_layers - 1)
-                * (
-                    self.num_layers / 2
-                    - (np.log2(len(self.classes)) // -len(self.dims_q))
-                    - 1
-                )
+            new_params = torch.randn(
+                total_params(self.dims_q, self.num_layers),
+                pin_memory=use_cuda,
+                requires_grad=True,
             )
-            total_params = conv_params + pool_params
-            # print(total_params)
-
-            new_params = torch.randn(total_params, requires_grad=True)
 
             with torch.no_grad():
                 new_params *= 2 * torch.pi
@@ -105,16 +127,19 @@ class QCNN:
                     new_params[-len(parameters) :] = parameters
 
             parameters = train(
-                self.qnode,
+                self.predict,
                 optimizer,
                 training_dataloader,
                 cost_fn,
                 initial_parameters=new_params,
             )
 
-        accuracy = test(self.qnode, parameters, testing_dataloader)
+        accuracy = test(self.predict, parameters, testing_dataloader)
+        # print(f"{num_layers=}, {accuracy=:.3%}")
 
         return accuracy
+
+    __call__ = run
 
 
 # if __name__ == "__main__":

@@ -10,6 +10,9 @@ import pennylane as qml
 
 # from pennylane import numpy as np
 
+conv_params = 3
+pool_params = 3
+
 
 def convolution(params: Sequence[Number], wires: Sequence[Number]):
     """
@@ -21,21 +24,17 @@ def convolution(params: Sequence[Number], wires: Sequence[Number]):
     """
 
     # TODO: order of parameters might be important
-    params1, params2 = params.reshape((2, 3))
+    params = params.reshape((len(wires), 3))
 
-    # First U3 layer
-    for wire in wires:
-        qml.U3(*params1, wires=wire)
+    # First Rot layer
+    for (theta, phi, delta), wire in zip(params, wires):
+        qml.Rot(theta, phi, delta, wires=wire)
 
     # CNOT gates
     control, target = tee(wires)
     first = next(target, None)
     for cnot_wires in zip(control, target):
         qml.CNOT(wires=cnot_wires)
-
-    # Second U3 layer
-    for wire in wires:
-        qml.U3(*params2, wires=wire)
 
     # Final CNOT gate (last to first)
     if len(wires) > 1:
@@ -55,7 +54,7 @@ def pooling(params: Sequence[Number], target: int, wires: Sequence[int]):
         target (int): high-frequency qubit to measure
         wires (Sequence[int]): low-frequency qubits to act upon
     """
-    qml.cond(qml.measure(target) == 0, convolution)(params, wires)
+    qml.cond(qml.measure(target) == 0, qml.Rot)(*params, wires)
 
 
 def qcnn_ansatz(
@@ -65,22 +64,27 @@ def qcnn_ansatz(
     num_classes: int = 2,
 ) -> Sequence[int]:
     max_wires = np.cumsum(dims_q)
-    offset = -int(np.log2(num_classes) // -len(dims_q))  # Ceiling division
-    wires = max_wires - offset
+    wires = range(sum(dims_q))
 
     for i in range(num_layers):
         # Apply convolution layers
         for j in 1 + np.arange(min(dims_q)):
-            conv_params, params = np.split(params, [6])
+            conv_params, params = np.split(params, [3 * len(dims_q)])
             convolution(conv_params, max_wires - j)
 
-    # Qubits to measure
-    meas = np.array(
-        [
-            np.arange(target_wire, max_wire)
-            for target_wire, max_wire in zip(wires, max_wires)
-        ]
-    ).flatten(order="F")
+    conv_params, params = np.split(params, [3 * len(wires)])
+    convolution(conv_params, wires)
 
-    # Return the minimum required number of qubits to measure in order
-    return np.sort(meas[: int(np.ceil(np.log2(num_classes)))])
+    params, _ = np.split(params, [3 * len(wires)])
+    params = params.reshape((len(wires), 3))
+    for (theta, phi, delta), wire in zip(params, wires):
+        qml.Rot(theta, phi, delta, wires=wire)
+
+    return wires
+
+
+def total_params(dims_q: Sequence[int], num_layers: int = 1, num_classes: int = 2):
+    n_params = conv_params * len(dims_q) * min(dims_q) * num_layers
+    n_params += conv_params * sum(dims_q) * 2
+
+    return n_params

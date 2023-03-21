@@ -1,5 +1,6 @@
 from typing import Sequence, Tuple, Any
 from torch.utils.data import Dataset, DataLoader, Subset
+from torch import cuda
 import numpy as np
 
 
@@ -19,7 +20,10 @@ def load_dataset(
             data = Subset(data, idx)
 
         dataloader = DataLoader(
-            data, batch_size=batch_size if is_train else 1, shuffle=is_train
+            data,
+            batch_size=batch_size if is_train else 1,
+            shuffle=is_train,
+            pin_memory=cuda.is_available(),
         )
 
         if is_train:

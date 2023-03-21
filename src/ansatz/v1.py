@@ -10,6 +10,9 @@ import pennylane as qml
 
 # from pennylane import numpy as np
 
+conv_params = 6
+pool_params = 6
+
 
 def convolution(params: Sequence[Number], wires: Sequence[Number]):
     """
@@ -23,9 +26,9 @@ def convolution(params: Sequence[Number], wires: Sequence[Number]):
     # TODO: order of parameters might be important
     params1, params2 = params.reshape((2, len(wires), 3))
 
-    # First U3 layer
+    # First Rot layer
     for (theta, phi, delta), wire in zip(params1, wires):
-        qml.U3(theta, phi, delta, wires=wire)
+        qml.Rot(theta, phi, delta, wires=wire)
 
     # CNOT gates
     control, target = tee(wires)
@@ -33,13 +36,13 @@ def convolution(params: Sequence[Number], wires: Sequence[Number]):
     for cnot_wires in zip(control, target):
         qml.CNOT(wires=cnot_wires)
 
-    # Second U3 layer
-    for (theta, phi, delta), wire in zip(params2, wires):
-        qml.U3(theta, phi, delta, wires=wire)
-
     # Final CNOT gate (last to first)
     if len(wires) > 1:
         qml.CNOT(wires=(wires[-1], first))
+
+    # Second Rot layer
+    for (theta, phi, delta), wire in zip(params2, wires):
+        qml.Rot(theta, phi, delta, wires=wire)
 
 
 # def pooling_unitary(params: Sequence[float], wires: Sequence[int]):
@@ -101,4 +104,17 @@ def qcnn_ansatz(
     convolution(conv_params, np.sort(meas))
 
     # Return the minimum required number of qubits to measure in order
-    return np.sort(meas[: int(np.ceil(np.log2(num_classes)))])
+    # return np.sort(meas[: int(np.ceil(np.log2(num_classes)))])
+    return np.sort(meas)
+
+
+def total_params(dims_q: Sequence[int], num_layers: int = 1, num_classes: int = 2):
+    n_conv_params = conv_params * num_layers * len(dims_q)
+    n_pool_params = int(
+        pool_params
+        * len(dims_q)
+        * (num_layers - 1)
+        * (num_layers / 2 - (np.log2(num_classes // -len(dims_q)) - 1))
+    )
+
+    return n_conv_params + n_pool_params

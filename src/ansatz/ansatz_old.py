@@ -73,3 +73,8 @@ def qcnn_ansatz(params, dims_q, *_, **__):
         params = params[U_params + pool_params :]
 
     return np.array(wires).item()
+
+
+def total_params(dims_q, *_, **__):
+    num_layers = int(np.ceil(np.log2(sum(dims_q))))
+    return num_layers * (U_params + pool_params)
