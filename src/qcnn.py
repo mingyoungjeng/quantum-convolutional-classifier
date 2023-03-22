@@ -3,17 +3,20 @@ from numbers import Number
 
 import numpy as np
 import torch
-import torchvision.transforms as transforms
 import torch.nn.functional as F
+from torchvision import transforms
 from torch.utils.data import Dataset
 from torch.optim import Optimizer
 import pennylane as qml
 
 # from pennylane import numpy as np
 from pennylane.templates.embeddings import AmplitudeEmbedding
-from ansatz.simple import qcnn_ansatz, total_params
 from data import load_dataset
 from training import train, test
+from ansatz.simple import qcnn_ansatz, total_params
+
+USE_CUDA = torch.cuda.is_available()
+DEVICE = torch.device("cuda" if USE_CUDA else "cpu")
 
 
 class QCNN:
@@ -44,11 +47,6 @@ class QCNN:
         device = qml.device("default.qubit", wires=self.num_qubits)
         self.qnode = qml.QNode(self.circuit, device, interface="torch")
 
-        global use_cuda
-        use_cuda = torch.cuda.is_available()
-
-        global DEVICE
-        DEVICE = torch.device("cuda" if use_cuda else "cpu")
         print(f"Using {DEVICE} device")
 
     def circuit(
@@ -76,9 +74,11 @@ class QCNN:
         if result.dim() == 1:  # Makes sure batch is 2D array
             result = result.unsqueeze(0)
 
+        # return result
+
         # Parity implementation
         num_classes = len(self.classes)
-        predictions = torch.empty((len(result), num_classes), pin_memory=use_cuda)
+        predictions = torch.empty((len(result), num_classes), pin_memory=USE_CUDA)
         for i, probs in enumerate(result):
             num_rows = torch.tensor([len(probs) // num_classes] * num_classes)
             num_rows[: len(probs) % num_classes] += 1
@@ -110,13 +110,13 @@ class QCNN:
             dataset, transform, batch_size=4, classes=self.classes
         )
 
-        parameters = torch.empty(0, pin_memory=use_cuda, requires_grad=True)
+        parameters = torch.empty(0, pin_memory=USE_CUDA, requires_grad=True)
         for num_layers in 1 + np.arange(self.max_layers):
             self.num_layers = num_layers
 
             new_params = torch.randn(
                 total_params(self.dims_q, self.num_layers),
-                pin_memory=use_cuda,
+                pin_memory=USE_CUDA,
                 requires_grad=True,
             )
 

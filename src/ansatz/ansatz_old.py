@@ -62,7 +62,7 @@ def pooling(V, params, iterable):
     return controlled
 
 
-# total_params = (15 + 2) * num_layers
+# TODO: work with num_classes > 2
 def qcnn_ansatz(params, dims_q, *_, **__):
     wires = range(sum(dims_q))
     while len(wires) > 1:
@@ -72,9 +72,11 @@ def qcnn_ansatz(params, dims_q, *_, **__):
         )
         params = params[U_params + pool_params :]
 
-    return np.array(wires).item()
+    return wires  # np.array(wires)  # .item()
 
 
+# total_params = (15 + 2) * num_layers
+# TODO: work with num_classes > 2
 def total_params(dims_q, *_, **__):
     num_layers = int(np.ceil(np.log2(sum(dims_q))))
-    return num_layers * (U_params + pool_params)
+    return (U_params + pool_params) * num_layers

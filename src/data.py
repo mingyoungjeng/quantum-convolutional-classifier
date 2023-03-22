@@ -21,7 +21,7 @@ def load_dataset(
 
         dataloader = DataLoader(
             data,
-            batch_size=batch_size if is_train else 1,
+            batch_size=batch_size if is_train else 40,
             shuffle=is_train,
             pin_memory=cuda.is_available(),
         )
