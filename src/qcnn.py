@@ -38,8 +38,8 @@ class QCNN:
             print(f"Error: Not enough qubits to represent all classes")
 
         # TODO: any better formula?
-        self.max_layers = min(self.dims_q) + int(
-            np.log2(len(self.classes)) // -len(self.dims_q)
+        self.max_layers = (
+            1 + min(self.dims_q) + int(np.log2(len(self.classes)) // -len(self.dims_q))
         )
 
         self.ansatz = qcnn_ansatz if ansatz is None else ansatz
