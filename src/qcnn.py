@@ -13,7 +13,7 @@ import pennylane as qml
 from pennylane.templates.embeddings import AmplitudeEmbedding
 from data import load_dataset
 from training import train, test
-from ansatz.simple import qcnn_ansatz, total_params
+from ansatz.ansatz import Ansatz
 
 USE_CUDA = torch.cuda.is_available()
 DEVICE = torch.device("cuda" if USE_CUDA else "cpu")
@@ -23,8 +23,7 @@ class QCNN:
     def __init__(
         self,
         dims: Sequence[int],
-        ansatz: Callable = None,
-        params_fn: Callable = None,
+        ansatz: Ansatz = None,
         classes: Sequence[int] = None,
     ) -> None:
         self.rng = np.random.default_rng()
@@ -42,8 +41,7 @@ class QCNN:
             1 + min(self.dims_q) + int(np.log2(len(self.classes)) // -len(self.dims_q))
         )
 
-        self.ansatz = qcnn_ansatz if ansatz is None else ansatz
-        self.total_params = total_params if params_fn is None else params_fn
+        self.ansatz = Ansatz() if ansatz is None else ansatz
         device = qml.device("default.qubit", wires=self.num_qubits)
         self.qnode = qml.QNode(self.circuit, device, interface="torch")
 
@@ -93,7 +91,7 @@ class QCNN:
 
         return predictions
 
-    def run(
+    def __call__(
         self,
         dataset: Dataset,
         optimizer: Optimizer,
@@ -115,7 +113,7 @@ class QCNN:
             self.num_layers = num_layers
 
             new_params = torch.randn(
-                total_params(self.dims_q, self.num_layers),
+                self.ansatz.total_params(self.dims_q, self.num_layers),
                 pin_memory=USE_CUDA,
                 requires_grad=True,
             )
@@ -134,12 +132,10 @@ class QCNN:
                 initial_parameters=new_params,
             )
 
-        accuracy = test(self.predict, parameters, testing_dataloader)
-        # print(f"{num_layers=}, {accuracy=:.3%}")
+            accuracy = test(self.predict, parameters, testing_dataloader)
+            print(f"{num_layers=}, {accuracy=:.3%}")
 
         return accuracy
-
-    __call__ = run
 
 
 # if __name__ == "__main__":

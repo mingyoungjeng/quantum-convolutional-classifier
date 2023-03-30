@@ -1,5 +1,5 @@
 from qcnn import QCNN
-from ansatz.ansatz_old import qcnn_ansatz, total_params
+from ansatz.related_work import OldAnsatz
 
 from typing import Sequence, Callable
 from numbers import Number
@@ -19,11 +19,9 @@ class QCNN_Old(QCNN):
         dims: Sequence[int],
         classes: Sequence[int] = None,
     ) -> None:
-        super().__init__(
-            dims, ansatz=qcnn_ansatz, params_fn=total_params, classes=classes
-        )
+        super().__init__(dims, ansatz=OldAnsatz(), classes=classes)
 
-    def run(
+    def __call__(
         self,
         dataset: Dataset,
         optimizer: Optimizer,
@@ -40,7 +38,9 @@ class QCNN_Old(QCNN):
             dataset, transform, batch_size=4, classes=self.classes
         )
 
-        new_params = torch.randn(total_params(self.dims_q), requires_grad=True)
+        new_params = torch.randn(
+            self.ansatz.total_params(self.dims_q), requires_grad=True
+        )
         parameters = train(
             self.predict,
             optimizer,
@@ -52,8 +52,6 @@ class QCNN_Old(QCNN):
         accuracy = test(self.predict, parameters, testing_dataloader)
 
         return accuracy
-
-    __call__ = run
 
 
 # if __name__ == "__main__":
