@@ -1,7 +1,3 @@
-"""
-ansatz.py: the various ansatz needed for the QCNN
-"""
-
 from typing import Sequence
 from numbers import Number
 from itertools import tee
@@ -10,8 +6,10 @@ import pennylane as qml
 
 # from pennylane import numpy as np
 
+from ansatz.ansatz import Ansatz
 
-class Ansatz:
+
+class NaiveAnsatz(Ansatz):
     conv_params = 3
     pool_params = 3
 
@@ -64,9 +62,29 @@ class Ansatz:
         num_layers: int = 1,
         num_classes: int = 2,
     ) -> Sequence[int]:
-        return range(sum(dims_q))
+        max_wires = np.cumsum(dims_q)
+        wires = range(sum(dims_q))
+
+        for i in range(num_layers):
+            # Apply convolution layers
+            for j in 1 + np.arange(min(dims_q)):
+                conv_params, params = np.split(params, [3 * len(dims_q)])
+                self.convolution(conv_params, max_wires - j)
+
+        conv_params, params = np.split(params, [3 * len(wires)])
+        self.convolution(conv_params, wires)
+
+        params, _ = np.split(params, [3 * len(wires)])
+        params = params.reshape((len(wires), 3))
+        for (theta, phi, delta), wire in zip(params, wires):
+            qml.Rot(theta, phi, delta, wires=wire)
+
+        return wires
 
     def total_params(
         self, dims_q: Sequence[int], num_layers: int = 1, num_classes: int = 2
     ):
-        return 0
+        n_params = self.conv_params * len(dims_q) * min(dims_q) * num_layers
+        n_params += self.conv_params * sum(dims_q) * 2
+
+        return n_params

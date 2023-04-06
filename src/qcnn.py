@@ -121,8 +121,9 @@ class QCNN:
             with torch.no_grad():
                 new_params *= 2 * torch.pi
 
-                if len(parameters) > 0:
-                    new_params[-len(parameters) :] = parameters
+                # if len(parameters) > 0:
+                #     new_params[-len(parameters) :] = parameters
+                # new_params[: len(parameters)] = parameters
 
             parameters = train(
                 self.predict,
