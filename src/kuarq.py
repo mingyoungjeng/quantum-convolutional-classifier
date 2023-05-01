@@ -40,7 +40,7 @@ def flatten_image(
     pad=False,
 ):  # -> tuple[npt.NDArray[np.complex64], *[tuple[int, ...]]]:
     with fits.open(filename) if multispectral else Image.open(filename, "r") as im:
-        matrix = im[0].data if multispectral else np.asarray(im)
+        matrix = im[0].data if multispectral else np.asarray(im, dtype=float)
         dims = matrix.shape
         if pad:
             new_dims = [(0, int(2 ** np.ceil(np.log2(x))) - x) for x in matrix.shape]
@@ -83,7 +83,7 @@ def get_fidelity(x_in, x_out) -> float:
     return fidelity
 
 
-def construct_img(img_data, size, mode: str = "RGB") -> Image.Image:
+def construct_img(img_data, size, mode: str = None) -> Image.Image:
     new_dims = [2 ** to_qubits(x) for x in size]
     image = np.abs(img_data).astype(np.uint8)  # Image package needs uint8
     image = image.reshape(new_dims, order="F")
