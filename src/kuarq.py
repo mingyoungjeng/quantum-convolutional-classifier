@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Union, Sequence
 from pathlib import Path
 import numpy as np
 from PIL import Image
@@ -6,8 +6,8 @@ from astropy.io import fits
 from qiskit import QuantumCircuit
 
 
-def to_qubits(length: int) -> int:
-    return int(np.ceil(np.log2(length)))
+def to_qubits(N: Union[int, Sequence[int]]) -> int:
+    return np.int_(np.ceil(np.log2(N)))
 
 
 def normalize(x, include_magnitude=False):
@@ -34,6 +34,16 @@ def random_data(
     return psi
 
 
+def flatten_array(arr: np.ndarray, pad: bool = False):
+    if pad:
+        new_dims = 2 ** to_qubits(arr.shape)
+        n_pad = list(zip([0] * arr.ndim, new_dims - arr.shape))
+        arr = np.pad(arr, n_pad, "constant", constant_values=0)
+    psi = np.ravel(arr, order="F")
+
+    return psi
+
+
 def flatten_image(
     filename: Path,
     include_mode: Optional[bool] = False,
@@ -43,10 +53,7 @@ def flatten_image(
     with fits.open(filename) if multispectral else Image.open(filename, "r") as im:
         matrix = im[0].data if multispectral else np.asarray(im, dtype=float)
         dims = matrix.shape
-        if pad:
-            new_dims = [(0, int(2 ** np.ceil(np.log2(x))) - x) for x in matrix.shape]
-            matrix = np.pad(matrix, new_dims, "constant", constant_values=0)
-        psi = matrix.flatten(order="F")
+        psi = flatten_array(matrix, pad)
         mode = "fits" if multispectral else im.mode
 
     if include_mode:

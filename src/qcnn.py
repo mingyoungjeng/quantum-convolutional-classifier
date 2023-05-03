@@ -8,6 +8,7 @@ from torchvision import transforms
 from torch.utils.data import Dataset
 from torch.optim import Optimizer
 import pennylane as qml
+from kuarq import to_qubits, flatten_array
 
 # from pennylane import numpy as np
 from pennylane.templates.embeddings import AmplitudeEmbedding
@@ -28,7 +29,7 @@ class QCNN:
     ) -> None:
         self.rng = np.random.default_rng()
         self.dims = dims
-        self.dims_q = [int(np.ceil(np.log2(dim))) for dim in dims]
+        self.dims_q = to_qubits(dims)
         self.num_qubits = sum(self.dims_q)
 
         self.num_layers = 1  # min(self.dims_q)
@@ -36,12 +37,7 @@ class QCNN:
         if self.num_qubits < len(self.classes):
             print(f"Error: Not enough qubits to represent all classes")
 
-        # TODO: any better formula?
-        self.max_layers = (
-            1 + min(self.dims_q) + int(np.log2(len(self.classes)) // -len(self.dims_q))
-        )
-
-        self.ansatz = Ansatz() if ansatz is None else ansatz
+        self.ansatz = Ansatz(self.dims_q) if ansatz is None else ansatz
         device = qml.device("default.qubit", wires=self.num_qubits)
         self.qnode = qml.QNode(self.circuit, device, interface="torch")
 
@@ -53,17 +49,11 @@ class QCNN:
         # c2q
         if psi_in is None:
             psi_in = np.asarray([1, 0])
-        AmplitudeEmbedding(psi_in, range(self.num_qubits), pad_with=0, normalize=True)
 
-        meas = self.ansatz(
-            params,
-            self.dims_q,
-            num_layers=self.num_layers,
-            num_classes=len(self.classes),
-        )
+        AmplitudeEmbedding(psi_in, range(self.num_qubits), pad_with=0, normalize=True)
+        meas = self.ansatz(params, self.num_layers)
 
         # q2c
-        # TODO: subject to change if meas qubits don't need to be entangled
         return qml.probs(meas)
 
     def predict(self, *args, **kwargs) -> torch.Tensor:
@@ -77,6 +67,7 @@ class QCNN:
         # Parity implementation
         num_classes = len(self.classes)
         predictions = torch.empty((len(result), num_classes), pin_memory=USE_CUDA)
+
         for i, probs in enumerate(result):
             num_rows = torch.tensor([len(probs) // num_classes] * num_classes)
             num_rows[: len(probs) % num_classes] += 1
@@ -100,8 +91,8 @@ class QCNN:
         transform = transforms.Compose(
             [
                 transforms.Resize(self.dims),
+                transforms.Lambda(lambda x: flatten_array(np.squeeze(x), pad=True)),
                 transforms.ToTensor(),
-                transforms.Lambda(lambda x: torch.flatten(torch.squeeze(x).T)),
             ]
         )
         training_dataloader, testing_dataloader = load_dataset(
@@ -109,11 +100,11 @@ class QCNN:
         )
 
         parameters = torch.empty(0, pin_memory=USE_CUDA, requires_grad=True)
-        for num_layers in 1 + np.arange(self.max_layers):
+        for num_layers in np.arange(self.ansatz.max_layers + 1):
             self.num_layers = num_layers
 
             new_params = torch.randn(
-                self.ansatz.total_params(self.dims_q, self.num_layers),
+                self.ansatz.total_params(self.num_layers),
                 pin_memory=USE_CUDA,
                 requires_grad=True,
             )

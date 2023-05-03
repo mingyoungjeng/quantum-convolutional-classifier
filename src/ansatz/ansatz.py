@@ -23,16 +23,24 @@ class Ansatz:
         *_,
         **__,
     ) -> None:
-        self.num_qubits = np.sum(dims_q)
-        self.wires = [
-            list(range(big - dim, big)) for big, dim in zip(np.cumsum(dims_q), dims_q)
-        ]
+        self._dims_q = dims_q
         self.fltr_shape_q = (
             (1, 1)
             if filter_dims is None
             else tuple(int(np.ceil(np.log2(N))) for N in filter_dims)
         )
         self.stride = stride
+
+    @property
+    def num_qubits(self):
+        return np.sum(self._dims_q)
+
+    @property
+    def wires(self):
+        return [
+            list(range(big - dim, big))
+            for big, dim in zip(np.cumsum(self._dims_q), self._dims_q)
+        ]
 
     @staticmethod
     def shift(wires, k: int = 1, control_wires=None):
@@ -110,7 +118,7 @@ class Ansatz:
 
     def __call__(self, params, num_layers: int = 1) -> Any:
         wires = self.wires.copy()
-        n_params = self.params_per_layer()
+        n_params = self.params_per_layer
 
         # Hybrid convolution/pooling layers
         for _ in range(num_layers):
@@ -130,7 +138,11 @@ class Ansatz:
         return sum(self.fltr_shape_q) * self.U_params
 
     def total_params(self, num_layers: int = 1, *_, **__):
-        n_params = num_layers * self.params_per_layer()
+        n_params = num_layers * self.params_per_layer
         n_params += self.num_qubits * self.U_params
 
         return n_params
+
+    @property
+    def max_layers(self):
+        return np.min(self._dims_q)
