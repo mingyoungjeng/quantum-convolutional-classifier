@@ -5,3 +5,4 @@
 **/__pycache__/*
 *.pyc
 pennylane/qcnn/result/*
+test/*.png

@@ -1,4 +1,4 @@
-import data
+import machine_learning.data as data
 import Training
 import QCNN_circuit
 import numpy as np

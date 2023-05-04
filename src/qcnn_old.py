@@ -9,8 +9,8 @@ import torch
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 from torch.optim import Optimizer
-from data import load_dataset
-from training import train, test
+from machine_learning.data import load_dataset
+from fn.machine_learning import train, test
 
 
 class QCNN_Old(QCNN):
