@@ -1,14 +1,14 @@
 from typing import Sequence
 from numbers import Number
-from itertools import tee
 import numpy as np
+from itertools import tee
 import pennylane as qml
-from ansatz.ansatz import Ansatz
+from ansatz.convolution import Ansatz
 
 # from pennylane import numpy as np
 
 
-class Ansatz1(Ansatz):
+class SimpleAnsatz(Ansatz):
     conv_params = 6
     pool_params = 6
 
@@ -23,11 +23,11 @@ class Ansatz1(Ansatz):
         """
 
         # TODO: order of parameters might be important
-        params1, params2 = params.reshape((2, len(wires), 3))
+        params1, params2 = params.reshape((2, 3))
 
         # First Rot layer
-        for (theta, phi, delta), wire in zip(params1, wires):
-            qml.Rot(theta, phi, delta, wires=wire)
+        for wire in wires:
+            qml.Rot(*params1, wires=wire)
 
         # CNOT gates
         control, target = tee(wires)
@@ -40,8 +40,8 @@ class Ansatz1(Ansatz):
             qml.CNOT(wires=(wires[-1], first))
 
         # Second Rot layer
-        for (theta, phi, delta), wire in zip(params2, wires):
-            qml.Rot(theta, phi, delta, wires=wire)
+        for wire in wires:
+            qml.Rot(*params2, wires=wire)
 
     # def pooling_unitary(params: Sequence[float], wires: Sequence[int]):
     #     pass
@@ -56,7 +56,7 @@ class Ansatz1(Ansatz):
             target (int): high-frequency qubit to measure
             wires (Sequence[int]): low-frequency qubits to act upon
         """
-        qml.cond(qml.measure(target) == 0, Ansatz1.convolution)(params, wires)
+        qml.cond(qml.measure(target) == 0, SimpleAnsatz.convolution)(params, wires)
 
     def __call__(
         self,
@@ -73,7 +73,8 @@ class Ansatz1(Ansatz):
             range(1, num_layers)
         ):  # Final behavior has different behavior
             # Apply convolution layer:
-            conv_params, params = np.split(params, [6 * len(wires)])
+            conv_params, params = np.split(params, [6])
+            pool_params, params = np.split(params, [6])
             # print(f"layer {i}: {len(conv_params)}-param convolution on wires {wires - i}")
             self.convolution(conv_params, wires - i)
 
@@ -84,8 +85,6 @@ class Ansatz1(Ansatz):
                 # #     f"layer {i}: {len(pool_params)}-param pool {j} on wires {target_wire-i, target_wire-i+1}"
                 # # )
                 # pooling(pool_params, target_wire - i, target_wire - i + 1)
-
-                pool_params, params = np.split(params, [6 * (offset + i - 1)])
                 # print(
                 #     f"layer {i}: {len(pool_params)}-param pool {j} on wires {target_wire-i, range(target_wire-i+1, max_wire)}"
                 # )
@@ -112,12 +111,7 @@ class Ansatz1(Ansatz):
     def total_params(
         self, dims_q: Sequence[int], num_layers: int = 1, num_classes: int = 2
     ):
-        n_conv_params = self.conv_params * num_layers * len(dims_q)
-        n_pool_params = int(
-            self.pool_params
-            * len(dims_q)
-            * (num_layers - 1)
-            * (num_layers / 2 - (np.log2(num_classes) // -len(dims_q)) - 1)
-        )
+        n_conv_params = self.conv_params * num_layers
+        n_pool_params = self.pool_params * (num_layers - 1)
 
         return n_conv_params + n_pool_params

@@ -6,7 +6,7 @@ import pennylane as qml
 
 # from pennylane import numpy as np
 
-from ansatz.ansatz import Ansatz
+from ansatz.convolution import Ansatz
 
 
 class RapidAnsatz(Ansatz):

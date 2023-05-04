@@ -1,4 +1,4 @@
-from typing import Callable, Sequence, Union, Tuple, Any
+from typing import Callable, Sequence, Tuple, Any
 from numbers import Number
 
 import numpy as np
@@ -19,14 +19,14 @@ USE_CUDA = torch.cuda.is_available()
 # DEVICE = torch.device("cuda" if USE_CUDA else "cpu")
 
 
-def create_tensor(fn: Union[type[Tensor], Callable], *args, **kwargs):
+def create_tensor(fn: type[Tensor] | Callable, /, *args, **kwargs):
     tensor = fn(*args, **kwargs)
     return tensor.cuda() if USE_CUDA else tensor
 
 
 def create_optimizer(
     optimizer: type[Optimizer],
-    params: Union[Sequence[Number], Number],
+    params: Sequence[Number] | Number,
     *args,
     **kwargs,
 ) -> Optimizer:
@@ -85,6 +85,20 @@ def load_dataset(
     return training_dataloader, testing_dataloader
 
 
+def backpropagate(
+    predictions: Sequence[Number],
+    labels: Sequence[Number],
+    opt: Optimizer,
+    cost_fn: Callable,
+):
+    opt.zero_grad()
+    cost = cost_fn(predictions, labels)
+    cost.backward()
+    opt.step()
+
+    return cost
+
+
 def train(
     fn: MLFunction,
     opt: Optimizer,
@@ -92,16 +106,9 @@ def train(
     cost_fn: CostFunction,
 ):
     params = opt.param_groups[0]["params"][0]
-    # print(f"{len(params)=}")
     for i, (data, labels) in enumerate(training_dataloader):
-        opt.zero_grad()
         predictions = fn(params, data)
-        cost = cost_fn(predictions, labels)
-        cost.backward()
-        opt.step()
-
-        # if (i == 0) or ((i + 1) % 100 == 0) or (i + 1 == len(training_dataloader)):
-        #     print(f"{i+1}/{len(training_dataloader)}: {cost=:.03f}")
+        backpropagate(predictions, labels, opt=opt, cost_fn=cost_fn)
 
     return params
 

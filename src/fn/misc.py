@@ -1,4 +1,3 @@
-from typing import Union
 from pathlib import Path
 from PIL import Image
 from astropy.io import fits
@@ -8,7 +7,7 @@ def create_parent(path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
 
 
-def export_img(img: Union[Image.Image, fits.HDUList], path: Path):
+def export_img(img: Image.Image | fits.HDUList, path: Path):
     if isinstance(img, fits.HDUList):
         path = path.with_suffix(".fits")
 

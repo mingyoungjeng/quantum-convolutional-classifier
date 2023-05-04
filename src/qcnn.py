@@ -30,7 +30,7 @@ class QCNN:
     def __init__(
         self,
         dims: Sequence[int],
-        ansatz: type[Ansatz] = None,
+        ansatz: type[Ansatz],
         classes: Sequence[int] = None,
     ) -> None:
         self.dims = dims
@@ -42,7 +42,7 @@ class QCNN:
         if self.num_qubits < len(self.classes):
             print("Error: Not enough qubits to represent all classes")
 
-        self.ansatz = Ansatz(self.dims_q) if ansatz is None else ansatz
+        self.ansatz = ansatz(self.num_qubits)
         device = qml.device("default.qubit", wires=self.num_qubits)
         self.qnode = qml.QNode(self._circuit, device, interface="torch")
 
@@ -83,7 +83,7 @@ class QCNN:
         # TODO: optimizer options should be an option
         opt = create_optimizer(
             optimizer,
-            self.ansatz.total_params(self.num_layers),
+            self.ansatz.total_params(),
             lr=0.01,
             momentum=0.9,
             nesterov=True,

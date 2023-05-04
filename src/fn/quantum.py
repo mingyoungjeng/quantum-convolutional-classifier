@@ -1,12 +1,14 @@
-from typing import Optional, Union, Sequence
+from typing import Optional, Sequence
 from pathlib import Path
+from functools import cache
 import numpy as np
 from PIL import Image
 from astropy.io import fits
 from qiskit import QuantumCircuit
 
 
-def to_qubits(N: Union[int, Sequence[int]]) -> int:
+@cache
+def to_qubits(N: int | Sequence[int]) -> int:
     return np.int_(np.ceil(np.log2(N)))
 
 

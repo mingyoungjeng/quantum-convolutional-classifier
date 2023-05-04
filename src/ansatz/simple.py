@@ -1,96 +1,33 @@
-from typing import Sequence
-from numbers import Number
+from unitary.simple import SimpleConvolution, SimplePooling
+from ansatz.ansatz import ConvolutionAnsatz
+from itertools import zip_longest, tee
 import numpy as np
-from itertools import tee
-import pennylane as qml
-from ansatz.ansatz import Ansatz
-
-# from pennylane import numpy as np
 
 
-class SimpleAnsatz(Ansatz):
-    conv_params = 6
-    pool_params = 6
+# TODO: work with num_classes > 2
+class BaselineAnsatz(ConvolutionAnsatz):
+    convolve = SimpleConvolution()
+    pool = SimplePooling()
 
-    @staticmethod
-    def convolution(params: Sequence[Number], wires: Sequence[Number]):
-        """
-        Applied convolution on high-frequency qubits.
+    def __init__(self, num_qubits):
+        self.num_qubits = num_qubits
 
-        Args:
-            params (Sequence[Number]): rotation gate parameters
-            wires (Sequence[Number]): high-frequency qubits of all dimensions
-        """
-
-        # TODO: order of parameters might be important
-        params1, params2 = params.reshape((2, 3))
-
-        # First Rot layer
-        for wire in wires:
-            qml.Rot(*params1, wires=wire)
-
-        # CNOT gates
-        control, target = tee(wires)
-        first = next(target, None)
-        for cnot_wires in zip(control, target):
-            qml.CNOT(wires=cnot_wires)
-
-        # Final CNOT gate (last to first)
-        if len(wires) > 1:
-            qml.CNOT(wires=(wires[-1], first))
-
-        # Second Rot layer
-        for wire in wires:
-            qml.Rot(*params2, wires=wire)
-
-    # def pooling_unitary(params: Sequence[float], wires: Sequence[int]):
-    #     pass
-
-    @staticmethod
-    def pooling(params: Sequence[Number], target: int, wires: Sequence[int]):
-        """
-        Controlled operation from circuit measurement of high-frequency qubits
-
-        Args:
-            params (Sequence[float]): rotation gate parameters
-            target (int): high-frequency qubit to measure
-            wires (Sequence[int]): low-frequency qubits to act upon
-        """
-        qml.cond(qml.measure(target) == 0, SimpleAnsatz.convolution)(params, wires)
-
-    def __call__(
-        self,
-        params: Sequence[Number],
-        dims_q: Sequence[int],
-        num_layers: int = 1,
-        num_classes: int = 2,
-    ) -> Sequence[int]:
+    def __call__(self, params, *_, num_layers: int = None, **__):
         max_wires = np.cumsum(dims_q)
         offset = -int(np.log2(num_classes) // -len(dims_q))  # Ceiling division
         wires = max_wires - offset
 
-        for i in reversed(
-            range(1, num_layers)
-        ):  # Final behavior has different behavior
+        # Final behavior has different behavior
+        for i in reversed(range(1, num_layers)):
             # Apply convolution layer:
-            conv_params, params = np.split(params, [6])
-            pool_params, params = np.split(params, [6])
-            # print(f"layer {i}: {len(conv_params)}-param convolution on wires {wires - i}")
-            self.convolution(conv_params, wires - i)
+            params = self.convolution(params, wires - i)
 
             # Apply pooling layers
             for j, (target_wire, max_wire) in enumerate(zip(wires, max_wires)):
-                # pool_params, params = np.split(params, [6 * ])
-                # # print(
-                # #     f"layer {i}: {len(pool_params)}-param pool {j} on wires {target_wire-i, target_wire-i+1}"
-                # # )
-                # pooling(pool_params, target_wire - i, target_wire - i + 1)
-                # print(
-                #     f"layer {i}: {len(pool_params)}-param pool {j} on wires {target_wire-i, range(target_wire-i+1, max_wire)}"
-                # )
-                self.pooling(
-                    pool_params, target_wire - i, range(target_wire - i + 1, max_wire)
+                p = self.pooling(
+                    params, target_wire - i, range(target_wire - i + 1, max_wire)
                 )
+            params = p
 
         # Qubits to measure
         meas = np.array(
@@ -101,17 +38,20 @@ class SimpleAnsatz(Ansatz):
         ).flatten(order="F")
 
         # Final layer of convolution
-        conv_params = params[: 6 * len(meas)]
-        self.convolution(conv_params, np.sort(meas))
+        self.convolve(params, np.sort(meas))
 
         # Return the minimum required number of qubits to measure in order
         # return np.sort(meas[: int(np.ceil(np.log2(num_classes)))])
         return np.sort(meas)
 
-    def total_params(
-        self, dims_q: Sequence[int], num_layers: int = 1, num_classes: int = 2
-    ):
-        n_conv_params = self.conv_params * num_layers
-        n_pool_params = self.pool_params * (num_layers - 1)
+    def total_params(self, num_layers=None, *_, **__):
+        n_conv_params = self.convolve.total_params() * num_layers
+        n_pool_params = self.pool.total_params() * (num_layers - 1)
 
         return n_conv_params + n_pool_params
+
+    @property
+    def max_layers(self) -> int:
+        return (
+            1 + min(self.dims_q) + int(np.log2(len(self.classes)) // -len(self.dims_q))
+        )
