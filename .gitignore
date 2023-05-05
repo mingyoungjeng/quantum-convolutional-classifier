@@ -4,5 +4,5 @@
 **/data/*
 **/__pycache__/*
 *.pyc
-pennylane/qcnn/result/*
-test/*.png
+test/pennylane/qcnn/result/*
+test/**/*.png

@@ -1,9 +1,5 @@
-from unitary.baseline import (
-    BaselineConvolution,
-    BaselinePooling1,
-    BaselinePooling2,
-    BaselinePooling3,
-)
+from pennylane.operation import Operation
+from unitary.baseline import BaselineConvolution, BaselinePooling1
 from ansatz.ansatz import ConvolutionAnsatz
 from itertools import zip_longest, tee
 import numpy as np
@@ -11,8 +7,8 @@ import numpy as np
 
 # TODO: work with num_classes > 2
 class BaselineAnsatz(ConvolutionAnsatz):
-    convolve = BaselineConvolution()
-    pool = BaselinePooling1()
+    convolve: type[Operation] = BaselineConvolution
+    pool: type[Operation] = BaselinePooling1
 
     def __init__(self, num_qubits):
         self.num_qubits = num_qubits
@@ -26,34 +22,33 @@ class BaselineAnsatz(ConvolutionAnsatz):
         lst.insert(0, last)
 
         for wires in lst:
-            p = self.convolve(params, wires=wires)
-
-        return p
+            self.convolve(params, wires=wires)
 
     def _pooling(self, params, iterable):
         measurements = iterable[1::2]
         controlled = iterable[0::2]
         for wires in zip(measurements, controlled):
-            p = self.pool(params, wires=wires)
+            self.pool(params, wires=wires)
 
-        return controlled, p
+        return controlled
 
     def __call__(self, params, *_, num_layers: int = None, **__):
         if num_layers is None:
             num_layers = self.max_layers
 
         wires = list(range(self.num_qubits))
+        idx = np.cumsum([self.convolve.shape(), self.pool.shape()])
+        conv_params, pool_params, params = np.split(params, idx)
         for i in range(num_layers):
-            params = self._convolution(params, wires)
-            wires, params = self._pooling(params, wires)
+            self._convolution(conv_params, wires)
+            wires = self._pooling(pool_params, wires)
 
         return wires  # np.array(wires)  # .item()
 
     def total_params(self, num_layers=None, *_, **__):
         if num_layers is None:
             num_layers = self.max_layers
-
-        return (self.convolve.total_params() + self.pool.total_params()) * num_layers
+        return (self.convolve.shape() + self.pool.shape()) * num_layers
 
     @property
     def max_layers(self) -> int:

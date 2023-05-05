@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Sequence
+from numbers import Number
 
-from ansatz.unitary.unitary import Parameters, Wires
+Parameters = Sequence[Number]
+Wires = Sequence[int]
 
 
 class Ansatz(ABC):

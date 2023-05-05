@@ -1,5 +1,6 @@
 from typing import Callable, Sequence, Tuple, Any
 from numbers import Number
+from itertools import chain, pairwise
 
 import numpy as np
 
@@ -17,6 +18,26 @@ MLFunction = Callable[[Sequence[Number], Sequence[Number]], Sequence[Number]]
 
 USE_CUDA = torch.cuda.is_available()
 # DEVICE = torch.device("cuda" if USE_CUDA else "cpu")
+
+
+def cut(
+    arr: Sequence[Number], i: Number | Sequence[Number]
+) -> Sequence[Sequence[Number]]:
+    """
+    Splits sequence at indice(s) i
+
+    Args:
+        arr (Sequence[Number]): Sequence to split
+        i (Number | Sequence[Number]): indice(s) to divide by
+
+    Returns:
+        Tuple[Sequence[Number], Sequence[Number]]: split sub-sequences
+    """
+    if not hasattr(i, "__iter__"):
+        i = (i,)
+
+    index = chain((None,), i, (None,))
+    return tuple(arr[a:b] for a, b, in pairwise(index))
 
 
 def create_tensor(fn: type[Tensor] | Callable, /, *args, **kwargs):
