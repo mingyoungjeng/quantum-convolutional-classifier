@@ -1,12 +1,12 @@
-from pennylane.operation import Operation
-from unitary.baseline import BaselineConvolution, BaselinePooling1
-from ansatz.ansatz import ConvolutionAnsatz
 from itertools import zip_longest, tee
 import numpy as np
+from pennylane.operation import Operation
+from thesis.unitary.baseline import BaselineConvolution, BaselinePooling1
+from thesis.unitary.ansatz import Ansatz
 
 
 # TODO: work with num_classes > 2
-class BaselineAnsatz(ConvolutionAnsatz):
+class BaselineAnsatz(Ansatz):
     convolve: type[Operation] = BaselineConvolution
     pool: type[Operation] = BaselinePooling1
 
@@ -45,11 +45,11 @@ class BaselineAnsatz(ConvolutionAnsatz):
 
         return wires  # np.array(wires)  # .item()
 
-    def total_params(self, num_layers=None, *_, **__):
+    def shape(self, num_layers=None):
         if num_layers is None:
             num_layers = self.max_layers
         return (self.convolve.shape() + self.pool.shape()) * num_layers
 
     @property
-    def max_layers(self) -> int:
+    def max_layers(self, *_, **__) -> int:
         return int(np.ceil(np.log2(self.num_qubits)))

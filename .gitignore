@@ -6,3 +6,4 @@
 *.pyc
 test/pennylane/qcnn/result/*
 test/**/*.png
+**/*.egg-info

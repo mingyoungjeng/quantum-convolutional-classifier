@@ -1,5 +1,5 @@
 import pennylane as qml
-from unitary.unitary import Unitary
+from thesis.unitary import Unitary
 
 
 class BaselineConvolution(Unitary):

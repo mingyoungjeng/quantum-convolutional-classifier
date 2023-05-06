@@ -1,11 +1,11 @@
-from unitary.simple import SimpleConvolution, SimplePooling
-from ansatz.ansatz import ConvolutionAnsatz
+from thesis.unitary import SimpleConvolution, SimplePooling
+from .ansatz import ConvolutionAnsatz
 from itertools import zip_longest, tee
 import numpy as np
 
 
 # TODO: work with num_classes > 2
-class BaselineAnsatz(ConvolutionAnsatz):
+class SimpleAnsatz(ConvolutionAnsatz):
     convolve = SimpleConvolution()
     pool = SimplePooling()
 

@@ -1,23 +1,31 @@
-from typing import Callable, Sequence, Tuple, Any
-from numbers import Number
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 from itertools import chain, pairwise
-
 import numpy as np
-
-from fn.quantum import flatten_array
-
 import torch
-from torch import Tensor
-from torch.utils.data import Dataset, DataLoader, Subset
-from torch.optim import Optimizer
-from torchvision import transforms
+from torch.utils.data import DataLoader, Subset
 import torch.nn.functional as F
+from torch.multiprocessing import Pool
+from torchvision import transforms
+from thesis.fn.quantum import flatten_array
 
-LossFunction = CostFunction = Callable[[Sequence[Number], Sequence[Number]], Number]
-MLFunction = Callable[[Sequence[Number], Sequence[Number]], Sequence[Number]]
+if TYPE_CHECKING:
+    from typing import Callable, Sequence, Tuple, Any
+    from numbers import Number
+    from torch import Tensor
+    from torch.utils.data import Dataset
+    from torch.optim import Optimizer
+
+    LossFunction = CostFunction = Callable[[Sequence[Number], Sequence[Number]], Number]
+    MLFunction = Callable[[Sequence[Number], Sequence[Number]], Sequence[Number]]
 
 USE_CUDA = torch.cuda.is_available()
 # DEVICE = torch.device("cuda" if USE_CUDA else "cpu")
+
+
+def _is_iterable(x: Any):
+    return hasattr(x, "__iter__")
 
 
 def cut(
@@ -33,7 +41,7 @@ def cut(
     Returns:
         Tuple[Sequence[Number], Sequence[Number]]: split sub-sequences
     """
-    if not hasattr(i, "__iter__"):
+    if not _is_iterable(i):
         i = (i,)
 
     index = chain((None,), i, (None,))
@@ -51,7 +59,7 @@ def create_optimizer(
     *args,
     **kwargs,
 ) -> Optimizer:
-    if isinstance(params, Number):
+    if not _is_iterable(params):
         params = create_tensor(torch.randn, params, requires_grad=True)
     return optimizer([params], *args, **kwargs)
 

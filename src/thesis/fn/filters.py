@@ -1,5 +1,6 @@
 import numpy as np
-from scipy.linalg import hadamard as H
+
+# from scipy.linalg import hadamard as H
 
 
 def avg_filter(N: int, dim: int = 1):

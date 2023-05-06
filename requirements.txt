@@ -1,0 +1,7 @@
+
+PennyLane
+qiskit
+torch
+torchvision
+Pillow
+astropy

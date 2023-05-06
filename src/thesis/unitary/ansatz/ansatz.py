@@ -1,31 +1,17 @@
-from abc import ABC, abstractmethod
-from typing import Sequence
-from numbers import Number
+from __future__ import annotations
+from typing import TYPE_CHECKING
 
-Parameters = Sequence[Number]
-Wires = Sequence[int]
+from abc import abstractmethod
+from thesis.unitary import Unitary
+
+if TYPE_CHECKING:
+    from thesis.unitary import Parameters, Wires
 
 
-class Ansatz(ABC):
-    @abstractmethod
-    def __call__(self, params: Parameters) -> Wires:
-        pass
-
+class Ansatz(Unitary):
     @property
     @abstractmethod
-    def total_params(self) -> int:
-        """
-        Minimum number of parameters required for execution
-
-        Returns:
-            int: number of parameters
-        """
-
-
-class ConvolutionAnsatz(Ansatz):
-    @property
-    @abstractmethod
-    def max_layers(self) -> int:
+    def max_layers(self, *args, **kwargs) -> int:
         """
         Most number of layers supported by ansatz
 

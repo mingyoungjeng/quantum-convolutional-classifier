@@ -1,7 +1,7 @@
-from unitary.unitary import Unitary
-import pennylane as qml
 from itertools import tee
 import numpy as np
+import pennylane as qml
+from thesis.unitary import Unitary
 
 
 class SimpleConvolution(Unitary):

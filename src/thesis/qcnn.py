@@ -1,22 +1,12 @@
-from typing import Sequence
-from numbers import Number
+from __future__ import annotations
+from typing import TYPE_CHECKING
 
 import numpy as np
-
-# from pennylane import numpy as np
 import pennylane as qml
 from pennylane.templates.embeddings import AmplitudeEmbedding
-from ansatz.ansatz import Ansatz
-
 import torch
-from torch.utils.data import Dataset
-from torch.optim import Optimizer
-
-# RNG = np.random.default_rng()
-
-from fn.quantum import to_qubits
-from fn.machine_learning import (
-    CostFunction,
+from thesis.fn.quantum import to_qubits
+from thesis.fn.machine_learning import (
     load_dataset,
     train,
     test,
@@ -24,6 +14,14 @@ from fn.machine_learning import (
     image_transform,
     parity,
 )
+
+if TYPE_CHECKING:
+    from typing import Sequence
+    from numbers import Number
+    from torch.utils.data import Dataset
+    from torch.optim import Optimizer
+    from thesis.unitary.ansatz import Ansatz
+    from thesis.fn.machine_learning import CostFunction
 
 
 class QCNN:
@@ -47,13 +45,11 @@ class QCNN:
         self.qnode = qml.QNode(self._circuit, device, interface="torch")
 
     def _circuit(
-        self, params: Sequence[Number], psi_in: Sequence[Number] = None
+        self, params: Sequence[Number], psi_in: Sequence[Number]
     ) -> Sequence[float]:
         # c2q
-        if psi_in is None:
-            psi_in = np.asarray([1, 0])
-
         AmplitudeEmbedding(psi_in, range(self.num_qubits), pad_with=0, normalize=True)
+
         meas = self.ansatz(params, self.num_layers)
 
         # q2c
@@ -83,7 +79,7 @@ class QCNN:
         # TODO: optimizer options should be an option
         opt = create_optimizer(
             optimizer,
-            self.ansatz.total_params(),
+            self.ansatz.shape(),
             lr=0.01,
             momentum=0.9,
             nesterov=True,

@@ -1,10 +1,11 @@
-from typing import Sequence
-from numbers import Number
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 from abc import abstractmethod
 from pennylane.operation import Operation, AnyWires
 
-Parameters = Sequence[Number]
-Wires = Sequence[int]
+if TYPE_CHECKING:
+    from thesis.unitary import Wires
 
 
 class Unitary(Operation):

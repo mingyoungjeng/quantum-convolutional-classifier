@@ -1,10 +1,15 @@
-from typing import Optional, Sequence
-from pathlib import Path
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 from functools import cache
 import numpy as np
 from PIL import Image
 from astropy.io import fits
-from qiskit import QuantumCircuit
+
+if TYPE_CHECKING:
+    from typing import Optional, Sequence
+    from pathlib import Path
+    from qiskit import QuantumCircuit
 
 
 @cache

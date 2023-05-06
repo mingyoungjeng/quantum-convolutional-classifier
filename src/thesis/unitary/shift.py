@@ -1,6 +1,12 @@
-from typing import Sequence
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
+
+if TYPE_CHECKING:
+    from typing import Sequence
+    from thesis.unitary import Wires
 
 
 class Shift(Operation):
@@ -15,7 +21,7 @@ class Shift(Operation):
         return (0,)
 
     @staticmethod
-    def compute_decomposition(*k: int, wires: Sequence[int], **_):
+    def compute_decomposition(*k: int, wires: Wires, **_) -> Sequence[Operation]:
         op_list = []
         for _ in range(abs(k)):
             for i, w in enumerate(wires) if k < 0 else reversed(list(enumerate(wires))):
