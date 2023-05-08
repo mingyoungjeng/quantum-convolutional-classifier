@@ -7,13 +7,13 @@ from PIL import Image
 from astropy.io import fits
 
 if TYPE_CHECKING:
-    from typing import Optional, Sequence
+    from typing import Optional, Iterable
     from pathlib import Path
     from qiskit import QuantumCircuit
 
 
 @cache
-def to_qubits(N: int | Sequence[int]) -> int:
+def to_qubits(N: int | Iterable[int]) -> int:
     return np.int_(np.ceil(np.log2(N)))
 
 

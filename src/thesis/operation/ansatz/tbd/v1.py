@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Iterable
 from numbers import Number
 from itertools import tee
 import numpy as np
@@ -13,13 +13,13 @@ class Ansatz1(Ansatz):
     pool_params = 6
 
     @staticmethod
-    def convolution(params: Sequence[Number], wires: Sequence[Number]):
+    def convolution(params: Iterable[Number], wires: Iterable[Number]):
         """
         Applied convolution on high-frequency qubits.
 
         Args:
-            params (Sequence[Number]): rotation gate parameters
-            wires (Sequence[Number]): high-frequency qubits of all dimensions
+            params (Iterable[Number]): rotation gate parameters
+            wires (Iterable[Number]): high-frequency qubits of all dimensions
         """
 
         # TODO: order of parameters might be important
@@ -43,28 +43,28 @@ class Ansatz1(Ansatz):
         for (theta, phi, delta), wire in zip(params2, wires):
             qml.Rot(theta, phi, delta, wires=wire)
 
-    # def pooling_unitary(params: Sequence[float], wires: Sequence[int]):
+    # def pooling_unitary(params: Iterable[float], wires: Iterable[int]):
     #     pass
 
     @staticmethod
-    def pooling(params: Sequence[Number], target: int, wires: Sequence[int]):
+    def pooling(params: Iterable[Number], target: int, wires: Iterable[int]):
         """
         Controlled operation from circuit measurement of high-frequency qubits
 
         Args:
-            params (Sequence[float]): rotation gate parameters
+            params (Iterable[float]): rotation gate parameters
             target (int): high-frequency qubit to measure
-            wires (Sequence[int]): low-frequency qubits to act upon
+            wires (Iterable[int]): low-frequency qubits to act upon
         """
         qml.cond(qml.measure(target) == 0, Ansatz1.convolution)(params, wires)
 
     def __call__(
         self,
-        params: Sequence[Number],
-        dims_q: Sequence[int],
+        params: Iterable[Number],
+        dims_q: Iterable[int],
         num_layers: int = 1,
         num_classes: int = 2,
-    ) -> Sequence[int]:
+    ) -> Iterable[int]:
         max_wires = np.cumsum(dims_q)
         offset = -int(np.log2(num_classes) // -len(dims_q))  # Ceiling division
         wires = max_wires - offset
@@ -110,7 +110,7 @@ class Ansatz1(Ansatz):
         return np.sort(meas)
 
     def total_params(
-        self, dims_q: Sequence[int], num_layers: int = 1, num_classes: int = 2
+        self, dims_q: Iterable[int], num_layers: int = 1, num_classes: int = 2
     ):
         n_conv_params = self.conv_params * num_layers * len(dims_q)
         n_pool_params = int(

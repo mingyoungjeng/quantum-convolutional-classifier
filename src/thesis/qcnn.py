@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+from dataclasses import dataclass, field
 
 import numpy as np
 import pennylane as qml
@@ -7,7 +8,7 @@ from pennylane.templates.embeddings import AmplitudeEmbedding
 import torch
 from thesis.fn.quantum import to_qubits
 from thesis.fn.machine_learning import (
-    load_dataset,
+    DatasetOptions,
     train,
     test,
     create_optimizer,
@@ -16,41 +17,30 @@ from thesis.fn.machine_learning import (
 )
 
 if TYPE_CHECKING:
-    from typing import Sequence
+    from typing import Iterable, Optional, Callable
     from numbers import Number
     from torch.utils.data import Dataset
     from torch.optim import Optimizer
-    from thesis.unitary.ansatz import Ansatz
+    from pennylane import QNode
+    from thesis.operation import Parameters
+    from thesis.operation.ansatz import Ansatz
     from thesis.fn.machine_learning import CostFunction
 
 
+@dataclass(slots=True)
 class QCNN:
-    def __init__(
-        self,
-        dims: Sequence[int],
-        ansatz: type[Ansatz],
-        classes: Sequence[int] = None,
-    ) -> None:
-        self.dims = dims
-        self.dims_q = to_qubits(dims)
-        self.num_qubits = sum(self.dims_q)
-        self.num_layers = 1
+    dims: Iterable[int] = field(default_factory=list)
+    dataset_options: DatasetOptions = DatasetOptions()
+    optimizer_options: dict = field(default_factory=dict)
 
-        self.classes = [0, 1] if classes is None else classes
-        if self.num_qubits < len(self.classes):
-            print("Error: Not enough qubits to represent all classes")
+    qnode: Optional[QNode] = field(init=False, repr=False, default=None)
+    ansatz: Optional[Ansatz] = field(init=False, repr=False, default=None)
 
-        self.ansatz = ansatz(self.num_qubits)
-        device = qml.device("default.qubit", wires=self.num_qubits)
-        self.qnode = qml.QNode(self._circuit, device, interface="torch")
-
-    def _circuit(
-        self, params: Sequence[Number], psi_in: Sequence[Number]
-    ) -> Sequence[float]:
+    def _circuit(self, params: Parameters, psi_in: Iterable[Number]) -> Iterable[float]:
         # c2q
-        AmplitudeEmbedding(psi_in, range(self.num_qubits), pad_with=0, normalize=True)
+        AmplitudeEmbedding(psi_in, self.ansatz.wires, pad_with=0, normalize=True)
 
-        meas = self.ansatz(params, self.num_layers)
+        meas = self.ansatz(params)
 
         # q2c
         return qml.probs(meas)
@@ -63,42 +53,26 @@ class QCNN:
 
         return parity(result)  # result
 
-    # TODO: num_layers as an option
-    # TODO: batch_size as an option
     def __call__(
         self,
+        ansatz: type[Ansatz],
         dataset: type[Dataset],
         optimizer: type[Optimizer],
         cost_fn: CostFunction,
     ):
-        transform = image_transform(self.dims)  # TODO: transform as option
-        training_dataloader, testing_dataloader = load_dataset(
-            dataset, transform, batch_size=4, classes=self.classes
-        )
+        # Create ansatz and qnode
+        self.ansatz = ansatz.from_dims(self.dims)
+        device = qml.device("default.qubit", wires=self.ansatz.num_wires)
+        self.qnode = qml.QNode(self._circuit, device, interface="torch")
 
-        # TODO: optimizer options should be an option
-        opt = create_optimizer(
-            optimizer,
-            self.ansatz.shape(),
-            lr=0.01,
-            momentum=0.9,
-            nesterov=True,
+        # Load dataset
+        training_dataloader, testing_dataloader = self.dataset_options.load(dataset)
+
+        optimizer = create_optimizer(
+            optimizer, self.ansatz.shape, **self.optimizer_options
         )
-        parameters = train(self.predict, opt, training_dataloader, cost_fn)
+        parameters = train(self.predict, optimizer, training_dataloader, cost_fn)
 
         accuracy = test(self.predict, parameters, testing_dataloader)
 
         return accuracy
-
-
-# if __name__ == "__main__":
-#     from torchvision.datasets import MNIST
-#     from torch.optim import SGD
-#     from torch.nn import CrossEntropyLoss
-#     from pennylane import NesterovMomentumOptimizer
-
-#     qcnn = QCNN((16, 16))
-#     qcnn.num_layers = 2
-#     accuracy = qcnn.run(MNIST, SGD, CrossEntropyLoss())
-
-#     print(accuracy)

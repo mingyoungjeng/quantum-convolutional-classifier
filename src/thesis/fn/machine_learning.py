@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from dataclasses import dataclass, field
 from itertools import chain, pairwise
 import numpy as np
 import torch
@@ -11,37 +12,37 @@ from torchvision import transforms
 from thesis.fn.quantum import flatten_array
 
 if TYPE_CHECKING:
-    from typing import Callable, Sequence, Tuple, Any
+    from typing import Callable, Iterable, Tuple, Optional, Any
     from numbers import Number
     from torch import Tensor
     from torch.utils.data import Dataset
     from torch.optim import Optimizer
 
-    LossFunction = CostFunction = Callable[[Sequence[Number], Sequence[Number]], Number]
-    MLFunction = Callable[[Sequence[Number], Sequence[Number]], Sequence[Number]]
+    LossFunction = CostFunction = Callable[[Iterable[Number], Iterable[Number]], Number]
+    MLFunction = Callable[[Iterable[Number], Iterable[Number]], Iterable[Number]]
 
 USE_CUDA = torch.cuda.is_available()
 # DEVICE = torch.device("cuda" if USE_CUDA else "cpu")
 
 
-def _is_iterable(x: Any):
+def is_iterable(x: Any):
     return hasattr(x, "__iter__")
 
 
 def cut(
-    arr: Sequence[Number], i: Number | Sequence[Number]
-) -> Sequence[Sequence[Number]]:
+    arr: Iterable[Number], i: Number | Iterable[Number]
+) -> Iterable[Iterable[Number]]:
     """
     Splits sequence at indice(s) i
 
     Args:
-        arr (Sequence[Number]): Sequence to split
-        i (Number | Sequence[Number]): indice(s) to divide by
+        arr (Iterable[Number]): Iterable to split
+        i (Number | Iterable[Number]): indice(s) to divide by
 
     Returns:
-        Tuple[Sequence[Number], Sequence[Number]]: split sub-sequences
+        Tuple[Iterable[Number], Iterable[Number]]: split sub-sequences
     """
-    if not _is_iterable(i):
+    if not is_iterable(i):
         i = (i,)
 
     index = chain((None,), i, (None,))
@@ -55,16 +56,16 @@ def create_tensor(fn: type[Tensor] | Callable, /, *args, **kwargs):
 
 def create_optimizer(
     optimizer: type[Optimizer],
-    params: Sequence[Number] | Number,
+    params: Iterable[Number] | Number,
     *args,
     **kwargs,
 ) -> Optimizer:
-    if not _is_iterable(params):
+    if not is_iterable(params):
         params = create_tensor(torch.randn, params, requires_grad=True)
     return optimizer([params], *args, **kwargs)
 
 
-def image_transform(dims: Sequence[int]):
+def image_transform(dims: Iterable[int]):
     return transforms.Compose(
         [
             transforms.Resize(dims),
@@ -74,49 +75,53 @@ def image_transform(dims: Sequence[int]):
     )
 
 
-def _dataset(
-    dataset: type[Dataset],
-    transform=None,
-    classes: Sequence[Any] = None,
-    batch_size: int = 1,
-    is_train: bool = True,
-) -> DataLoader:
-    data = dataset(
-        root="data",
-        train=is_train,
-        download=True,
-        transform=transform,
-    )
+@dataclass(slots=True)
+class DatasetOptions:
+    transform: Optional[Callable] = field(default_factory=transforms.ToTensor)
+    target_transform: Optional[Callable] = None
+    classes: Optional[Iterable[Any]] = None
+    batch_size: int | tuple[int, int] = 1
 
-    if classes is not None:
-        (idx,) = np.isin(data.targets, classes).nonzero()
-        data = Subset(data, idx)
+    def _load(self, dataset: type[Dataset], is_train: bool = True) -> DataLoader:
+        data = dataset(
+            root="data",
+            train=is_train,
+            download=True,
+            transform=self.transform,
+            target_transform=self.target_transform,
+        )
 
-    dataloader = DataLoader(
-        data,
-        batch_size=batch_size if is_train else 40,
-        shuffle=is_train,
-        pin_memory=USE_CUDA,
-    )
+        if self.classes is not None:
+            (idx,) = np.isin(data.targets, self.classes).nonzero()
+            data = Subset(data, idx)
 
-    return dataloader
+        # Handle different batch sizes between train/test
+        if is_iterable(self.batch_size):
+            batch_size = batch_size[0] if is_train else batch_size[-1]
+        else:
+            batch_size = self.batch_size
 
+        dataloader = DataLoader(
+            data,
+            batch_size=batch_size,
+            shuffle=is_train,
+            pin_memory=USE_CUDA,
+        )
 
-def load_dataset(
-    dataset: type[Dataset],
-    transform: Any = None,
-    classes: Sequence[Any] = None,
-    batch_size: int = 1,
-) -> Tuple[DataLoader, DataLoader]:
-    training_dataloader = _dataset(dataset, transform, classes, batch_size, True)
-    testing_dataloader = _dataset(dataset, transform, classes, batch_size, False)
+        return dataloader
 
-    return training_dataloader, testing_dataloader
+    def load(
+        self, dataset: type[Dataset], is_train: Optional[bool] = None
+    ) -> DataLoader | tuple[DataLoader, DataLoader]:
+        if is_train is None:
+            return self._load(dataset, True), self._load(dataset, False)
+        else:
+            return self._load(dataset, is_train)
 
 
 def backpropagate(
-    predictions: Sequence[Number],
-    labels: Sequence[Number],
+    predictions: Iterable[Number],
+    labels: Iterable[Number],
     opt: Optimizer,
     cost_fn: Callable,
 ):
@@ -134,7 +139,7 @@ def train(
     training_dataloader: DataLoader,
     cost_fn: CostFunction,
 ):
-    params = opt.param_groups[0]["params"][0]
+    params = opt.param_groups[0]["params"][0]  # TODO: clean up
     for i, (data, labels) in enumerate(training_dataloader):
         predictions = fn(params, data)
         backpropagate(predictions, labels, opt=opt, cost_fn=cost_fn)
@@ -145,7 +150,7 @@ def train(
 @torch.no_grad()
 def test(
     fn: MLFunction,
-    params: Sequence[Number],
+    params: Iterable[Number],
     testing_dataloader: DataLoader,
 ):
     correct = 0

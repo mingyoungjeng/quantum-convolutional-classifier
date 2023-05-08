@@ -2,7 +2,7 @@
 ansatz.py: the various ansatz needed for the QCNN
 """
 
-from typing import Any, Sequence, Union
+from typing import Any, Iterable, Union
 from numbers import Number
 from itertools import tee
 
@@ -17,8 +17,8 @@ class Ansatz:
 
     def __init__(
         self,
-        dims_q: Sequence[int],
-        filter_dims: Union[Sequence[int], None] = None,
+        dims_q: Iterable[int],
+        filter_dims: Union[Iterable[int], None] = None,
         stride: int = 1,
         *_,
         **__,
@@ -43,31 +43,13 @@ class Ansatz:
         ]
 
     @staticmethod
-    def shift(wires, k: int = 1, control_wires=None):
-        if k == 0:
-            return
-
-        # Increment / Decrement for k times
-        for _ in range(abs(k)):
-            for i in range(len(wires))[:: -np.sign(k)]:
-                controls = list(wires[:i])
-
-                if control_wires is not None:
-                    controls += [control_wires]
-
-                if len(controls) == 0:
-                    qml.PauliX(wires[i])
-                else:
-                    qml.MultiControlledX(wires=controls + [wires[i]])
-
-    @staticmethod
-    def U(params: Sequence[Number], wires: Sequence[Number]):
+    def U(params: Iterable[Number], wires: Iterable[Number]):
         """
         Applied convolution on high-frequency qubits.
 
         Args:
-            params (Sequence[Number]): rotation gate parameters
-            wires (Sequence[Number]): high-frequency qubits of all dimensions
+            params (Iterable[Number]): rotation gate parameters
+            wires (Iterable[Number]): high-frequency qubits of all dimensions
         """
 
         params = params[: len(wires) * 3]
@@ -116,7 +98,7 @@ class Ansatz:
 
         return wires
 
-    def __call__(self, params, num_layers: int = 1) -> Sequence[int]:
+    def __call__(self, params, num_layers: int = 1) -> Iterable[int]:
         wires = self.wires.copy()
         n_params = self.params_per_layer
 

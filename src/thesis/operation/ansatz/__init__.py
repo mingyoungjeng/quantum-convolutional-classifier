@@ -1,4 +1,4 @@
-from .ansatz import Ansatz
+from thesis.operation.unitary import Ansatz
 from .baseline import BaselineAnsatz
 
 # from .simple import SimpleAnsatz
