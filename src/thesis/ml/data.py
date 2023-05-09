@@ -6,7 +6,7 @@ import numpy as np
 from torch.utils.data import Dataset, DataLoader, Subset
 from torchvision import transforms
 from thesis.ml import USE_CUDA
-from quantum.quantum import flatten_array
+from thesis.quantum import flatten_array
 
 if TYPE_CHECKING:
     from typing import Optional, Callable

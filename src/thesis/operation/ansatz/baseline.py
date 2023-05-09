@@ -2,7 +2,8 @@ from itertools import zip_longest, tee
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
-from thesis.operation import Unitary, Ansatz
+from thesis.operation import Unitary
+from thesis.operation.ansatz import Ansatz
 
 
 class BaselineConvolution(Unitary):
