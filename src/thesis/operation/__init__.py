@@ -2,10 +2,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Base class
-from .unitary import Unitary, Ansatz
+from .unitary import Unitary
 
 # Shift operation
 from .shift import Shift
 
 if TYPE_CHECKING:
-    from .unitary import Parameters, Wires
+    from .unitary import Parameters, Qubits

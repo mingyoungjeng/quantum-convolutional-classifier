@@ -1,78 +1,52 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from dataclasses import dataclass, field
 
-import numpy as np
-import pennylane as qml
-from pennylane.templates.embeddings import AmplitudeEmbedding
+from attrs import define, field
+
 import torch
-from thesis.fn.quantum import to_qubits
-from thesis.fn.machine_learning import (
-    DatasetOptions,
-    train,
-    test,
-    create_optimizer,
-    image_transform,
-    parity,
-)
+import torch.nn.functional as F
+
+from thesis.operation.ansatz import Ansatz
+from thesis.ml.model import Model
+from thesis.ml.ml import create_tensor
 
 if TYPE_CHECKING:
-    from typing import Iterable, Optional, Callable
-    from numbers import Number
-    from torch.utils.data import Dataset
-    from torch.optim import Optimizer
-    from pennylane import QNode
-    from thesis.operation import Parameters
-    from thesis.operation.ansatz import Ansatz
-    from thesis.fn.machine_learning import CostFunction
+    from torch import Tensor
 
 
-@dataclass(slots=True)
-class QCNN:
-    dims: Iterable[int] = field(default_factory=list)
-    dataset_options: DatasetOptions = DatasetOptions()
-    optimizer_options: dict = field(default_factory=dict)
+def parity(result, num_classes: int = 2):
+    predictions = create_tensor(torch.empty, (len(result), num_classes))
 
-    qnode: Optional[QNode] = field(init=False, repr=False, default=None)
-    ansatz: Optional[Ansatz] = field(init=False, repr=False, default=None)
+    for i, probs in enumerate(result):
+        num_rows = create_tensor(
+            torch.tensor, [len(probs) // num_classes] * num_classes
+        )
+        num_rows[: len(probs) % num_classes] += 1
 
-    def _circuit(self, params: Parameters, psi_in: Iterable[Number]) -> Iterable[float]:
-        # c2q
-        AmplitudeEmbedding(psi_in, self.ansatz.wires, pad_with=0, normalize=True)
+        pred = F.pad(probs, (0, max(num_rows) * num_classes - len(probs)))
+        pred = probs.reshape(max(num_rows), num_classes)
+        pred = torch.sum(pred, 0)
+        pred /= num_rows
+        pred /= sum(pred)
 
-        meas = self.ansatz(params)
+        predictions[i] = pred
 
-        # q2c
-        return qml.probs(meas)
+    return predictions
 
-    def predict(self, *args, **kwargs) -> torch.Tensor:
-        result = self.qnode(*args, **kwargs)
+
+@define
+class QCNN(Model):
+    ansatz: Ansatz = field(init=False)
+
+    def predict(self, *args, **kwargs) -> Tensor:
+        result = self.ansatz.qnode(*args, **kwargs)
 
         if result.dim() == 1:  # Makes sure batch is 2D array
             result = result.unsqueeze(0)
 
         return parity(result)  # result
 
-    def __call__(
-        self,
-        ansatz: type[Ansatz],
-        dataset: type[Dataset],
-        optimizer: type[Optimizer],
-        cost_fn: CostFunction,
-    ):
-        # Create ansatz and qnode
-        self.ansatz = ansatz.from_dims(self.dims)
-        device = qml.device("default.qubit", wires=self.ansatz.num_wires)
-        self.qnode = qml.QNode(self._circuit, device, interface="torch")
+    def __call__(self, ansatz: type[Ansatz], *args, **kwargs):
+        self.ansatz = ansatz.from_dims(*args, **kwargs)
 
-        # Load dataset
-        training_dataloader, testing_dataloader = self.dataset_options.load(dataset)
-
-        optimizer = create_optimizer(
-            optimizer, self.ansatz.shape, **self.optimizer_options
-        )
-        parameters = train(self.predict, optimizer, training_dataloader, cost_fn)
-
-        accuracy = test(self.predict, parameters, testing_dataloader)
-
-        return accuracy
+        return super().__call__(self.predict, self.ansatz.shape)

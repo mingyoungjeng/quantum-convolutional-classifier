@@ -94,7 +94,7 @@ class BaselineAnsatz(Ansatz):
 
         return controlled
 
-    def __call__(self, params):
+    def circuit(self, params):
         idx = np.cumsum([self.convolve.shape(), self.pool.shape()])
         conv_params, pool_params, params = np.split(params, idx)
         wires = self.wires

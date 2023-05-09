@@ -1,9 +1,9 @@
 from thesis.operation.ansatz import Ansatz
-from itertools import zip_longest, tee
 import numpy as np
 import pennylane as qml
 from thesis.operation import Unitary
 from pennylane.operation import Operation
+from attrs import define
 
 
 class SimpleConvolution(Unitary):
@@ -43,10 +43,11 @@ class SimplePooling(SimpleConvolution):
         return 6
 
 
-# TODO: work with num_classes > 2
+@define(frozen=True)
 class SimpleAnsatz(Ansatz):
-    convolve: type[Operation] = SimpleConvolution()
-    pool: type[Operation] = SimplePooling()
+    num_classes: int = 2
+    convolve: type[Operation] = SimpleConvolution
+    pool: type[Operation] = SimplePooling
 
     def __call__(self, params):
         max_wires = np.cumsum(self.num_qubits)
@@ -64,9 +65,8 @@ class SimpleAnsatz(Ansatz):
             # Apply pooling layers
             pool_params, params = np.split(params, self.pool.shape())
             for j, (target_wire, max_wire) in enumerate(zip(wires, max_wires)):
-                self.pool(
-                    pool_params, target_wire - i, range(target_wire - i + 1, max_wire)
-                )
+                tmp = list(range(target_wire - i + 1, max_wire)) + [target_wire - i]
+                self.pool(pool_params, tmp)
 
         # Qubits to measure
         meas = np.array(
