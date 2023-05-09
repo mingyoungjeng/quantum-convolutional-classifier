@@ -16,12 +16,27 @@ if TYPE_CHECKING:
 
 
 class Optimizer(optim.Optimizer):
-    def __init__(self, cls, *args, **kwargs):
-        # TODO: messy, find alternative
-        self.__class__ = type(
-            self.__class__.__name__, (cls, object), dict(self.__class__.__dict__)
-        )
+    """
+    Extension of torch.optim.Optimizer
+    """
 
+    def __new__(self, cls: type[optim.Optimizer], *_, **__):
+        """
+        Workaround to take a type[optim.Optimizer] as a parameter
+
+        if works and is_readable:
+            pass
+        else:
+            add a comment saying it came to you in a revelation from god and leave it at that
+        - Ethan Grantz
+        """
+
+        class Opti(self, cls):
+            """Don't try this at home, kids"""
+
+        return super().__new__(Opti)
+
+    def __init__(self, cls: type[optim.Optimizer], *args, **kwargs):
         cls.__init__(self, [torch.empty(0)], *args, **kwargs)
         self.param_groups.clear()
         self.state.clear()
@@ -34,7 +49,8 @@ class Optimizer(optim.Optimizer):
 
     @property
     def parameters(self):
-        pass
+        params = [group["params"] and group["params"][0] for group in self.param_groups]
+        return params and params[0]
 
 
 def backpropagate(
