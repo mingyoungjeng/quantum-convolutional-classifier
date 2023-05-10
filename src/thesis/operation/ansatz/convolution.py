@@ -11,13 +11,14 @@ from thesis.operation.ansatz import Ansatz, is_multidimensional
 from thesis.operation.ansatz.basic import BasicConvolution
 
 if TYPE_CHECKING:
+    from typing import Iterable
     from thesis.operation import Unitary, Parameters, Qubits
 
 
 @define(frozen=True)
 class ConvolutionAnsatz(Ansatz):
     U: Unitary = BasicConvolution
-    filter_shape = (2, 2)  # TODO: add type hint
+    filter_shape: Iterable[int] = (2, 2)  # TODO: add type hint
     stride: int = 1
 
     @property
@@ -57,7 +58,7 @@ class ConvolutionAnsatz(Ansatz):
         return qubits
 
     def circuit(self, params: Parameters) -> Wires:
-        qubits = self.qubits
+        qubits = self.qubits.copy()
 
         # TODO: Find a more elegant solution maybe?
         if not is_multidimensional(qubits):

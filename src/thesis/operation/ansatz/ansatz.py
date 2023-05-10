@@ -12,10 +12,12 @@ from thesis.quantum import to_qubits
 from thesis.ml.ml import is_iterable
 
 if TYPE_CHECKING:
-    from typing import Iterable
+    from typing import Iterable, Optional
     from numbers import Number
     from pennylane.operation import Operation
     from thesis.operation import Parameters, Qubits
+
+    Statevector = Iterable[Number]
 
 
 def is_multidimensional(wires: Qubits):
@@ -61,7 +63,7 @@ class Ansatz(ABC):
         else:
             return self.num_wires
 
-    def c2q(self, psi_in: Iterable[Number]) -> Operation:
+    def c2q(self, psi_in: Statevector) -> Operation:
         return AmplitudeEmbedding(psi_in, self.wires, pad_with=0, normalize=True)
 
     @abstractmethod
@@ -71,8 +73,9 @@ class Ansatz(ABC):
     def q2c(self, wires: Wires):
         return qml.probs(wires)
 
-    def __call__(self, params: Parameters, psi_in: Iterable[Number]) -> Iterable[float]:
-        self.c2q(psi_in)
+    def __call__(self, params: Parameters, psi_in: Optional[Statevector] = None):
+        if psi_in is not None:
+            self.c2q(psi_in)
         meas = self.circuit(params)
         return self.q2c(meas)
 

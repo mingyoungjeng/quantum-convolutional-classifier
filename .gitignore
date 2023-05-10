@@ -7,3 +7,4 @@
 test/pennylane/qcnn/result/*
 test/**/*.png
 **/*.egg-info
+**/*.csv

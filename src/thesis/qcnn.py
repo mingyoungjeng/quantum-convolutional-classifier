@@ -5,6 +5,7 @@ from attrs import define, field
 
 import torch
 import torch.nn.functional as F
+import pennylane as qml
 
 from thesis.operation.ansatz import Ansatz
 from thesis.ml.model import Model
@@ -50,3 +51,7 @@ class QCNN(Model):
         self.ansatz = ansatz.from_dims(*args, **kwargs)
 
         return super().__call__(self.predict, self.ansatz.shape)
+
+    @property
+    def draw(self):
+        return qml.draw_mpl(self.ansatz.qnode)(self.optimizer.parameters)

@@ -4,7 +4,8 @@ from typing import TYPE_CHECKING
 from numbers import Number
 import torch
 from torch import optim
-from thesis.ml.ml import create_tensor
+from thesis.ml import create_tensor
+from thesis.logger import Logger
 
 if TYPE_CHECKING:
     from typing import Callable, Iterable

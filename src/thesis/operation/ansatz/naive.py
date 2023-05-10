@@ -24,6 +24,8 @@ class NaiveConvolution(Unitary):
         if len(wires) > 1:
             op_list += [qml.CNOT(wires=(wires[-1], first))]
 
+        return op_list
+
     @staticmethod
     def shape(*_) -> int:
         return 3

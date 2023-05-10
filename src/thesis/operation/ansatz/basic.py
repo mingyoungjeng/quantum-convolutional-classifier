@@ -33,6 +33,8 @@ class BasicConvolution(Unitary):
         # Second Rot layer
         op_list += [qml.Rot(*angles, wire) for angles, wire in zip(params2, wires)]
 
+        return op_list
+
     @staticmethod
     def shape(wires: Wires) -> int:
         return 6 * len(wires)
