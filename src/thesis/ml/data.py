@@ -18,7 +18,7 @@ class Data:
     transform: Optional[Callable] = field(factory=transforms.ToTensor)
     target_transform: Optional[Callable] = None
     classes: Optional[Iterable] = None
-    batch_size: tuple[int, int] | int = (1, 1)
+    batch_size: Optional[tuple[int, int] | int] = None
 
     def _load(self, is_train: bool = True) -> DataLoader:
         data = self.dataset(

@@ -1,13 +1,13 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from numbers import Number
 import torch
 from torch import optim
 from thesis.ml.ml import create_tensor
 
 if TYPE_CHECKING:
     from typing import Callable, Iterable
-    from numbers import Number
     from torch import Tensor
     from torch.utils.data import DataLoader
 
@@ -36,13 +36,16 @@ class Optimizer(optim.Optimizer):
 
         return super().__new__(Opti)
 
-    def __init__(self, cls: type[optim.Optimizer], *args, **kwargs):
-        cls.__init__(self, [torch.empty(0)], *args, **kwargs)
-        self.param_groups.clear()
-        self.state.clear()
+    def __init__(self, cls: type[optim.Optimizer], *args, params=None, **kwargs):
+        if params is None:
+            cls.__init__(self, [torch.empty(0)], *args, **kwargs)
+            self.param_groups.clear()
+            self.state.clear()
+        else:
+            cls.__init__(self, params, *args, **kwargs)
 
     def __call__(self, params: Tensor | int) -> Optimizer:
-        if isinstance(params, int):
+        if isinstance(params, Number):
             params = create_tensor(torch.randn, params, requires_grad=True)
         self.add_param_group({"params": params})
         return self

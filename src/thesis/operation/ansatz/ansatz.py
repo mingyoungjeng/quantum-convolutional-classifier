@@ -24,20 +24,13 @@ def is_multidimensional(wires: Qubits):
     return False
 
 
-def _convert_qubits(q: Qubits) -> Qubits:
-    return [Wires(w) for w in q] if is_multidimensional(q) else Wires(q)
-
-
-def _check_num_layers(self: Ansatz, _, value):
-    if value > self.max_layers:
-        raise ValueError(
-            f"Number of layers {value} exceeds maximum number of layers {self.max_layers}"
-        )
-
-
 @define(frozen=True)
 class Ansatz(ABC):
-    qubits: Qubits = field(converter=_convert_qubits)
+    qubits: Qubits = field(
+        converter=lambda q: [Wires(w) for w in q]
+        if is_multidimensional(q)
+        else Wires(q)
+    )
     _qnode: qml.QNode = field(init=False, repr=False)
 
     @_qnode.default  # @qubits.validator
@@ -45,7 +38,9 @@ class Ansatz(ABC):
         device = qml.device("default.qubit", wires=self.num_wires)
         return qml.QNode(self.__call__, device, interface="torch")
 
-    num_layers: int = field(validator=[validators.ge(0), _check_num_layers])
+    num_layers: int = field(
+        validator=[validators.ge(0), lambda *x: validators.le(x[0].max_layers)(*x)]
+    )
 
     @num_layers.default
     def _num_layers(self):

@@ -22,6 +22,8 @@ class Shift(Operation):
 
     @staticmethod
     def compute_decomposition(*k: int, wires: Wires, **_) -> Iterable[Operation]:
+        (k,) = k  # Keep the type-checker happy
+
         op_list = []
         for _ in range(abs(k)):
             for i, w in enumerate(wires) if k < 0 else reversed(list(enumerate(wires))):
