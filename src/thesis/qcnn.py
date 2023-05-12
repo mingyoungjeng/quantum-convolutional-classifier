@@ -52,6 +52,6 @@ class QCNN(Model):
 
         return super().__call__(self.predict, self.ansatz.shape)
 
-    @property
-    def draw(self):
-        return qml.draw_mpl(self.ansatz.qnode)(self.optimizer.parameters)
+    def draw(self, include_axis: bool = False):
+        fig, ax = qml.draw_mpl(self.ansatz.qnode)(self.optimizer.parameters)
+        return fig, ax if include_axis else fig

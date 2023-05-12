@@ -31,22 +31,27 @@ class Ansatz(ABC):
     qubits: Qubits = field(
         converter=lambda q: [Wires(w) for w in q]
         if is_multidimensional(q)
-        else Wires(q)
+        else [Wires(q)]
+    )
+    num_layers: int = field(
+        validator=[validators.ge(0), lambda *x: validators.le(x[0].max_layers)(*x)]
     )
     _qnode: qml.QNode = field(init=False, repr=False)
+
+    @num_layers.default
+    def _num_layers(self):
+        return self.max_layers
 
     @_qnode.default  # @qubits.validator
     def _check_qnode(self):
         device = qml.device("default.qubit", wires=self.num_wires)
         return qml.QNode(self.__call__, device, interface="torch")
 
-    num_layers: int = field(
-        validator=[validators.ge(0), lambda *x: validators.le(x[0].max_layers)(*x)]
-    )
+    @property
+    def qnode(self):
+        return self._qnode
 
-    @num_layers.default
-    def _num_layers(self):
-        return self.max_layers
+    # Derived properties
 
     @property
     def wires(self) -> Wires:
@@ -58,17 +63,20 @@ class Ansatz(ABC):
 
     @property
     def num_qubits(self) -> Iterable[int] | int:
-        if is_multidimensional(self.qubits):
-            return [len(w) for w in self.qubits]
-        else:
-            return self.num_wires
+        return [len(q) for q in self.qubits]
+
+    @property
+    def ndim(self) -> int:
+        return len(self.num_qubits)
+
+    @property
+    def min_dim(self) -> int:
+        return min(self.num_qubits)
+
+    # Circuit operation
 
     def c2q(self, psi_in: Statevector) -> Operation:
         return AmplitudeEmbedding(psi_in, self.wires, pad_with=0, normalize=True)
-
-    @abstractmethod
-    def circuit(self, params: Parameters) -> Wires:
-        pass
 
     def q2c(self, wires: Wires):
         return qml.probs(wires)
@@ -78,6 +86,12 @@ class Ansatz(ABC):
             self.c2q(psi_in)
         meas = self.circuit(params)
         return self.q2c(meas)
+
+    # Abstract methods
+
+    @abstractmethod
+    def circuit(self, params: Parameters) -> Wires:
+        pass
 
     @property
     @abstractmethod
@@ -89,40 +103,10 @@ class Ansatz(ABC):
     def max_layers(self) -> int:
         pass
 
+    # Instance factories
+
     @classmethod
     def from_dims(cls, dims: Iterable[int], *args, **kwargs):
         dims = to_qubits(dims)
         qubits = [list(range(x - y, x)) for x, y in zip(np.cumsum(dims), dims)]
         return cls(qubits, *args, **kwargs)
-
-    @property
-    def qnode(self):
-        return self._qnode
-
-
-# class Ansatz(Unitary):
-#     def __init__(self, *params, wires=None, do_queue=True, id=None, **kwargs):
-#         self._hyperparameters = kwargs
-
-#         if is_multidimensional(wires):
-#             wires = [qml.wires.Wires(w) for w in wires]
-#             super().__init__(*params, wires=sum(wires), do_queue=do_queue, id=id)
-#             self._wires = wires
-#         else:
-#             super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
-
-#     @property
-#     def num_wires(self):
-#         if is_multidimensional(self.wires):
-#             return sum(len(w) for w in self.wires)
-#         return super().num_wires
-
-#     @property
-#     @abstractmethod
-#     def max_layers(self, *args, **kwargs) -> int:
-#         """
-#         Most number of layers supported by ansatz
-
-#         Returns:
-#             int: maximum layers
-#         """

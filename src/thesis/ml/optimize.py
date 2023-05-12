@@ -5,7 +5,6 @@ from numbers import Number
 import torch
 from torch import optim
 from thesis.ml import create_tensor
-from thesis.logger import Logger
 
 if TYPE_CHECKING:
     from typing import Callable, Iterable
@@ -52,7 +51,7 @@ class Optimizer(optim.Optimizer):
         return self
 
     @property
-    def parameters(self):
+    def parameters(self) -> Tensor:
         params = [group["params"] and group["params"][0] for group in self.param_groups]
         return params and params[0]
 

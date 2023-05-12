@@ -24,6 +24,8 @@ class Model:
         training_dataloader, testing_dataloader = self.data.load()
 
         opt = self.optimizer(params)
+        self.logger.logger.info(f"Number of Parameters: {opt.parameters.shape}")
+
         parameters = train(model, opt, training_dataloader, self.cost_fn)
 
         accuracy = test(model, parameters, testing_dataloader)
@@ -32,9 +34,10 @@ class Model:
         return accuracy
 
     @classmethod
-    def with_logging(cls, name: str, *args, **kwargs):
+    def with_logging(cls, *args, name="model", **kwargs):
         schema = [("loss", float)]
-        logger = Logger.from_schema(schema, name=name)
+        fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        logger = Logger.from_schema(schema, name, fmt)
         return cls(*args, **kwargs, logger=logger)
 
     def save(self, filename: Optional[Path] = None):

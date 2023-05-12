@@ -8,36 +8,53 @@ from attrs import define, field
 import polars as pl
 
 if TYPE_CHECKING:
-    from typing import Optional
+    from typing import Optional, Callable
 
     SchemaDefinition = list[tuple[str, pl.DataType]]
+
+
+def save(filename: Path, fn: Callable[[Path], None], overwrite=True):
+    if not isinstance(filename, Path):
+        filename = Path(filename)
+
+    filename.parent.mkdir(parents=True, exist_ok=True)
+
+    if not overwrite:
+        i = 1
+        while filename.is_file():
+            filename = filename.with_name(f"{filename.stem}_{i}{filename.suffix}")
+            i += 1
+
+    return fn(filename)
 
 
 @define(frozen=True)
 class Logger:
     df: pl.DataFrame = field(repr=False)
+    name: str = field(default=__name__)
+    format: str = None
 
     @df.validator
     def _check_df(self, _, df: pl.DataFrame):
         if pl.Datetime not in df.dtypes:
             df.insert_at_idx(0, pl.Series("time", dtype=pl.Datetime))
 
-    name: str = field(default=__name__)
-
     @name.validator
-    def _setup_logging(self, _, __):
-        self.logger.setLevel(logging.INFO)
-        self.logger.handlers.clear()
+    def _setup_logging(self, _, name):
+        if name is not None:
+            self.logger.handlers.clear()
+            self.logger.propagate = False
 
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.INFO)
+            self.logger.setLevel(logging.INFO)
 
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
-        ch.setFormatter(formatter)
+            ch = logging.StreamHandler()
+            ch.setLevel(logging.INFO)
 
-        self.logger.addHandler(ch)
+            if self.format is not None:
+                formatter = logging.Formatter(self.format)
+                ch.setFormatter(formatter)
+
+            self.logger.addHandler(ch)
 
     @property
     def logger(self):
@@ -52,21 +69,11 @@ class Logger:
             msg = row.select(row.columns[1:]).to_dicts()[0]
             self.logger.info(msg)
 
-    def save(self, filename: Optional[Path] = None, overwrite=True):
+    def save(self, filename: Optional[Path] = None, overwrite=True) -> None:
         if filename is None:
             filename = Path(f"{self.name}.csv")
-        if not isinstance(filename, Path):
-            filename = Path(filename)
 
-        filename.parent.mkdir(parents=True, exist_ok=True)
-
-        if not overwrite:
-            i = 1
-            while filename.is_file():
-                filename = filename.with_name(f"{filename.stem}_{i}{filename.suffix}")
-                i += 1
-
-        self.df.write_csv(filename)
+        save(filename, fn=self.df.write_csv, overwrite=overwrite)
 
     @classmethod
     def from_schema(cls, schema: SchemaDefinition, *args, **kwargs) -> Logger:

@@ -3,8 +3,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-if TYPE_CHECKING
+if TYPE_CHECKING:
     from qiskit import QuantumCircuit
+
 
 def shift(qc: QuantumCircuit, k: int = 1, targets=None, control=None) -> None:
     if k == 0:
