@@ -6,7 +6,7 @@ from pathlib import Path
 from datetime import datetime
 from attrs import define, field
 import polars as pl
-from thesis.file import save
+from thesis.file import save_dataframe_as_csv
 
 if TYPE_CHECKING:
     from typing import Optional
@@ -59,7 +59,7 @@ class Logger:
         if filename is None:
             filename = Path(f"{self.name}.csv")
 
-        save(filename, fn=self.df.write_csv, overwrite=overwrite)
+        save_dataframe_as_csv(filename, self.df, overwrite=overwrite)
 
     @classmethod
     def from_schema(cls, schema: SchemaDefinition, *args, **kwargs) -> Logger:

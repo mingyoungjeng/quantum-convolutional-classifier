@@ -2,6 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pathlib import Path
+from PIL import Image
+from astropy.io import fits
+from polars import DataFrame
 
 if TYPE_CHECKING:
     from typing import Callable
@@ -24,3 +27,18 @@ def save(filename: Path, fn: Callable[[Path], None], overwrite=True):
             i += 1
 
     return fn(filename)
+
+
+def save_img(filename: Path, img: Image.Image, overwrite=True):
+    save(filename, img.save, overwrite=overwrite)
+
+
+def save_fits(filename: Path, data: fits.HDUList, overwrite=True):
+    filename = filename.with_suffix(".fits")
+    save(filename, data.writeto, overwrite=overwrite)
+
+
+def save_dataframe_as_csv(filename: Path, df: DataFrame, overwrite=True):
+    filename = filename.with_suffix(".csv")
+
+    save(filename, fn=df.write_csv, overwrite=overwrite)
