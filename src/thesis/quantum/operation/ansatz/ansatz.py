@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from typing import Iterable, Optional
     from numbers import Number
     from pennylane.operation import Operation
-    from thesis.operation import Parameters, Qubits
+    from thesis.quantum.operation import Parameters, Qubits
 
     Statevector = Iterable[Number]
 

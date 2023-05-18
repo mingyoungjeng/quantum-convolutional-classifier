@@ -6,7 +6,7 @@ from pennylane.operation import Operation, AnyWires
 
 if TYPE_CHECKING:
     from typing import Iterable
-    from thesis.operation import Wires
+    from thesis.quantum.operation import Wires
 
 
 class Shift(Operation):

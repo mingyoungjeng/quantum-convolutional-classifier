@@ -5,28 +5,26 @@ from attrs import define
 import pennylane as qml
 from pennylane.wires import Wires
 from thesis.quantum import to_qubits
-from thesis.operation import Shift
-from thesis.operation.ansatz import Ansatz
-from thesis.operation.ansatz.basic import BasicConvolution
+from thesis.quantum.operation import Shift
+from thesis.quantum.operation.ansatz import Ansatz
+from thesis.quantum.operation.ansatz.basic import BasicConvolution
+from thesis.quantum.operation.ansatz.simple import SimpleConvolution
 
 if TYPE_CHECKING:
     from typing import Iterable
-    from thesis.operation import Unitary, Parameters, Qubits
+    from thesis.quantum.operation import Unitary, Parameters, Qubits
 
 
 @define(frozen=True)
 class ConvolutionAnsatz(Ansatz):
-    U: Unitary = BasicConvolution
+    U_filter: Unitary = BasicConvolution
+    U_fully_connected: Unitary = SimpleConvolution
     filter_shape: Iterable[int] = (2, 2)
     stride: int = 1
 
     @property
     def filter_shape_qubits(self):
         return to_qubits(self.filter_shape)
-
-    @property
-    def num_params_per_layer(self):
-        return self.U.shape(range(sum(self.filter_shape_qubits)))
 
     def conv_pool(self, params, qubits) -> Qubits:
         fltr_ndim = len(self.filter_shape)
@@ -51,13 +49,13 @@ class ConvolutionAnsatz(Ansatz):
 
         # Apply convolution filter
         filter_qubits = [q for w, fq in zip(qubits[self.ndim :], fsq) for q in w[-fq:]]
-        self.U(params, filter_qubits)
+        self.U_filter(params, filter_qubits)
 
         return qubits
 
     def circuit(self, params: Parameters) -> Wires:
         qubits = self.qubits.copy()
-        n_params = self.num_params_per_layer
+        n_params = self.U_filter.shape(range(sum(self.filter_shape_qubits)))
 
         # Hybrid convolution/pooling layers
         for _ in range(self.num_layers):
@@ -69,14 +67,16 @@ class ConvolutionAnsatz(Ansatz):
         wires = [q for w in qubits for q in w]
 
         # Fully connected layer
-        self.U(params, wires)
+        self.U_fully_connected(params, wires)
 
         return wires
 
     @property
     def shape(self) -> int:
-        n_params = self.num_layers * self.num_params_per_layer
-        n_params += self.U.shape(self.wires)
+        n_params = self.num_layers * self.U_filter.shape(
+            range(sum(self.filter_shape_qubits))
+        )
+        n_params += self.U_fully_connected.shape(self.wires)
 
         return n_params
 

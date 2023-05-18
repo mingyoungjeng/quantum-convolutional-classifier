@@ -6,26 +6,12 @@ from pathlib import Path
 from datetime import datetime
 from attrs import define, field
 import polars as pl
+from thesis.file import save
 
 if TYPE_CHECKING:
-    from typing import Optional, Callable
+    from typing import Optional
 
     SchemaDefinition = list[tuple[str, pl.DataType]]
-
-
-def save(filename: Path, fn: Callable[[Path], None], overwrite=True):
-    if not isinstance(filename, Path):
-        filename = Path(filename)
-
-    filename.parent.mkdir(parents=True, exist_ok=True)
-
-    if not overwrite:
-        i = 1
-        while filename.is_file():
-            filename = filename.with_name(f"{filename.stem}_{i}{filename.suffix}")
-            i += 1
-
-    return fn(filename)
 
 
 @define(frozen=True)

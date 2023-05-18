@@ -1,9 +1,10 @@
+from attrs import define
 from itertools import tee
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
-from thesis.operation.ansatz import Ansatz
-from thesis.operation import Unitary
+from thesis.quantum.operation.ansatz import Ansatz
+from thesis.quantum.operation import Unitary
 
 
 class SimpleConvolution(Unitary):
@@ -28,7 +29,7 @@ class SimpleConvolution(Unitary):
         op_list += [qml.Rot(*params2, wires=wire) for wire in wires]
 
     @staticmethod
-    def shape(*_) -> int:
+    def _shape(*_) -> int:
         return 6
 
 
@@ -40,7 +41,7 @@ class SimplePooling(Unitary):
         return qml.ctrl(SimpleConvolution, ctrl)(params, wires)
 
     @staticmethod
-    def shape(*_) -> int:
+    def _shape(*_) -> int:
         return 6
 
 

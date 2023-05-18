@@ -5,8 +5,8 @@ from itertools import tee
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
-from thesis.operation.ansatz import Ansatz
-from thesis.operation import Unitary
+from thesis.quantum.operation.ansatz import Ansatz
+from thesis.quantum.operation import Unitary
 
 if TYPE_CHECKING:
     from pennylane.wires import Wires
@@ -36,7 +36,7 @@ class BasicConvolution(Unitary):
         return op_list
 
     @staticmethod
-    def shape(wires: Wires) -> int:
+    def _shape(wires: Wires) -> int:
         return 6 * len(wires)
 
 
@@ -48,7 +48,7 @@ class BasicPooling(Unitary):
         return qml.ctrl(BasicConvolution, ctrl)(params, wires)
 
     @staticmethod
-    def shape(wires: Wires) -> int:
+    def _shape(wires: Wires) -> int:
         return 6 * (len(wires) - 1)
 
 

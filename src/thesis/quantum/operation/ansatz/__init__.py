@@ -1,6 +1,9 @@
 from .ansatz import Ansatz, is_multidimensional
 from .baseline import BaselineAnsatz
 
+# v0
+from .fully_connected import FullyConnectedAnsatz
+
 # v1
 from .basic import BasicAnsatz
 

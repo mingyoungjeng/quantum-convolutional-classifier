@@ -7,7 +7,7 @@ import torch
 import torch.nn.functional as F
 import pennylane as qml
 
-from thesis.operation.ansatz import Ansatz
+from thesis.quantum.operation.ansatz import Ansatz
 from thesis.ml.model import Model
 from thesis.ml.ml import create_tensor
 
@@ -53,5 +53,8 @@ class QCNN(Model):
         return super().__call__(self.predict, self.ansatz.shape)
 
     def draw(self, include_axis: bool = False):
-        fig, ax = qml.draw_mpl(self.ansatz.qnode)(self.optimizer.parameters)
+        plot = super().draw(include_axis=True)
+        circuit = qml.draw_mpl(self.ansatz.qnode)(self.optimizer.parameters)
+
+        fig, ax = zip(plot, circuit)
         return fig, ax if include_axis else fig

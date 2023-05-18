@@ -75,10 +75,12 @@ def train(
     optimizer: Optimizer,
     training_dataloader: DataLoader,
     cost_fn: CostFunction,
+    epoch: int = 1,
 ):
-    for i, (data, labels) in enumerate(training_dataloader):
-        predictions = fn(optimizer.parameters, data)
-        backpropagate(predictions, labels, optimizer, cost_fn)
+    for i in range(epoch):
+        for j, (data, labels) in enumerate(training_dataloader):
+            predictions = fn(optimizer.parameters, data)
+            backpropagate(predictions, labels, optimizer, cost_fn)
 
     return optimizer.parameters
 
@@ -89,9 +91,7 @@ def test(
     params: Iterable[Number],
     testing_dataloader: DataLoader,
 ):
-    correct = 0
-    total = 0
-
+    correct = total = 0
     for data, labels in testing_dataloader:
         predictions = fn(params, data)
         predictions = torch.argmax(predictions, 1)

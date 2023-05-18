@@ -1,6 +1,6 @@
 import numpy as np
 from thesis.quantum import to_qubits
-from thesis.operation.ansatz import SimpleAnsatz
+from thesis.quantum.operation.ansatz import SimpleAnsatz
 
 
 class RapidAnsatz(SimpleAnsatz):

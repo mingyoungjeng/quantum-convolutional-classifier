@@ -2,8 +2,8 @@ from itertools import zip_longest, tee
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
-from thesis.operation import Unitary
-from thesis.operation.ansatz import Ansatz
+from thesis.quantum.operation import Unitary
+from thesis.quantum.operation.ansatz import Ansatz
 
 
 class BaselineConvolution(Unitary):
@@ -23,7 +23,7 @@ class BaselineConvolution(Unitary):
         ]
 
     @staticmethod
-    def shape(*_) -> int:
+    def _shape(*_) -> int:
         return 15
 
 
@@ -37,7 +37,7 @@ class BaselinePooling1(Unitary):
         ]
 
     @staticmethod
-    def shape(*_) -> int:
+    def _shape(*_) -> int:
         return 2
 
 
@@ -52,7 +52,7 @@ class BaselinePooling2(Unitary):
         ]
 
     @staticmethod
-    def shape(*_) -> int:
+    def _shape(*_) -> int:
         return 2
 
 
@@ -64,7 +64,7 @@ class BaselinePooling3(Unitary):
         qml.cond(m_0 == 1, qml.RY)(params[1], wires=wires[1])
 
     @staticmethod
-    def shape(*_) -> int:
+    def _shape(*_) -> int:
         return 2
 
 
@@ -80,7 +80,9 @@ class BaselineAnsatz(Ansatz):
         lst = list(zip_longest(a, b, fillvalue=first))
         last = lst.pop()[::-1]
         lst = lst[::2] + lst[1::2]
-        lst.insert(0, last)
+
+        if len(lst) > 1:
+            lst.insert(0, last)
 
         for wires in lst:
             cls.convolve(params, wires=wires)
