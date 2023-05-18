@@ -14,7 +14,7 @@ def create_parent(path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
 
 
-def save(filename: Path, fn: Callable[[Path], None], overwrite=True):
+def save(filename: Path, fn: Callable[[Path], None], overwrite=True) -> None:
     if not isinstance(filename, Path):
         filename = Path(filename)
 
@@ -29,16 +29,21 @@ def save(filename: Path, fn: Callable[[Path], None], overwrite=True):
     return fn(filename)
 
 
-def save_img(filename: Path, img: Image.Image, overwrite=True):
-    save(filename, img.save, overwrite=overwrite)
+def save_img(filename: Path, img: Image.Image, overwrite=True) -> None:
+    return save(filename, img.save, overwrite=overwrite)
 
 
-def save_fits(filename: Path, data: fits.HDUList, overwrite=True):
+def save_fits(filename: Path, data: fits.HDUList, overwrite=True) -> None:
+    if not isinstance(filename, Path):
+        filename = Path(filename)
     filename = filename.with_suffix(".fits")
-    save(filename, data.writeto, overwrite=overwrite)
+
+    return save(filename, data.writeto, overwrite=overwrite)
 
 
-def save_dataframe_as_csv(filename: Path, df: DataFrame, overwrite=True):
+def save_dataframe_as_csv(filename: Path, df: DataFrame, overwrite=True) -> None:
+    if not isinstance(filename, Path):
+        filename = Path(filename)
     filename = filename.with_suffix(".csv")
 
-    save(filename, fn=df.write_csv, overwrite=overwrite)
+    return save(filename, fn=df.write_csv, overwrite=overwrite)
