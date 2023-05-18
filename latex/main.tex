@@ -1,4 +1,69 @@
-\input{template/header.tex}
+\documentclass[12pt,english,letterpaper]{kuthesis}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathptmx}
+\renewcommand{\sfdefault}{lmss}
+\renewcommand{\ttdefault}{lmtt}
+\usepackage{geometry}
+\geometry{verbose,tmargin=1in,bmargin=1in,lmargin=1in,rmargin=1in}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+\usepackage{color}
+\usepackage{babel}
+\usepackage{url}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{setspace}
+\usepackage{import}
+\usepackage[authoryear]{natbib}
+\doublespacing
+\usepackage[unicode=true,
+ bookmarks=true,bookmarksnumbered=false,bookmarksopen=false,
+ breaklinks=true,pdfborder={0 0 0},pdfborderstyle={},backref=false,colorlinks=true]
+ {hyperref}
+\hypersetup{pdftitle={University of Kansas Thesis Template},
+ pdfauthor={Anonymous},
+ pdfsubject={A Thesis},
+ urlcolor={black},citecolor={black},allcolors={black}}
+\makeatletter
+% used to align decimals in tables according to APA style
+\usepackage{dcolumn}
+\usepackage{booktabs}
+% Don't change this block, probably.
+% This handles code input. Included here just for completion.
+\usepackage{listings}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This is the stuff you should edit.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\title{Some Title}
+\author{Mingyoung Jeng}
+% Optional priorcreds field
+% Leave blank if you don't want to list prior credits
+% \priorcreds{B.M. Caffeine}{B.S. in Caffeine}
+\priorcreds{B.S. in Engineering Physics}
+\dept{Department of Electrical Engineering and Computer Science}
+\degreetitle{Master's of Computer Engineering}
+\papertype{Thesis} % or Dissertation 
+%  It is required to have 7 entries, even if some are empty, i.e., {}  for committee and role
+\committee{Member Name 1}{Member Name 2}{Member Name 3}{Member Name 4}{Member 5 has a long name}{Member 6}{}
+\role{Chairperson}{Co-Chair}{Some description}{No Role}{}{External Reviewer}{}
+\@printd@testrue
+% BOTH dates must be included. 
+\datedefended{July 02, 2019}
+ % Since the date will likely be unknown, this keeps the blank line from floating above the "Date Approved: " line late signing.
+\dateapproved{\textcolor{white}{blank}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% After \makeatother, you put the packages you need. 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% This is definitely a hack, and I know what it does, but not how to put it somewhere else. This likely has to do with how the .cls file is handled, which I did not create. -AB
+\makeatother
+
+% Individual user defined packages can go here.
+\usepackage{subcaption}
+\usepackage{physics}
 
 \begin{document}
 
@@ -21,8 +86,62 @@
 \end{romanpages}
 
 \chapter{Introduction}
+
+\section{Motivation}
+
+
+
+\section{Problem Statement}
+\section{idk}
 \chapter{Background}
+
+\section{Fundamental Concepts}
+On the macroscopic scale, objects and events are largely expected to have a defined state. [examples], and classical bit exists in either a \texttt{0} or \texttt{1} state.
+In general, however, there is a limit to the amount of information that can be gathered with certainty, as dictated by the Heisenberg uncertainty principle, see \eqref{eq:heisenberg_uncertainty}.
+
+\begin{equation}
+	\sigma_x \sigma_p \geq \frac{\hbar}{2},
+\label{eq:heisenberg_uncertainty}
+\end{equation}
+where $\sigma_x$ and $\sigma_p$ represent the standard deviation in position and momentum, respectively, and $\hbar$ is the reduced Planck constant. In other words, there must always exist some uncertainty in knowing a particle's position and/or momentum, although it is small enough such that it typically only manifests at quantum scales.
+
+Thus, in order to leverage classical physics, quantum states are generalized in terms of probabilistic wavefunctions, representing the weighted complex probability amplitudes spanning the entire state space of a quantum object. As the name implies, wavefunctions behave like waves, which can be interpreted as [...].
+
+What is a Hilbert space - ``a vector space equipped with an inner product that defines a distance function for which the space is a complete metric space.''
+
+The Dirac or ``bra-ket'' notation...
+
+
+
+% Wave behavior / probability interpretation
+
+
+
+% \section{test}
+% discrete quantized states
+% linear vector space, hilbert space
+% braket / Dirac notation
+
+
+
+% Classical Convolution
+% Quantum Wavefunctions
+% Quantum Gates
+% Multidimensional Quantum Amplitude Encoding
+
+% Related Work
+
 \chapter{Methods}
+
+Representation of Filter (as a data encoding problem)
+$\ketbra{\psi}{\psi}$
+
+Convolutional Layers
+
+Pooling Layers
+
+Fully-connected Layer
+
 \chapter{Results and Analysis}
 \chapter{Conclusion}
 

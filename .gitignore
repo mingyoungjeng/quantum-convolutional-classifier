@@ -8,3 +8,16 @@ test/pennylane/qcnn/result/*
 test/**/*.png
 **/*.egg-info
 **/*.csv
+
+# LATEX
+*.aux 
+*.fdb_latexmk 
+*.fls 
+*.log 
+*.out 
+*.bbl 
+*.blg 
+*.lof 
+*.lot 
+*.toc 
+*.synctex.gz
