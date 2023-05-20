@@ -22,9 +22,9 @@ class Model:
     logger: Optional[Logger] = None
 
     def _cost(self, *args, **kwargs):
-        loss = self.cost_fn(*args, **kwargs)
-        self.logger.log(loss, silent=True)
-        return loss
+        cost = self.cost_fn(*args, **kwargs)
+        self.logger.log(cost, silent=True)
+        return cost
 
     def __call__(self, model: MLFunction, params):
         # Load dataset
@@ -41,8 +41,11 @@ class Model:
         return accuracy
 
     @classmethod
-    def with_logging(cls, *args, name="model", **kwargs):
-        schema = [("loss", float)]
+    def with_logging(cls, *args, name: Optional[str] = None, **kwargs):
+        if name is None:
+            name = cls.__name__.lower()
+
+        schema = [("cost", float)]
         fmt = "%(asctime)s: (%(name)s) %(message)s"
         logger = Logger.from_schema(schema, name, fmt)
         return cls(*args, **kwargs, logger=logger)
@@ -52,10 +55,10 @@ class Model:
             return
 
         fig, ax = plt.subplots()
-        loss = self.logger.df.get_column("loss").to_numpy()
-        ax.plot(loss)
+        cost = self.logger.df.get_column("cost").to_numpy()
+        ax.plot(cost)
         ax.set_xlabel("Iteration")
-        ax.set_ylabel("Loss")
+        ax.set_ylabel("Cost")
 
         return fig, ax if include_axis else fig
 

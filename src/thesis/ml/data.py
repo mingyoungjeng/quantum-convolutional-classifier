@@ -67,12 +67,13 @@ class BinaryData(Data):
             raise ValueError("Binary data must have only two classes")
 
 
-def image_transform(dims: Iterable[int], fix_bands=True):
+def image_transform(dims: Iterable[int], fix_bands=True, flatten=True):
     ops = [transforms.Resize(dims[:2]), transforms.ToTensor()]
 
     if fix_bands and len(dims) >= 3:
-        ops += [transforms.Lambda(lambda x: np.moveaxis(x.numpy(), 0, -1))]
+        ops += [transforms.Lambda(lambda x: np.moveaxis(np.squeeze(x).numpy(), 0, -1))]
 
-    ops += [transforms.Lambda(lambda x: flatten_array(np.squeeze(x), pad=True))]
+    if flatten:
+        ops += [transforms.Lambda(lambda x: flatten_array(x, pad=True))]
 
     return transforms.Compose(ops)

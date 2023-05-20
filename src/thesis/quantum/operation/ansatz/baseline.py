@@ -1,3 +1,7 @@
+"""
+https://github.com/takh04/QCNN
+"""
+
 from itertools import zip_longest, tee
 import numpy as np
 import pennylane as qml

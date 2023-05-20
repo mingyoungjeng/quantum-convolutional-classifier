@@ -64,3 +64,11 @@ class Logger:
     @classmethod
     def from_schema(cls, schema: SchemaDefinition, *args, **kwargs) -> Logger:
         return cls(pl.DataFrame(schema=schema), *args, **kwargs)
+
+    @classmethod
+    def copy(cls, logger: Logger):
+        df = pl.DataFrame(schema=logger.df.schema)
+        name = logger.name
+        fmt = logger.format
+
+        return cls(df=df, name=name, format=fmt)
