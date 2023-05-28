@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 from numbers import Number
 import torch
@@ -7,7 +7,7 @@ from torch import optim
 from thesis.ml import create_tensor
 
 if TYPE_CHECKING:
-    from typing import Callable, Iterable
+    from typing import Callable
     from torch import Tensor
     from torch.utils.data import DataLoader
 
@@ -51,9 +51,18 @@ class Optimizer(optim.Optimizer):
         return self
 
     @property
-    def parameters(self) -> Tensor:
-        params = [group["params"] and group["params"][0] for group in self.param_groups]
-        return params and params[0]
+    def parameters(self) -> Tensor | list[Tensor]:
+        params = [p for group in self.param_groups for p in group["params"]]
+        return params[0] if len(params) == 1 else params
+
+    @property
+    def num_parameters(self) -> int:
+        params = self.parameters
+        if isinstance(params, torch.Tensor):
+            params = [params]
+
+        n = sum([param.flatten().shape[0] for param in params])
+        return n
 
 
 def backpropagate(

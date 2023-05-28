@@ -31,7 +31,7 @@ class Model:
         training_dataloader, testing_dataloader = self.data.load()
 
         opt = self.optimizer(params)
-        self.logger.logger.info(f"Number of Parameters: {opt.parameters.shape[0]}")
+        self.logger.logger.info(f"Number of Parameters: {opt.num_parameters}")
 
         parameters = train(model, opt, training_dataloader, self._cost, self.epoch)
 
