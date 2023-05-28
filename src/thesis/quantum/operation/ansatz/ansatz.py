@@ -8,7 +8,7 @@ import pennylane as qml
 
 from pennylane.wires import Wires
 from pennylane.templates import AmplitudeEmbedding
-from thesis.quantum import to_qubits
+from thesis.quantum import to_qubits, wires_to_qubits
 from thesis.ml.ml import is_iterable
 
 if TYPE_CHECKING:
@@ -44,7 +44,7 @@ class Ansatz(ABC):
 
     @_qnode.default  # @qubits.validator
     def _check_qnode(self):
-        device = qml.device("default.qubit", wires=self.num_wires)
+        device = qml.device("default.qubit", wires=self.wires[::-1])
         return qml.QNode(self.__call__, device, interface="torch")
 
     @property
@@ -107,6 +107,8 @@ class Ansatz(ABC):
 
     @classmethod
     def from_dims(cls, dims: Iterable[int], *args, **kwargs):
-        dims = to_qubits(dims)
-        qubits = [list(range(x - y, x)) for x, y in zip(np.cumsum(dims), dims)]
+        dims_q = to_qubits(dims)
+        wires = list(range(sum(dims_q)))
+        qubits = wires_to_qubits(wires, dims_q)
+
         return cls(qubits, *args, **kwargs)

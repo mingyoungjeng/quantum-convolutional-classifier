@@ -4,8 +4,10 @@ from typing import TYPE_CHECKING
 # Base class
 from .unitary import Unitary
 
-# Shift operation
 from .shift import Shift
+from .multiplex import Multiplex
+from .c2q import C2Q
+from .convolution import Convolution
 
 if TYPE_CHECKING:
     from .unitary import Parameters, Qubits

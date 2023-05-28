@@ -23,6 +23,14 @@ def normalize(x, include_magnitude=False):
     return (psi, magnitude) if include_magnitude else psi
 
 
+def wires_to_qubits(wires, dims_q):
+    return [wires[x - y : x] for x, y in zip(np.cumsum(dims_q), dims_q)]
+
+
+def binary(i: int, num_bits: int):
+    return tuple(int(b) for b in f"{i:0{num_bits}b}")
+
+
 def random_data(
     qubits: int, is_complex: Optional[bool] = False, seed: Optional[float] = None
 ):
@@ -40,11 +48,17 @@ def random_data(
     return psi
 
 
+def pad_array(arr: np.ndarray):
+    new_dims = 2 ** to_qubits(arr.shape)
+    n_pad = list(zip([0] * arr.ndim, new_dims - arr.shape))
+    arr = np.pad(arr, n_pad, "constant", constant_values=0)
+
+    return arr
+
+
 def flatten_array(arr: np.ndarray, pad: bool = False):
     if pad:
-        new_dims = 2 ** to_qubits(arr.shape)
-        n_pad = list(zip([0] * arr.ndim, new_dims - arr.shape))
-        arr = np.pad(arr, n_pad, "constant", constant_values=0)
+        arr = pad_array(arr)
     psi = np.ravel(arr, order="F")
 
     return psi
@@ -92,7 +106,7 @@ def get_fidelity(x_in, x_out) -> float:
     #     print(x, y)
     x_in = normalize(x_in)
     x_out = normalize(x_out)
-    dp = np.dot(x_in, x_out)
+    dp = np.vdot(x_in, x_out)
     fidelity = np.abs(dp) ** 2
     return fidelity
 
