@@ -6,6 +6,7 @@ import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 
+from thesis.quantum import flatten_array, normalize
 from thesis.quantum.operation import Multiplex
 
 if TYPE_CHECKING:
@@ -31,13 +32,11 @@ class C2Q(Operation):
     def get_params(x_in):
         p = x_in
         while len(p) > 1:
-            x = np.reshape(p, (int(len(p) / 2), 2))
+            x = np.reshape(p, (len(p) // 2, 2))
             p = np.linalg.norm(x, axis=1)
 
             with np.errstate(divide="ignore", invalid="ignore"):
-                alpha, beta = np.array(
-                    [y / m if m > 0 else (1, 0) for y, m in zip(x, p)]
-                ).T
+                alpha, beta = zip(*(y / m if m > 0 else (1, 0) for y, m in zip(x, p)))
 
                 alpha_mag, beta_mag = np.abs((alpha, beta))
                 alpha_phase, beta_phase = np.angle((alpha, beta))
@@ -55,18 +54,26 @@ class C2Q(Operation):
         wires: Wires,
         **hyperparameters,
     ) -> Iterable[Operation]:
-        op_list = []
-
         # Keep the type-checker happy
         (params,) = params
         transpose = hyperparameters["transpose"]
 
+        # Flatten and normalize input state (params)
+        params = flatten_array(params, pad=True)
+        params, magnitude = normalize(params, include_magnitude=True)
+
+        if magnitude != 1:
+            print(f"C2Q parameters were not normalized ({magnitude=}).")
+
+        # Loop setup
         params = list(enumerate(C2Q.get_params(params)))
         if not transpose:
             params = reversed(params)
 
+        # Main C2Q operation
+        op_list = []
         for j, (theta, phi, _, t) in params:
-            wires_j = wires[j:][::-1]
+            wires_j = wires[j + 1 :] + wires[j : j + 1]
 
             if transpose:
                 theta = -theta

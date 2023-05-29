@@ -3,9 +3,8 @@ from typing import TYPE_CHECKING
 
 from abc import ABC, abstractmethod
 from attrs import define, field, validators
-import numpy as np
-import pennylane as qml
 
+import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.templates import AmplitudeEmbedding
 from thesis.quantum import to_qubits, wires_to_qubits
@@ -34,7 +33,10 @@ class Ansatz(ABC):
         else [Wires(q)]
     )
     num_layers: int = field(
-        validator=[validators.ge(0), lambda *x: validators.le(x[0].max_layers)(*x)]
+        validator=[
+            validators.ge(0),
+            lambda *x: validators.le(x[0].max_layers)(*x),
+        ]
     )
     _qnode: qml.QNode = field(init=False, repr=False)
 
@@ -45,10 +47,10 @@ class Ansatz(ABC):
     @_qnode.default  # @qubits.validator
     def _check_qnode(self):
         device = qml.device("default.qubit", wires=self.wires[::-1])
-        return qml.QNode(self.__call__, device, interface="torch")
+        return qml.QNode(self._circuit, device, interface="torch")
 
     @property
-    def qnode(self):
+    def qnode(self) -> qml.QNode:
         return self._qnode
 
     # Derived properties
@@ -81,11 +83,23 @@ class Ansatz(ABC):
     def q2c(self, wires: Wires):
         return qml.probs(wires)
 
-    def __call__(self, params: Parameters, psi_in: Optional[Statevector] = None):
+    def post_processing(self, result):
+        # Makes sure batch is 2D array
+        if result.dim() == 1:
+            result = result.unsqueeze(0)
+
+        return result
+
+    def _circuit(self, params: Parameters, psi_in: Optional[Statevector] = None):
         if psi_in is not None:
             self.c2q(psi_in)
         meas = self.circuit(params)
         return self.q2c(meas)
+
+    def __call__(self, params: Parameters, psi_in: Optional[Statevector] = None):
+        result = self.qnode(params, psi_in)  # pylint: disable=not-callable
+
+        return self.post_processing(result)
 
     # Abstract methods
 

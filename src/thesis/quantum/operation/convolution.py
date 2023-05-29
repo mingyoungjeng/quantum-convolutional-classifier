@@ -26,6 +26,7 @@ class Convolution(Operation):
         # stride: ConvolutionSetting = 1,
         # padding: ConvolutionSetting = 0,
         # dilation: ConvolutionSetting = 1,
+        do_swaps=True,
         do_queue=True,
         id=None,
     ):
@@ -36,6 +37,7 @@ class Convolution(Operation):
             # "stride": stride,
             # "padding": padding,
             # "dilation": dilation,
+            "do_swaps": do_swaps,
         }
 
         wires = Wires.all_wires(qubits)
@@ -81,7 +83,6 @@ class Convolution(Operation):
         wires = [q[:fsq] for q, fsq in zip(qubits, to_qubits(fltr.shape))]
         wires = Wires.all_wires(wires)
 
-        fltr = fltr.flatten("F")
         return [C2Q(fltr, wires, transpose=True)]
 
     @staticmethod
@@ -97,15 +98,25 @@ class Convolution(Operation):
         return op_list
 
     @staticmethod
-    def compute_decomposition(*params, wires: Wires, dims_q) -> Iterable[Operation]:
-        (params,) = params  # Keep the type-checker happy
+    def compute_decomposition(
+        *params,
+        wires: Wires,
+        **hyperparameters,
+    ) -> Iterable[Operation]:
+        # Keep the type-checker happy
+        (params,) = params
+        dims_q = hyperparameters["dims_q"]
+        do_swaps = hyperparameters["do_swaps"]
 
         filter_shape_q = to_qubits(params.shape)
         qubits = wires_to_qubits(dims_q, wires)
 
-        op_list = []
-        op_list += Convolution._shift(filter_shape_q, qubits)
-        op_list += Convolution._filter(params, qubits)
-        op_list += Convolution._permute(filter_shape_q, qubits)
+        op_list = Convolution._shift(filter_shape_q, qubits)
+
+        if filter_shape_q.any():
+            op_list += Convolution._filter(params, qubits)
+
+        if do_swaps:
+            op_list += Convolution._permute(filter_shape_q, qubits)
 
         return op_list

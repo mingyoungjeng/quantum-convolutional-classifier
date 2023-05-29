@@ -28,16 +28,21 @@ class Multiplex(Operation):
 
     @staticmethod
     def compute_decomposition(
-        *params: Iterable, wires: Wires, op: type[Operation]
+        *params: Iterable, wires: Wires, **hyperparameters
     ) -> Iterable[Operation]:
-        (ps,) = params  # Keep the type-checker happy
+        # Keep the type-checker happy
+        (params,) = params
+        op: type[Operation] = hyperparameters["op"]
 
-        c, w = wires[: -op.num_wires], wires[-op.num_wires :]
+        ctrls, wires = wires[: -op.num_wires], wires[-op.num_wires :]
 
-        if len(c) == 0:
-            return op(ps, wires)
+        if len(ctrls) == 0:
+            return op(params, wires)
         else:
-            return [qml.ctrl(op, c, binary(i, len(c)))(p, w) for i, p in enumerate(ps)]
+            return [
+                qml.ctrl(op, ctrls, binary(i, len(ctrls))[::-1])(param, wires)
+                for i, param in enumerate(params)
+            ]
 
     def adjoint(self) -> Operation:
         return Multiplex(self.hyperparameters["op"], -self.parameters, self.wires)
