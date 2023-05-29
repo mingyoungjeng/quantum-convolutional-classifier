@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from functools import cache
 import numpy as np
 from PIL import Image
 from astropy.io import fits
@@ -11,7 +10,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-@cache
 def to_qubits(N: int | Iterable[int]) -> int:
     return np.int_(np.ceil(np.log2(N)))
 
@@ -23,7 +21,9 @@ def normalize(x, include_magnitude=False):
     return (psi, magnitude) if include_magnitude else psi
 
 
-def wires_to_qubits(wires, dims_q):
+def wires_to_qubits(dims_q, wires=None):
+    if wires is None:
+        wires = list(range(sum(dims_q)))
     return [wires[x - y : x] for x, y in zip(np.cumsum(dims_q), dims_q)]
 
 

@@ -108,7 +108,6 @@ class Ansatz(ABC):
     @classmethod
     def from_dims(cls, dims: Iterable[int], *args, **kwargs):
         dims_q = to_qubits(dims)
-        wires = list(range(sum(dims_q)))
-        qubits = wires_to_qubits(wires, dims_q)
+        qubits = wires_to_qubits(dims_q)
 
         return cls(qubits, *args, **kwargs)

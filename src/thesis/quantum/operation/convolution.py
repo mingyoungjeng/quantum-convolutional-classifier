@@ -7,7 +7,7 @@ from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 
 from thesis.quantum import to_qubits, wires_to_qubits
-from thesis.quantum.operation import Shift
+from thesis.quantum.operation import Shift, C2Q
 
 if TYPE_CHECKING:
     from typing import Iterable
@@ -62,7 +62,7 @@ class Convolution(Operation):
         op_list = []
 
         for i, fsq in enumerate(filter_shape_q):
-            filter_wires = qubits[i][:fsq]
+            filter_wires = qubits[i]
             ancilla_wires = qubits[i - len(filter_shape_q)][:fsq]
 
             # Apply Hadamard to ancilla wires
@@ -77,8 +77,12 @@ class Convolution(Operation):
         return op_list
 
     @staticmethod
-    def _filter():
-        pass
+    def _filter(fltr: np.ndarray, qubits):
+        wires = [q[:fsq] for q, fsq in zip(qubits, to_qubits(fltr.shape))]
+        wires = Wires.all_wires(wires)
+
+        fltr = fltr.flatten("F")
+        return [C2Q(fltr, wires, transpose=True)]
 
     @staticmethod
     def _permute(filter_shape_q, qubits):
@@ -97,8 +101,11 @@ class Convolution(Operation):
         (params,) = params  # Keep the type-checker happy
 
         filter_shape_q = to_qubits(params.shape)
-        qubits = wires_to_qubits(wires, dims_q)
+        qubits = wires_to_qubits(dims_q, wires)
 
-        return Convolution._shift(filter_shape_q, qubits) + Convolution._permute(
-            filter_shape_q, qubits
-        )
+        op_list = []
+        op_list += Convolution._shift(filter_shape_q, qubits)
+        op_list += Convolution._filter(params, qubits)
+        op_list += Convolution._permute(filter_shape_q, qubits)
+
+        return op_list
