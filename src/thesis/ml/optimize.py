@@ -66,7 +66,7 @@ class Optimizer(optim.Optimizer):
 
 
 def init_params(size):
-    return create_tensor(torch.randn, size, requires_grad=True)
+    return torch.nn.Parameter(create_tensor(torch.randn, size, requires_grad=True))
 
 
 def backpropagate(

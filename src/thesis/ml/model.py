@@ -26,7 +26,10 @@ class Model:
         self.logger.log(cost, silent=True)
         return cost
 
-    def __call__(self, model: MLFunction, params):
+    def __call__(self, model: MLFunction, params=None):
+        if params is None:
+            params = model.parameters()
+
         # Load dataset
         training_dataloader, testing_dataloader = self.data.load()
 

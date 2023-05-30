@@ -111,4 +111,4 @@ class CNN(Model):
 
     def __call__(self, dims, num_layers=1):
         model = self.forward(dims, num_layers)
-        return super().__call__(model, model.parameters())
+        return super().__call__(model)
