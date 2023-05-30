@@ -39,22 +39,14 @@ def parity(result, num_classes: int = 2):
 class QCNN(Model):
     ansatz: Ansatz = field(init=False)
 
-    def predict(self, *args, **kwargs) -> Tensor:
-        result = self.ansatz.qnode(*args, **kwargs)
-
-        if result.dim() == 1:  # Makes sure batch is 2D array
-            result = result.unsqueeze(0)
-
-        return parity(result)  # result
-
     def __call__(self, ansatz: type[Ansatz], *args, **kwargs):
         self.ansatz = ansatz.from_dims(*args, **kwargs)
 
-        return super().__call__(self.predict, self.ansatz.shape)
+        return super().__call__(self.ansatz, self.ansatz.parameters)
 
     def draw(self, include_axis: bool = False):
         plot = super().draw(include_axis=True)
-        circuit = qml.draw_mpl(self.ansatz.qnode)(self.optimizer.parameters)
+        circuit = qml.draw_mpl(self.ansatz.qnode)()
 
         fig, ax = zip(plot, circuit)
         return fig, ax if include_axis else fig

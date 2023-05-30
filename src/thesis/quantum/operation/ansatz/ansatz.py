@@ -2,13 +2,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from abc import ABC, abstractmethod
-from attrs import define, field, validators
+from attrs import define, field, validators, Factory
 
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.templates import AmplitudeEmbedding
+
 from thesis.quantum import to_qubits, wires_to_qubits
-from thesis.ml.ml import is_iterable
+from thesis.ml import is_iterable
+from thesis.ml.optimize import init_params
 
 if TYPE_CHECKING:
     from typing import Iterable, Optional
@@ -36,22 +38,20 @@ class Ansatz(ABC):
         validator=[
             validators.ge(0),
             lambda *x: validators.le(x[0].max_layers)(*x),
-        ]
+        ],
+        default=Factory(lambda self: self.max_layers, takes_self=True),
     )
-    _qnode: qml.QNode = field(init=False, repr=False)
+    parameters = field(
+        init=False,
+        repr=False,
+        default=Factory(lambda self: init_params(self.shape), takes_self=True),
+    )
+    qnode: qml.QNode = field(init=False, repr=False)
 
-    @num_layers.default
-    def _num_layers(self):
-        return self.max_layers
-
-    @_qnode.default  # @qubits.validator
+    @qnode.default  # @qubits.validator
     def _check_qnode(self):
         device = qml.device("default.qubit", wires=self.wires[::-1])
         return qml.QNode(self._circuit, device, interface="torch")
-
-    @property
-    def qnode(self) -> qml.QNode:
-        return self._qnode
 
     # Derived properties
 
@@ -90,14 +90,18 @@ class Ansatz(ABC):
 
         return result
 
-    def _circuit(self, params: Parameters, psi_in: Optional[Statevector] = None):
-        if psi_in is not None:
+    def _circuit(
+        self,
+        params: Optional[Parameters] = None,
+        psi_in: Optional[Statevector] = None,
+    ):
+        if psi_in is not None:  # this is done to facilitate drawing
             self.c2q(psi_in)
-        meas = self.circuit(params)
+        meas = self.circuit(self.parameters if params is None else params)
         return self.q2c(meas)
 
-    def __call__(self, params: Parameters, psi_in: Optional[Statevector] = None):
-        result = self.qnode(params, psi_in)  # pylint: disable=not-callable
+    def __call__(self, psi_in: Optional[Statevector] = None):
+        result = self.qnode(psi_in=psi_in)  # pylint: disable=not-callable
 
         return self.post_processing(result)
 

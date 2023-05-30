@@ -35,7 +35,7 @@ class Model:
 
         parameters = train(model, opt, training_dataloader, self._cost, self.epoch)
 
-        accuracy = test(model, parameters, testing_dataloader)
+        accuracy = test(model, testing_dataloader, parameters)
         self.logger.logger.info(f"Accuracy: {accuracy:.03%}")
 
         return accuracy

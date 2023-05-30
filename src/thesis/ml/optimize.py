@@ -7,7 +7,7 @@ from torch import optim
 from thesis.ml import create_tensor
 
 if TYPE_CHECKING:
-    from typing import Callable
+    from typing import Callable, Optional
     from torch import Tensor
     from torch.utils.data import DataLoader
 
@@ -46,7 +46,7 @@ class Optimizer(optim.Optimizer):
 
     def __call__(self, params: Tensor | int) -> Optimizer:
         if isinstance(params, Number):
-            params = create_tensor(torch.randn, params, requires_grad=True)
+            params = init_params(params)
         self.add_param_group({"params": params})
         return self
 
@@ -63,6 +63,10 @@ class Optimizer(optim.Optimizer):
 
         n = sum([param.flatten().shape[0] for param in params])
         return n
+
+
+def init_params(size):
+    return create_tensor(torch.randn, size, requires_grad=True)
 
 
 def backpropagate(
@@ -85,24 +89,25 @@ def train(
     training_dataloader: DataLoader,
     cost_fn: CostFunction,
     epoch: int = 1,
+    params: Optional[Iterable[Number]] = None,
 ):
     for i in range(epoch):
         for j, (data, labels) in enumerate(training_dataloader):
-            predictions = fn(optimizer.parameters, data)
+            predictions = fn(data) if params is None else fn(data, params)
             backpropagate(predictions, labels, optimizer, cost_fn)
 
-    return optimizer.parameters
+    return None if params is None else optimizer.parameters
 
 
 @torch.no_grad()
 def test(
     fn: MLFunction,
-    params: Iterable[Number],
     testing_dataloader: DataLoader,
+    params: Optional[Iterable[Number]] = None,
 ):
     correct = total = 0
     for data, labels in testing_dataloader:
-        predictions = fn(params, data)
+        predictions = fn(data) if params is None else fn(data, params)
         predictions = torch.argmax(predictions, 1)
         correct += torch.count_nonzero(predictions == labels).numpy()
         total += len(data)
