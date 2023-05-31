@@ -8,6 +8,7 @@ import pennylane as qml
 from pennylane.operation import Operation
 from thesis.quantum.operation import Unitary
 from thesis.quantum.operation.ansatz import Ansatz
+from thesis.ml.optimize import init_params
 
 
 class BaselineConvolution(Unitary):
@@ -77,6 +78,10 @@ class BaselineAnsatz(Ansatz):
     convolve: type[Operation] = BaselineConvolution
     pool: type[Operation] = BaselinePooling1
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._params = init_params(self.shape)
+
     @classmethod
     def _convolution(cls, params, iterable):
         a, b = tee(iterable)
@@ -103,9 +108,9 @@ class BaselineAnsatz(Ansatz):
 
     def circuit(self, params):
         idx = np.cumsum([self.convolve.shape(), self.pool.shape()])
-        conv_params, pool_params, params = np.split(params, idx)
         wires = self.wires
         for _ in range(self.num_layers):
+            conv_params, pool_params, params = np.split(params, idx)
             self._convolution(conv_params, wires)
             wires = self._pooling(pool_params, wires)
 

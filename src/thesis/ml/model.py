@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from attrs import define
+from torch.nn import Module
 from thesis.ml.data import Data
 from thesis.ml.optimize import Optimizer, train, test
 from thesis.experiment.logger import Logger
@@ -26,14 +27,11 @@ class Model:
         self.logger.log(cost, silent=True)
         return cost
 
-    def __call__(self, model: MLFunction, params=None):
-        if params is None:
-            params = model.parameters()
-
+    def __call__(self, model: Module, params=None):
         # Load dataset
         training_dataloader, testing_dataloader = self.data.load()
 
-        opt = self.optimizer(params)
+        opt = self.optimizer(model.parameters() if params is None else params)
         self.logger.logger.info(f"Number of Parameters: {opt.num_parameters}")
 
         parameters = train(model, opt, training_dataloader, self._cost, self.epoch)

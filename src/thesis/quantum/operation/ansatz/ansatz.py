@@ -2,15 +2,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from abc import ABC, abstractmethod
-from attrs import define, field, validators, Factory
 
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.templates import AmplitudeEmbedding
 
+from torch.nn import Module
 from thesis.quantum import to_qubits, wires_to_qubits
 from thesis.ml import is_iterable
-from thesis.ml.optimize import init_params
 
 if TYPE_CHECKING:
     from typing import Iterable, Optional
@@ -27,33 +26,44 @@ def is_multidimensional(wires: Qubits):
     return False
 
 
-@define(frozen=True)
-class Ansatz(ABC):
-    qubits: Qubits = field(
-        converter=lambda q: [Wires(w) for w in q]
-        if is_multidimensional(q)
-        else [Wires(q)]
-    )
-    num_layers: int = field(
-        validator=[
-            validators.ge(0),
-            lambda *x: validators.le(x[0].max_layers)(*x),
-        ],
-        default=Factory(lambda self: self.max_layers, takes_self=True),
-    )
-    parameters = field(
-        init=False,
-        repr=False,
-        default=Factory(lambda self: init_params(self.shape), takes_self=True),
-    )
-    qnode: qml.QNode = field(init=False, repr=False)
+# TODO: turn into metaclass / decorator
+# (especially useful for post_init parameters initialization)
+class Ansatz(Module, ABC):
+    __slots__ = "_qubits", "_num_layers"
 
-    @qnode.default  # @qubits.validator
-    def _check_qnode(self):
-        device = qml.device("default.qubit", wires=self.wires[::-1])
-        return qml.QNode(self._circuit, device, interface="torch")
+    def __init__(self, qubits, num_layers=None):
+        super().__init__()
+        self.qubits = qubits
+        self.num_layers = self.max_layers if num_layers is None else num_layers
+
+    @property
+    def qubits(self) -> Iterable[Iterable[int]]:
+        return self._qubits
+
+    @qubits.setter
+    def qubits(self, q) -> None:
+        self._qubits = [Wires(w) for w in q] if is_multidimensional(q) else [Wires(q)]
+
+    @property
+    def num_layers(self) -> int:
+        return self._num_layers
+
+    @num_layers.setter
+    def num_layers(self, value: int) -> None:
+        # Check bounds
+        if value < 0 or value > self.max_layers:
+            err = f"num_layers must be in range (0, {self.max_layers}], got {value}"
+            raise ValueError(err)
+
+        self._num_layers = value
 
     # Derived properties
+
+    @property
+    def qnode(self) -> qml.QNode:
+        wires = self.wires[::-1]  # Big-endian format
+        device = qml.device("default.qubit", wires=wires)
+        return qml.QNode(self._circuit, device, interface="torch")
 
     @property
     def wires(self) -> Wires:
@@ -78,12 +88,12 @@ class Ansatz(ABC):
     # Circuit operation
 
     def c2q(self, psi_in: Statevector) -> Operation:
-        return AmplitudeEmbedding(psi_in, self.wires, pad_with=0, normalize=True)
+        return AmplitudeEmbedding(psi_in, self.wires[::-1], pad_with=0, normalize=True)
 
     def q2c(self, wires: Wires):
         return qml.probs(wires)
 
-    def post_processing(self, result):
+    def post_processing(self, result) -> Iterable[Iterable[Number]]:
         # Makes sure batch is 2D array
         if result.dim() == 1:
             result = result.unsqueeze(0)
@@ -92,15 +102,15 @@ class Ansatz(ABC):
 
     def _circuit(
         self,
-        params: Optional[Parameters] = None,
         psi_in: Optional[Statevector] = None,
+        params: Optional[Parameters] = None,
     ):
         if psi_in is not None:  # this is done to facilitate drawing
             self.c2q(psi_in)
-        meas = self.circuit(self.parameters if params is None else params)
+        meas = self.circuit(next(self.parameters()) if params is None else params)
         return self.q2c(meas)
 
-    def __call__(self, psi_in: Optional[Statevector] = None):
+    def forward(self, psi_in: Optional[Statevector] = None):
         result = self.qnode(psi_in=psi_in)  # pylint: disable=not-callable
 
         return self.post_processing(result)
@@ -114,6 +124,7 @@ class Ansatz(ABC):
     @property
     @abstractmethod
     def shape(self) -> int:
+        # TODO: for now, parameters are set using self.shape(), but want to change that
         pass
 
     @property
@@ -128,4 +139,6 @@ class Ansatz(ABC):
         dims_q = to_qubits(dims)
         qubits = wires_to_qubits(dims_q)
 
-        return cls(qubits, *args, **kwargs)
+        ansatz = cls(qubits, *args, **kwargs)
+
+        return ansatz

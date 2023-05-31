@@ -41,7 +41,7 @@ class QCNN(Model):
 
     def __call__(self, ansatz: type[Ansatz], *args, **kwargs):
         self.ansatz = ansatz.from_dims(*args, **kwargs)
-        return super().__call__(self.ansatz, self.ansatz.parameters)
+        return super().__call__(self.ansatz)
 
     def draw(self, include_axis: bool = False):
         plot = super().draw(include_axis=True)

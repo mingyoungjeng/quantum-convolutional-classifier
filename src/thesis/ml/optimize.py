@@ -39,16 +39,20 @@ class Optimizer(optim.Optimizer):
     def __init__(self, cls: type[optim.Optimizer], *args, params=None, **kwargs):
         if params is None:
             cls.__init__(self, [torch.empty(0)], *args, **kwargs)
-            self.param_groups.clear()
-            self.state.clear()
+            self.reset()
         else:
             cls.__init__(self, params, *args, **kwargs)
 
     def __call__(self, params: Tensor | int) -> Optimizer:
+        self.reset()
         if isinstance(params, Number):
             params = init_params(params)
         self.add_param_group({"params": params})
         return self
+
+    def reset(self):
+        self.param_groups.clear()
+        self.state.clear()
 
     @property
     def parameters(self) -> Tensor | list[Tensor]:
