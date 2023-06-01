@@ -6,8 +6,6 @@ import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 
-import torch
-
 from thesis.quantum import flatten_array, normalize
 from thesis.quantum.operation import Multiplex
 
@@ -61,17 +59,16 @@ class C2Q(Operation):
         transpose = hyperparameters["transpose"]
 
         # Flatten and normalize input state (params)
-        with torch.no_grad():
-            params = flatten_array(params, pad=True)
-            params, magnitude = normalize(params, include_magnitude=True)
-
+        # TODO: this has issues with PyTorch
+        params = flatten_array(params, pad=True)
+        params, magnitude = normalize(params, include_magnitude=True)
         if magnitude != 1:
             print(f"C2Q parameters were not normalized ({magnitude=}).")
 
         # Loop setup
         params = list(enumerate(C2Q.get_params(params)))
         if not transpose:
-            params = reversed(params)
+            params = params[::-1]
 
         # Main C2Q operation
         op_list = []

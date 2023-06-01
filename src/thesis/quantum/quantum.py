@@ -4,6 +4,9 @@ from typing import TYPE_CHECKING
 import numpy as np
 from PIL import Image
 from astropy.io import fits
+import torch
+import torch.nn.functional as F
+from thesis.ml import create_tensor
 
 if TYPE_CHECKING:
     from typing import Optional, Iterable
@@ -51,6 +54,8 @@ def random_data(
 def pad_array(arr: np.ndarray):
     new_dims = 2 ** to_qubits(arr.shape)
     n_pad = list(zip([0] * arr.ndim, new_dims - arr.shape))
+
+    # TODO: don't pad if not needed
     arr = np.pad(arr, n_pad, "constant", constant_values=0)
 
     return arr
@@ -59,7 +64,7 @@ def pad_array(arr: np.ndarray):
 def flatten_array(arr: np.ndarray, pad: bool = False):
     if pad:
         arr = pad_array(arr)
-    psi = np.ravel(arr, order="F")
+    psi = arr.ravel(order="F")
 
     return psi
 
@@ -122,3 +127,23 @@ def construct_img(img_data, size, mode: str = None) -> Image.Image:
         return fits.HDUList([hdu])
 
     return Image.fromarray(image, mode)
+
+
+def parity(result, num_classes: int = 2):
+    predictions = create_tensor(torch.empty, (len(result), num_classes))
+
+    for i, probs in enumerate(result):
+        num_rows = create_tensor(
+            torch.tensor, [len(probs) // num_classes] * num_classes
+        )
+        num_rows[: len(probs) % num_classes] += 1
+
+        pred = F.pad(probs, (0, max(num_rows) * num_classes - len(probs)))
+        pred = probs.reshape(max(num_rows), num_classes)
+        pred = torch.sum(pred, 0)
+        pred /= num_rows
+        pred /= sum(pred)
+
+        predictions[i] = pred
+
+    return predictions

@@ -10,6 +10,7 @@ from pennylane.templates import AmplitudeEmbedding
 from torch.nn import Module
 from thesis.quantum import to_qubits, wires_to_qubits
 from thesis.ml import is_iterable
+from thesis.ml.optimize import init_params
 
 if TYPE_CHECKING:
     from typing import Iterable, Optional
@@ -29,12 +30,13 @@ def is_multidimensional(wires: Qubits):
 # TODO: turn into metaclass / decorator
 # (especially useful for post_init parameters initialization)
 class Ansatz(Module, ABC):
-    __slots__ = "_qubits", "_num_layers"
+    __slots__ = "_qubits", "_num_layers", "_params"
 
     def __init__(self, qubits, num_layers=None):
         super().__init__()
         self.qubits = qubits
         self.num_layers = self.max_layers if num_layers is None else num_layers
+        self._params = init_params(self.shape)
 
     @property
     def qubits(self) -> Iterable[Iterable[int]]:

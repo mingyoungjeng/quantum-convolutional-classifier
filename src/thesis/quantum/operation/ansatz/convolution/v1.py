@@ -1,14 +1,15 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from numbers import Number
+from typing import TYPE_CHECKING, Iterable
 
 import numpy as np
 from pennylane.wires import Wires
-from pennylane.templates import AmplitudeEmbedding
+from pennylane.templates import AmplitudeEmbedding as Initialize
 
-from thesis.quantum import to_qubits
+from thesis.quantum import to_qubits, parity
 from thesis.quantum.operation.ansatz import Ansatz
 from thesis.quantum.operation import Convolution
-from thesis.quantum.operation.ansatz.simple import SimpleConvolution
+from thesis.quantum.operation.ansatz.fully_connected import FullyConnectedLayer
 from thesis.ml.optimize import init_params
 
 if TYPE_CHECKING:
@@ -17,13 +18,9 @@ if TYPE_CHECKING:
 
 
 class ConvolutionAnsatz(Ansatz):
-    U_fully_connected: Unitary = SimpleConvolution
+    U_fully_connected: Unitary = FullyConnectedLayer
     filter_shape: Iterable[int] = (2, 2)
     stride: int = 1
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._params = init_params(self.shape)
 
     @property
     def filter_shape_qubits(self):
@@ -46,14 +43,17 @@ class ConvolutionAnsatz(Ansatz):
         return Wires.all_wires(self.ancilla_qubits)
 
     def c2q(self, psi_in):
-        return AmplitudeEmbedding(
-            psi_in, self.main_wires[::-1], pad_with=0, normalize=True
-        )
+        return Initialize(psi_in, self.main_wires[::-1], pad_with=0, normalize=True)
+
+    def post_processing(self, result) -> Iterable[Iterable[Number]]:
+        result = super().post_processing(result)
+
+        return parity(result)
 
     def circuit(self, params: Parameters) -> Wires:
         n_params = np.prod(self.filter_shape)
 
-        # Hybrid convolution/pooling layers
+        # Convolution layers
         for i in range(self.num_layers):
             conv_params, params = params[:n_params], params[n_params:]
             conv_params = conv_params.reshape(self.filter_shape)
@@ -97,5 +97,6 @@ class ConvolutionAnsatz(Ansatz):
                 top += fsq
 
         self.qubits = self.qubits + ancilla_qubits
+        self._params = init_params(self.shape)
 
         return self

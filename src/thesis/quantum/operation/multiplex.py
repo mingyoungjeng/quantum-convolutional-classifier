@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
+from pennylane.ops import Controlled
 
 from thesis.quantum import binary
 
@@ -37,10 +38,10 @@ class Multiplex(Operation):
         ctrls, wires = wires[: -op.num_wires], wires[-op.num_wires :]
 
         if len(ctrls) == 0:
-            return op(params, wires)
+            return [op(params[0], wires)]
         else:
             return [
-                qml.ctrl(op, ctrls, binary(i, len(ctrls))[::-1])(param, wires)
+                Controlled(op(param, wires), ctrls, binary(i, len(ctrls))[::-1])
                 for i, param in enumerate(params)
             ]
 

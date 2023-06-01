@@ -15,4 +15,4 @@ from .naive import NaiveAnsatz
 from .rapid import RapidAnsatz
 
 # v4
-from .convolution import ConvolutionAnsatz
+# from .convolution import ConvolutionAnsatz

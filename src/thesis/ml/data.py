@@ -6,7 +6,7 @@ import numpy as np
 from torch.utils.data import Dataset, DataLoader, Subset
 from torchvision import transforms
 from thesis.ml import USE_CUDA
-from thesis.quantum import flatten_array
+from thesis.quantum import flatten_array, normalize
 
 if TYPE_CHECKING:
     from typing import Optional, Callable
@@ -67,7 +67,7 @@ class BinaryData(Data):
             raise ValueError("Binary data must have only two classes")
 
 
-def image_transform(dims: Iterable[int], fix_bands=True, flatten=True):
+def image_transform(dims: Iterable[int], fix_bands=True, flatten=True, norm=True):
     ops = [transforms.Resize(dims[:2]), transforms.ToTensor()]
 
     if fix_bands and len(dims) >= 3:
@@ -75,5 +75,8 @@ def image_transform(dims: Iterable[int], fix_bands=True, flatten=True):
 
     if flatten:
         ops += [transforms.Lambda(lambda x: flatten_array(x, pad=True))]
+
+    if norm:
+        ops += [transforms.Lambda(lambda x: normalize(x))]
 
     return transforms.Compose(ops)

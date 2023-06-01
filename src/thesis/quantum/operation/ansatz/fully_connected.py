@@ -1,7 +1,8 @@
 import numpy as np
 from itertools import tee
 import pennylane as qml
-from pennylane.templates import BasicEntanglerLayers
+
+# from pennylane.templates import BasicEntanglerLayers
 from thesis.quantum.operation.ansatz import Ansatz
 from thesis.quantum.operation import Unitary
 

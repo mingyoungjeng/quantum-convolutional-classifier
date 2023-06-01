@@ -8,7 +8,6 @@ import pennylane as qml
 from pennylane.operation import Operation
 from thesis.quantum.operation import Unitary
 from thesis.quantum.operation.ansatz import Ansatz
-from thesis.ml.optimize import init_params
 
 
 class BaselineConvolution(Unitary):
@@ -77,10 +76,6 @@ class BaselinePooling3(Unitary):
 class BaselineAnsatz(Ansatz):
     convolve: type[Operation] = BaselineConvolution
     pool: type[Operation] = BaselinePooling1
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._params = init_params(self.shape)
 
     @classmethod
     def _convolution(cls, params, iterable):

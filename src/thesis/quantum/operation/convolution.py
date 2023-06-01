@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
+from pennylane.ops import Controlled
 from pennylane.wires import Wires
 
 from thesis.quantum import to_qubits, wires_to_qubits
@@ -72,7 +73,7 @@ class Convolution(Operation):
 
             # Shift operation
             op_list += [
-                qml.ctrl(Shift, control)(-stride, wires=filter_wires[j:])
+                Controlled(Shift(-stride, wires=filter_wires[j:]), control)
                 for j, control in enumerate(ancilla_wires)
             ]
 
