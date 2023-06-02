@@ -61,7 +61,7 @@ class Convolution(Operation):
     #     return self.hyperparameters["dilation"]
 
     @staticmethod
-    def _shift(filter_shape_q, qubits, stride=1):
+    def shift(filter_shape_q, qubits, stride=1):
         op_list = []
 
         for i, fsq in enumerate(filter_shape_q):
@@ -80,14 +80,14 @@ class Convolution(Operation):
         return op_list
 
     @staticmethod
-    def _filter(fltr: np.ndarray, qubits):
+    def filter(fltr: np.ndarray, qubits):
         wires = [q[:fsq] for q, fsq in zip(qubits, to_qubits(fltr.shape))]
         wires = Wires.all_wires(wires)
 
         return [C2Q(fltr, wires, transpose=True)]
 
     @staticmethod
-    def _permute(filter_shape_q, qubits):
+    def permute(filter_shape_q, qubits):
         op_list = []
 
         for i, fsq in enumerate(filter_shape_q):
@@ -112,12 +112,12 @@ class Convolution(Operation):
         filter_shape_q = to_qubits(params.shape)
         qubits = wires_to_qubits(dims_q, wires)
 
-        op_list = Convolution._shift(filter_shape_q, qubits)
+        op_list = Convolution.shift(filter_shape_q, qubits)
 
         if filter_shape_q.any():
-            op_list += Convolution._filter(params, qubits)
+            op_list += Convolution.filter(params, qubits)
 
         if do_swaps:
-            op_list += Convolution._permute(filter_shape_q, qubits)
+            op_list += Convolution.permute(filter_shape_q, qubits)
 
         return op_list

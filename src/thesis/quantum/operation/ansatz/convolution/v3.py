@@ -11,6 +11,9 @@ from thesis.quantum.operation import Convolution
 from thesis.quantum.operation.ansatz.fully_connected import FullyConnectedLayer
 from thesis.ml.optimize import init_params
 
+import pennylane as qml
+from thesis.quantum.operation import Shift, Multiplex
+
 if TYPE_CHECKING:
     from typing import Iterable
     from numbers import Number
@@ -21,6 +24,7 @@ class ConvolutionAnsatz(Ansatz):
     U_fully_connected: Unitary = FullyConnectedLayer
     filter_shape: Iterable[int] = (2, 2)
     stride: int = 1
+    num_features = 4
 
     @property
     def filter_shape_qubits(self):
@@ -36,11 +40,19 @@ class ConvolutionAnsatz(Ansatz):
 
     @property
     def ancilla_qubits(self):
-        return self.qubits[-(self.num_layers * len(self.filter_shape)) :]
+        return self.qubits[-(self.num_layers * len(self.filter_shape)) - 1 : -1]
 
     @property
     def ancilla_wires(self):
         return Wires.all_wires(self.ancilla_qubits)
+
+    @property
+    def feature_qubits(self):
+        return self.qubits[-1:]
+
+    @property
+    def feature_wires(self):
+        return Wires.all_wires(self.feature_qubits)
 
     def c2q(self, psi_in):
         return Initialize(psi_in, self.main_wires[::-1], pad_with=0, normalize=True)
@@ -51,12 +63,11 @@ class ConvolutionAnsatz(Ansatz):
         return parity(result)
 
     def circuit(self, params: Parameters) -> Wires:
-        n_params = np.prod(self.filter_shape)
-
         # Convolution layers
         for i in range(self.num_layers):
+            n_params = self.num_features * self._num_theta
             conv_params, params = params[:n_params], params[n_params:]
-            conv_params = conv_params.reshape(self.filter_shape)
+            # conv_params = conv_params.reshape(self.filter_shape)
 
             qubits = (
                 self.main_qubits
@@ -66,48 +77,53 @@ class ConvolutionAnsatz(Ansatz):
                 ]
             )
 
-            Convolution(conv_params, qubits)
+            Convolution.shift(self.filter_shape_qubits, qubits)
+
+            ### FILTER
+            wires = [q[:fsq] for q, fsq in zip(qubits, self.filter_shape_qubits)]
+            wires = Wires.all_wires(wires)
+
+            shape = (self.num_features, len(conv_params) // self.num_features)
+            conv_params = conv_params.reshape(shape)
+
+            idx = lambda x: 2 ** (len(wires) - x) * (2**x - 1)
+            for j, wire in enumerate(wires):
+                theta = [p[idx(j) : idx(j + 1)] for p in conv_params]
+
+                hyperparameters = {
+                    "control_wires": wires[j + 1 :],
+                    "op": qml.RY,
+                }
+
+                Multiplex(
+                    theta,
+                    wires=wire,
+                    control_wires=self.feature_wires,
+                    op=Multiplex,
+                    hyperparameters=hyperparameters,
+                )
+
+            Convolution.permute(self.filter_shape_qubits, qubits)
 
         # Fully connected layer
-        # self.U_fully_connected(params, self.wires)
+        self.U_fully_connected(params, self.wires)
 
-        return Wires.all_wires(
-            [
-                1,
-                2,
-                3,
-                4,
-                5,
-                6,
-                7,
-                8,
-                10,
-                11,
-                12,
-                13,
-                14,
-                15,
-                16,
-                17,
-                18,
-                19,
-                20,
-                21,
-            ][::-1]
-        )
-
-        return self.wires[::-1]
+        return self.wires
 
     @property
     def shape(self) -> int:
-        n_params = self.num_layers * np.prod(self.filter_shape)
-        # n_params += self.U_fully_connected.shape(self.wires)
+        n_params = self.num_layers * self.num_features * self._num_theta
+        n_params += self.U_fully_connected.shape(self.wires)
 
         return n_params
 
     @property
     def max_layers(self) -> int:
         return self.min_dim
+
+    @property
+    def _num_theta(self) -> int:
+        return np.prod(self.filter_shape) - 1
 
     @classmethod
     def from_dims(cls, *args, **kwargs):
@@ -121,7 +137,9 @@ class ConvolutionAnsatz(Ansatz):
                 ancilla_qubits += [list(range(top, top + fsq))]
                 top += fsq
 
-        self.qubits = self.qubits + ancilla_qubits
+        feature_qubits = [list(range(top, top + to_qubits(self.num_features)))]
+
+        self.qubits = self.qubits + ancilla_qubits + feature_qubits
         self._params = init_params(self.shape)
 
         return self

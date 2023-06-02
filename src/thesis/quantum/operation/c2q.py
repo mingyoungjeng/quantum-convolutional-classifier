@@ -60,10 +60,13 @@ class C2Q(Operation):
 
         # Flatten and normalize input state (params)
         # TODO: this has issues with PyTorch
-        params = flatten_array(params, pad=True)
-        params, magnitude = normalize(params, include_magnitude=True)
-        if magnitude != 1:
-            print(f"C2Q parameters were not normalized ({magnitude=}).")
+        import torch
+
+        with torch.no_grad():
+            params = flatten_array(params, pad=True)
+            params, magnitude = normalize(params, include_magnitude=True)
+            if magnitude != 1:
+                print(f"C2Q parameters were not normalized ({magnitude=}).")
 
         # Loop setup
         params = list(enumerate(C2Q.get_params(params)))
@@ -73,18 +76,16 @@ class C2Q(Operation):
         # Main C2Q operation
         op_list = []
         for j, (theta, phi, _, t) in params:
-            wires_j = wires[j + 1 :] + wires[j : j + 1]
-
             if transpose:
                 theta = -theta
                 phi, t = -t, -phi
 
             if t.any():
-                op_list += [Multiplex(-t, wires_j, qml.RZ)]
+                op_list += [Multiplex(-t, wires[j], wires[j + 1 :], qml.RZ)]
 
-            op_list += [Multiplex(theta, wires_j, qml.RY)]
+            op_list += [Multiplex(theta, wires[j], wires[j + 1 :], qml.RY)]
 
             if phi.any():
-                op_list += [Multiplex(phi, wires_j, qml.RZ)]
+                op_list += [Multiplex(phi, wires[j], wires[j + 1 :], qml.RZ)]
 
         return op_list

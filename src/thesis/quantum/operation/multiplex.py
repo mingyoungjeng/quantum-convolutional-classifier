@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 from pennylane.ops import Controlled
@@ -9,7 +8,7 @@ from pennylane.ops import Controlled
 from thesis.quantum import binary
 
 if TYPE_CHECKING:
-    from typing import Iterable
+    from typing import Iterable, Optional, Mapping
 
 
 class Multiplex(Operation):
@@ -19,31 +18,45 @@ class Multiplex(Operation):
         self,
         params,
         wires: Wires,
+        control_wires: Optional[Wires] = None,
         op: type[Operation] = Operation,
+        hyperparameters: Optional[Mapping] = None,
         do_queue=True,
         id=None,
     ):
-        self._hyperparameters = {"op": op}
+        wires = Wires(wires)
+        control_wires = [] if control_wires is None else Wires(control_wires)
 
-        super().__init__(params, wires=wires, do_queue=do_queue, id=id)
+        self._hyperparameters = {
+            "control_wires": control_wires,
+            "op": op,
+            "hyperparameters": {} if hyperparameters is None else hyperparameters,
+        }
+
+        if len(control_wires) > 0:
+            wires = control_wires + wires
+
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def compute_decomposition(
         *params: Iterable, wires: Wires, **hyperparameters
     ) -> Iterable[Operation]:
         # Keep the type-checker happy
-        (params,) = params
+        ctrls: Optional[Wires] = hyperparameters["control_wires"]
         op: type[Operation] = hyperparameters["op"]
-
-        ctrls, wires = wires[: -op.num_wires], wires[-op.num_wires :]
+        hyperparameters: Mapping = hyperparameters["hyperparameters"]
 
         if len(ctrls) == 0:
-            return [op(params[0], wires)]
-        else:
-            return [
-                Controlled(op(param, wires), ctrls, binary(i, len(ctrls))[::-1])
-                for i, param in enumerate(params)
-            ]
+            return [op(params[0], wires, **hyperparameters)]
+
+        wires = wires[len(ctrls) :]
+        return [
+            Controlled(
+                op(param, wires, **hyperparameters), ctrls, binary(i, len(ctrls))[::-1]
+            )
+            for i, param in enumerate(params)
+        ]
 
     def adjoint(self) -> Operation:
         return Multiplex(self.hyperparameters["op"], -self.parameters, self.wires)

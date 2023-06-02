@@ -1,6 +1,5 @@
 from __future__ import annotations
-from numbers import Number
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING
 
 import numpy as np
 from pennylane.wires import Wires
@@ -8,15 +7,17 @@ from pennylane.templates import AmplitudeEmbedding as Initialize
 
 from thesis.quantum import to_qubits, parity
 from thesis.quantum.operation.ansatz import Ansatz
+from thesis.quantum.operation import Convolution
 from thesis.quantum.operation.ansatz.fully_connected import FullyConnectedLayer
 from thesis.ml.optimize import init_params
 
 import pennylane as qml
-from thesis.quantum.operation import Shift, Multiplex
+from thesis.quantum.operation import Multiplex
 
 if TYPE_CHECKING:
     from typing import Iterable
-    from thesis.quantum.operation import Unitary, Parameters, Qubits
+    from numbers import Number
+    from thesis.quantum.operation import Unitary, Parameters
 
 
 class ConvolutionAnsatz(Ansatz):
@@ -68,46 +69,24 @@ class ConvolutionAnsatz(Ansatz):
                 ]
             )
 
-            # Convolution(conv_params, qubits)
-            self.convolution(conv_params, qubits)
+            Convolution.shift(self.filter_shape_qubits, qubits)
+
+            ### FILTER
+            wires = [q[:fsq] for q, fsq in zip(qubits, self.filter_shape_qubits)]
+            wires = Wires.all_wires(wires)
+
+            idx = lambda x: 2 ** (len(wires) - x) * (2**x - 1)
+            for j, wire in enumerate(wires):
+                theta = conv_params[idx(j) : idx(j + 1)]
+
+                Multiplex(theta, wire, wires[j + 1 :], qml.RY)
+
+            Convolution.permute(self.filter_shape_qubits, qubits)
 
         # Fully connected layer
         self.U_fully_connected(params, self.wires)
 
         return self.wires
-
-    def convolution(self, params, qubits):
-        ### SHIFT
-        for i, fsq in enumerate(self.filter_shape_qubits):
-            filter_wires = qubits[i]
-            ancilla_wires = qubits[i - len(self.filter_shape_qubits)][:fsq]
-
-            # Apply Hadamard to ancilla wires
-            for aq in ancilla_wires:
-                qml.Hadamard(aq)
-
-            # Shift operation
-            for j, control in enumerate(ancilla_wires):
-                qml.ctrl(Shift, control)(-self.stride, wires=filter_wires[j:])
-
-        ### FILTER
-        wires = [q[:fsq] for q, fsq in zip(qubits, self.filter_shape_qubits)]
-        wires = Wires.all_wires(wires)
-
-        idx = lambda x: 2 ** (len(wires) - x) * (2**x - 1)
-        for j in range(len(wires)):
-            theta = params[idx(j) : idx(j + 1)]
-            wires_j = wires[j + 1 :] + wires[j : j + 1]
-
-            Multiplex(theta, wires_j, qml.RY)
-
-        ### PERMUTE
-        for i, fsq in enumerate(self.filter_shape_qubits):
-            filter_wires = qubits[i][:fsq]
-            ancilla_wires = qubits[i - len(self.filter_shape_qubits)][:fsq]
-
-            for f, a in zip(filter_wires, ancilla_wires):
-                qml.SWAP((f, a))
 
     @property
     def shape(self) -> int:
