@@ -3,29 +3,26 @@ from typing import TYPE_CHECKING
 
 from attrs import define, field
 
-import torch
-import torch.nn.functional as F
 import pennylane as qml
 
 from thesis.quantum.operation.ansatz import Ansatz
 from thesis.ml.model import Model
-from thesis.ml.ml import create_tensor
 
 if TYPE_CHECKING:
-    from torch import Tensor
+    pass
 
 
 @define
 class QCNN(Model):
     ansatz: Ansatz = field(init=False)
 
-    def __call__(self, ansatz: type[Ansatz], *args, **kwargs):
+    def __call__(self, ansatz: type[Ansatz], *args, silent=False, **kwargs):
         self.ansatz = ansatz.from_dims(*args, **kwargs)
-        return super().__call__(self.ansatz)
+        return super().__call__(self.ansatz, silent=silent)
 
-    def draw(self, include_axis: bool = False):
+    def draw(self, include_axis: bool = False, decompose: bool = False):
         plot = super().draw(include_axis=True)
-        circuit = qml.draw_mpl(self.ansatz.qnode)()
+        circuit = self.ansatz.draw(include_axis=include_axis, decompose=decompose)
 
         fig, ax = zip(plot, circuit)
         return fig, ax if include_axis else fig

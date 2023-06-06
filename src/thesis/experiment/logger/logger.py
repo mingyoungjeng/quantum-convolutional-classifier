@@ -55,6 +55,12 @@ class Logger:
             msg = row.select(row.columns[1:]).to_dicts()[0]
             self.logger.info(msg)
 
+    def info(self, msg: str, silent: bool = False) -> None:
+        if silent:
+            return
+
+        self.logger.info(msg)
+
     def save(self, filename: Optional[Path] = None, overwrite=True) -> None:
         if filename is None:
             filename = Path(f"{self.name}.csv")

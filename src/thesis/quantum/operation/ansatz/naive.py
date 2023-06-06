@@ -3,6 +3,7 @@ import pennylane as qml
 from pennylane.operation import Operation
 from thesis.quantum.operation.ansatz import Ansatz
 from thesis.quantum.operation.ansatz.fully_connected import FullyConnectedLayer
+from thesis.quantum import parity
 
 
 class NaiveAnsatz(Ansatz):
@@ -29,6 +30,11 @@ class NaiveAnsatz(Ansatz):
             qml.Rot(theta, phi, delta, wires=wire)
 
         return self.wires
+
+    def post_processing(self, result):
+        result = super().post_processing(result)
+
+        return parity(result)
 
     @property
     def shape(self):

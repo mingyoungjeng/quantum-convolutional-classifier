@@ -29,7 +29,7 @@ class Experiment:
             if not isinstance(value.logger, Logger):
                 raise TypeError("Logger bad")
         else:
-            raise TypeError("No Logger")
+            raise AttributeError("No Logger")
 
     def __call__(self, *args, fn: Optional[Callable] = None, **kwargs):
         if fn is None:

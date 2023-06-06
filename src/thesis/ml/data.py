@@ -74,7 +74,7 @@ def image_transform(dims: Iterable[int], fix_bands=True, flatten=True, norm=True
         ops += [transforms.Lambda(lambda x: np.moveaxis(np.squeeze(x).numpy(), 0, -1))]
 
     if flatten:
-        ops += [transforms.Lambda(lambda x: flatten_array(x, pad=True))]
+        ops += [transforms.Lambda(lambda x: flatten_array(x.numpy(), pad=True))]
 
     if norm:
         ops += [transforms.Lambda(lambda x: normalize(x))]

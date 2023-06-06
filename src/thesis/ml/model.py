@@ -27,17 +27,17 @@ class Model:
         self.logger.log(cost, silent=True)
         return cost
 
-    def __call__(self, model: Module, params=None):
+    def __call__(self, model: Module, params=None, silent=False):
         # Load dataset
         training_dataloader, testing_dataloader = self.data.load()
 
         opt = self.optimizer(model.parameters() if params is None else params)
-        self.logger.logger.info(f"Number of Parameters: {opt.num_parameters}")
+        self.logger.info(f"Number of Parameters: {opt.num_parameters}", silent=silent)
 
         parameters = train(model, opt, training_dataloader, self._cost, self.epoch)
 
         accuracy = test(model, testing_dataloader, parameters)
-        self.logger.logger.info(f"Accuracy: {accuracy:.03%}")
+        self.logger.info(f"Accuracy: {accuracy:.03%}", silent=silent)
 
         return accuracy
 

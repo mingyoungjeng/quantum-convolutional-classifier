@@ -5,6 +5,7 @@ import pennylane as qml
 # from pennylane.templates import BasicEntanglerLayers
 from thesis.quantum.operation.ansatz import Ansatz
 from thesis.quantum.operation import Unitary
+from thesis.quantum import parity
 
 
 class FullyConnectedLayer(Unitary):
@@ -45,6 +46,11 @@ class FullyConnectedAnsatz(Ansatz):
             self.layer(p, wires=self.wires)
 
         return self.wires
+
+    def post_processing(self, result):
+        result = super().post_processing(result)
+
+        return parity(result)
 
     @property
     def shape(self):

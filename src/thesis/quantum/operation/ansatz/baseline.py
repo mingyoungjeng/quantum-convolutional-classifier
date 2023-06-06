@@ -10,7 +10,7 @@ from thesis.quantum.operation import Unitary
 from thesis.quantum.operation.ansatz import Ansatz
 
 
-class BaselineConvolution(Unitary):
+class BaselineFiltering(Unitary):
     @staticmethod
     def compute_decomposition(params, wires, **_):
         return [
@@ -74,7 +74,7 @@ class BaselinePooling3(Unitary):
 
 # TODO: work with num_classes > 2
 class BaselineAnsatz(Ansatz):
-    convolve: type[Operation] = BaselineConvolution
+    convolve: type[Operation] = BaselineFiltering
     pool: type[Operation] = BaselinePooling1
 
     @classmethod

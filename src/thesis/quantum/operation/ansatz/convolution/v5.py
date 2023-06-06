@@ -10,6 +10,8 @@ from thesis.quantum.operation.ansatz.convolution.test import ConvolutionAnsatz a
 from thesis.quantum import to_qubits
 from thesis.quantum.operation import Convolution
 from thesis.ml.optimize import init_params
+from thesis.quantum.operation.ansatz.basic import BasicFiltering
+from thesis.quantum.operation.ansatz.simple import SimpleFiltering
 
 import pennylane as qml
 from thesis.quantum.operation import Multiplex
@@ -21,8 +23,9 @@ if TYPE_CHECKING:
 
 class ConvolutionAnsatz(Base):
     __slots__ = "_feature_qubits"
-
-    num_features = 4
+    U_filter = BasicFiltering
+    U_fully_connected = SimpleFiltering
+    num_features = 1
 
     def __init__(self, qubits, num_layers=None):
         Module.__init__(self)
@@ -35,12 +38,6 @@ class ConvolutionAnsatz(Base):
         top = self.num_wires
         self.feature_qubits = [list(range(top, top + to_qubits(self.num_features)))]
         top += to_qubits(self.num_features)
-
-        # Add ancilla qubits
-        for _ in range(self.num_layers):
-            for fsq in self.filter_shape_qubits:
-                self.ancilla_qubits += [list(range(top, top + fsq))]
-                top += fsq
 
         self._params = init_params(self.shape)
 
@@ -63,21 +60,24 @@ class ConvolutionAnsatz(Base):
         return Wires.all_wires(self.feature_qubits)
 
     def circuit(self, params: Parameters) -> Wires:
+        n_dim = len(self.main_qubits)
+        main_qubits = self.main_qubits
+        main_qubits += [[] for _ in range(len(self.filter_shape))]
+
+        # Setup ancilla qubits
+        for i, fsq in enumerate(self.filter_shape_qubits):
+            self.ancilla_qubits += [main_qubits[i][:fsq]]
+            main_qubits[i] = main_qubits[i][fsq:]
+
         # Convolution layers
         for i in range(self.num_layers):
             n_params = self.num_features * self._num_theta
             conv_params, params = params[:n_params], params[n_params:]
             # conv_params = conv_params.reshape(self.filter_shape)
 
-            qubits = (
-                self.main_qubits
-                + self.ancilla_qubits[
-                    len(self.filter_shape) * i : len(self.filter_shape) * i
-                    + len(self.filter_shape)
-                ]
-            )
+            qubits = main_qubits + self.ancilla_qubits
 
-            Convolution.shift(self.filter_shape_qubits, qubits)
+            Convolution.shift(self.filter_shape_qubits, qubits, H=False)
 
             ### FILTER
             wires = [q[:fsq] for q, fsq in zip(qubits, self.filter_shape_qubits)]
@@ -86,35 +86,47 @@ class ConvolutionAnsatz(Base):
             shape = (self.num_features, len(conv_params) // self.num_features)
             conv_params = conv_params.reshape(shape)
 
-            idx = lambda x: 2 ** (len(wires) - x) * (2**x - 1)
-            for j, wire in enumerate(wires):
-                theta = [p[idx(j) : idx(j + 1)] for p in conv_params]
+            Multiplex(conv_params, wires, self.feature_wires, self.U_filter)
 
-                hyperparameters = {
-                    "control_wires": wires[j + 1 :],
-                    "op": qml.RY,
-                }
+            # idx = lambda x: 2 ** (len(wires) - x) * (2**x - 1)
+            # for j, wire in enumerate(wires):
+            #     theta = [p[idx(j) : idx(j + 1)] for p in conv_params]
 
-                Multiplex(theta, wire, self.feature_wires, Multiplex, hyperparameters)
+            #     hyperparameters = {
+            #         "control_wires": wires[j + 1 :],
+            #         "op": qml.RY,
+            #     }
 
-            Convolution.permute(self.filter_shape_qubits, qubits)
+            #     Multiplex(theta, wire, self.feature_wires, Multiplex, hyperparameters)
+
+            ### PERMUTE
+            # Convolution.permute(self.filter_shape_qubits, qubits)
+            for i, fsq in enumerate(self.filter_shape_qubits):
+                main_qubits[n_dim + i] += main_qubits[i][:fsq]
+                main_qubits[i] = main_qubits[i][fsq:]
 
         # Fully connected layer
-        self.U_fully_connected(params, self.wires)
+        meas = main_qubits[:n_dim] + self.feature_qubits + main_qubits[n_dim:]
+        meas = Wires.all_wires(meas)
+        self.U_fully_connected(params, meas)
 
-        return self.wires[::-1]
+        return meas[::-1]
+        # return self.wires[::-1]
 
     @property
     def shape(self) -> int:
         n_params = self.num_layers * self.num_features * self._num_theta
-        n_params += self.U_fully_connected.shape(self.wires)
+
+        n_meas = self.num_wires - sum(self.filter_shape_qubits)
+        n_params += self.U_fully_connected.shape(range(n_meas))
 
         return n_params
 
     @property
     def max_layers(self) -> int:
-        return self.min_dim
+        return self.min_dim - 1
 
     @property
     def _num_theta(self) -> int:
-        return np.prod(self.filter_shape) - 1
+        return self.U_filter.shape(range(sum(self.filter_shape_qubits)))
+        # return np.prod(self.filter_shape) - 1

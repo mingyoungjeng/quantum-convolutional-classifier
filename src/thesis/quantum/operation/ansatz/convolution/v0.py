@@ -1,24 +1,23 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from attrs import define
 import pennylane as qml
 from pennylane.wires import Wires
-from thesis.quantum import to_qubits
+from thesis.quantum import to_qubits, parity
 from thesis.quantum.operation import Shift
 from thesis.quantum.operation.ansatz import Ansatz
-from thesis.quantum.operation.ansatz.basic import BasicConvolution
-from thesis.quantum.operation.ansatz.simple import SimpleConvolution
+from thesis.quantum.operation.ansatz.basic import BasicFiltering
+from thesis.quantum.operation.ansatz.simple import SimpleFiltering
 
 if TYPE_CHECKING:
     from typing import Iterable
+    from numbers import Number
     from thesis.quantum.operation import Unitary, Parameters, Qubits
 
 
-@define(frozen=True)
 class ConvolutionAnsatz(Ansatz):
-    U_filter: Unitary = BasicConvolution
-    U_fully_connected: Unitary = SimpleConvolution
+    U_filter: Unitary = BasicFiltering
+    U_fully_connected: Unitary = SimpleFiltering
     filter_shape: Iterable[int] = (2, 2)
     stride: int = 1
 
@@ -69,7 +68,12 @@ class ConvolutionAnsatz(Ansatz):
         # Fully connected layer
         self.U_fully_connected(params, wires)
 
-        return wires
+        return wires[::-1]
+
+    def post_processing(self, result) -> Iterable[Iterable[Number]]:
+        result = super().post_processing(result)
+
+        return parity(result)
 
     @property
     def shape(self) -> int:

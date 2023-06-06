@@ -32,15 +32,17 @@ def is_multidimensional(wires: Qubits):
 class Ansatz(Module, ABC):
     __slots__ = "_qubits", "_num_layers", "_params"
 
-    def __init__(self, qubits, num_layers=None):
+    def __init__(self, qubits, num_layers: int = 1):
         super().__init__()
         self.qubits = qubits
-        self.num_layers = self.max_layers if num_layers is None else num_layers
+        self.num_layers = num_layers
         self._params = init_params(self.shape)
+
+    # Main properties
 
     @property
     def qubits(self) -> Iterable[Iterable[int]]:
-        return self._qubits
+        return self._qubits.copy()
 
     @qubits.setter
     def qubits(self, q) -> None:
@@ -87,6 +89,23 @@ class Ansatz(Module, ABC):
     def min_dim(self) -> int:
         return min(self.num_qubits)
 
+    # Abstract methods
+
+    @abstractmethod
+    def circuit(self, params: Parameters) -> Wires:
+        pass
+
+    @property
+    @abstractmethod
+    def shape(self) -> int:
+        # TODO: for now, parameters are set using self.shape(), but want to change that
+        pass
+
+    @property
+    @abstractmethod
+    def max_layers(self) -> int:
+        pass
+
     # Circuit operation
 
     def c2q(self, psi_in: Statevector) -> Operation:
@@ -117,22 +136,14 @@ class Ansatz(Module, ABC):
 
         return self.post_processing(result)
 
-    # Abstract methods
+    # Miscellaneous
 
-    @abstractmethod
-    def circuit(self, params: Parameters) -> Wires:
-        pass
+    def draw(self, include_axis: bool = False, decompose: bool = False):
+        fig, ax = qml.draw_mpl(
+            self.qnode, expansion_strategy="device" if decompose else "gradient"
+        )()
 
-    @property
-    @abstractmethod
-    def shape(self) -> int:
-        # TODO: for now, parameters are set using self.shape(), but want to change that
-        pass
-
-    @property
-    @abstractmethod
-    def max_layers(self) -> int:
-        pass
+        return fig, ax if include_axis else fig
 
     # Instance factories
 

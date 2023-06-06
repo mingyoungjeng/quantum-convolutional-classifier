@@ -53,10 +53,11 @@ def random_data(
 
 def pad_array(arr: np.ndarray):
     new_dims = 2 ** to_qubits(arr.shape)
-    n_pad = list(zip([0] * arr.ndim, new_dims - arr.shape))
+    n_pad = new_dims - arr.shape
 
-    # TODO: don't pad if not needed
-    arr = np.pad(arr, n_pad, "constant", constant_values=0)
+    if n_pad.any():  # Don't pad if you don't need to
+        n_pad = list(zip([0] * arr.ndim, n_pad))
+        arr = np.pad(arr, n_pad, "constant", constant_values=0)
 
     return arr
 
@@ -64,7 +65,7 @@ def pad_array(arr: np.ndarray):
 def flatten_array(arr: np.ndarray, pad: bool = False):
     if pad:
         arr = pad_array(arr)
-    psi = arr.ravel(order="F")
+    psi = arr.T.ravel()  # == arr.ravel(order="F") # but PyTorch compatible
 
     return psi
 

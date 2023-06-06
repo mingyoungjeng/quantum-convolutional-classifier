@@ -7,12 +7,13 @@ import pennylane as qml
 from pennylane.operation import Operation
 from thesis.quantum.operation.ansatz import Ansatz
 from thesis.quantum.operation import Unitary
+from thesis.quantum import parity
 
 if TYPE_CHECKING:
     from pennylane.wires import Wires
 
 
-class BasicConvolution(Unitary):
+class BasicFiltering(Unitary):
     @staticmethod
     def compute_decomposition(params, wires, **_):
         op_list = []
@@ -44,8 +45,8 @@ class BasicPooling(Unitary):
     @staticmethod
     def compute_decomposition(params, wires, **_):
         wires, ctrl, *_ = np.split(wires, [-1])
-        # return [qml.cond(qml.measure(ctrl) == 0, SimpleConvolution)(params, wires)]
-        return qml.ctrl(BasicConvolution, ctrl)(params, wires)
+        # return [qml.cond(qml.measure(ctrl) == 0, SimpleFiltering)(params, wires)]
+        return qml.ctrl(BasicFiltering, ctrl)(params, wires)
 
     @staticmethod
     def _shape(wires: Wires) -> int:
@@ -54,9 +55,9 @@ class BasicPooling(Unitary):
 
 class BasicAnsatz(Ansatz):
     num_classes: int = 2
-    convolve: type[Operation] = BasicConvolution
+    convolve: type[Operation] = BasicFiltering
     pool: type[Operation] = BasicPooling
-    fully_connected: type[Operation] = BasicConvolution
+    fully_connected: type[Operation] = BasicFiltering
 
     def circuit(self, params):
         max_wires = np.cumsum(self.num_qubits)
@@ -95,6 +96,11 @@ class BasicAnsatz(Ansatz):
         # Return the minimum required number of qubits to measure in order
         # return np.sort(meas[: int(np.ceil(np.log2(num_classes)))])
         return np.sort(meas)
+
+    def post_processing(self, result):
+        result = super().post_processing(result)
+
+        return parity(result)
 
     @property
     def shape(self):

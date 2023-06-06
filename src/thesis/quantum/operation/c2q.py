@@ -48,6 +48,7 @@ class C2Q(Operation):
 
             yield theta, phi, r, t
 
+    # TODO: this has issues with PyTorch
     @staticmethod
     def compute_decomposition(
         *params: Iterable,
@@ -59,14 +60,10 @@ class C2Q(Operation):
         transpose = hyperparameters["transpose"]
 
         # Flatten and normalize input state (params)
-        # TODO: this has issues with PyTorch
-        import torch
-
-        with torch.no_grad():
-            params = flatten_array(params, pad=True)
-            params, magnitude = normalize(params, include_magnitude=True)
-            if magnitude != 1:
-                print(f"C2Q parameters were not normalized ({magnitude=}).")
+        params = flatten_array(params, pad=True)
+        params, magnitude = normalize(params, include_magnitude=True)
+        if magnitude != 1:
+            print(f"C2Q parameters were not normalized ({magnitude=}).")
 
         # Loop setup
         params = list(enumerate(C2Q.get_params(params)))

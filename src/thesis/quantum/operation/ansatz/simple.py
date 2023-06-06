@@ -1,13 +1,14 @@
-from attrs import define
 from itertools import tee
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.ops import Controlled
 from thesis.quantum.operation.ansatz import Ansatz
 from thesis.quantum.operation import Unitary
+from thesis.quantum import parity
 
 
-class SimpleConvolution(Unitary):
+class SimpleFiltering(Unitary):
     @staticmethod
     def compute_decomposition(params, wires, **_):
         op_list = []
@@ -28,17 +29,46 @@ class SimpleConvolution(Unitary):
         # Second Rot layer
         op_list += [qml.Rot(*params2, wires=wire) for wire in wires]
 
+        return op_list
+
     @staticmethod
     def _shape(*_) -> int:
         return 6
+
+
+class SimpleFiltering2(Unitary):
+    @staticmethod
+    def compute_decomposition(params, wires, **_):
+        op_list = []
+
+        # # First Rot layer
+        # op_list += [qml.Rot(*params1, wires=wire) for wire in wires]
+
+        # CNOT gates
+        control, target = tee(wires)
+        first = next(target, None)
+        op_list += [qml.CNOT(wires=cnot_wires) for cnot_wires in zip(control, target)]
+
+        # Final CNOT gate (last to first)
+        if len(wires) > 1:
+            op_list += [qml.CNOT(wires=(wires[-1], first))]
+
+        # Second Rot layer
+        op_list += [qml.Rot(*params, wires=wire) for wire in wires]
+
+        return op_list
+
+    @staticmethod
+    def _shape(*_) -> int:
+        return 3
 
 
 class SimplePooling(Unitary):
     @staticmethod
     def compute_decomposition(params, wires, **_):
         wires, ctrl, *_ = np.split(wires, [-1])
-        # return [qml.cond(qml.measure(ctrl) == 0, SimpleConvolution)(params, wires)]
-        return qml.ctrl(SimpleConvolution, ctrl)(params, wires)
+
+        return [Controlled(SimpleFiltering(params, wires), ctrl)]
 
     @staticmethod
     def _shape(*_) -> int:
@@ -47,9 +77,9 @@ class SimplePooling(Unitary):
 
 class SimpleAnsatz(Ansatz):
     num_classes: int = 2
-    convolve: type[Operation] = SimpleConvolution
+    convolve: type[Operation] = SimpleFiltering
     pool: type[Operation] = SimplePooling
-    fully_connected: type[Operation] = SimpleConvolution
+    fully_connected: type[Operation] = SimpleFiltering
 
     def circuit(self, params):
         max_wires = np.cumsum(self.num_qubits)
@@ -84,6 +114,11 @@ class SimpleAnsatz(Ansatz):
         # Return the minimum required number of qubits to measure in order
         # return np.sort(meas[: int(np.ceil(np.log2(num_classes)))])
         return np.sort(meas)
+
+    def post_processing(self, result):
+        result = super().post_processing(result)
+
+        return parity(result)
 
     @property
     def shape(self):

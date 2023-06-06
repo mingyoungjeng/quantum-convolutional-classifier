@@ -61,7 +61,7 @@ class Convolution(Operation):
     #     return self.hyperparameters["dilation"]
 
     @staticmethod
-    def shift(filter_shape_q, qubits, stride=1):
+    def shift(filter_shape_q, qubits, stride=1, H=True):
         op_list = []
 
         for i, fsq in enumerate(filter_shape_q):
@@ -69,7 +69,8 @@ class Convolution(Operation):
             ancilla_wires = qubits[i - len(filter_shape_q)][:fsq]
 
             # Apply Hadamard to ancilla wires
-            op_list += [qml.Hadamard(aq) for aq in ancilla_wires]
+            if H:
+                op_list += [qml.Hadamard(aq) for aq in ancilla_wires]
 
             # Shift operation
             op_list += [
