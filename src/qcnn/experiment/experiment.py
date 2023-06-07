@@ -68,7 +68,7 @@ class Experiment:
     def aggregate(name: str, op: str):
         regex = f"^{name}_[0-9]+$"
         fn = getattr(pl.element(), op)
-        expr = pl.concat_list(pl.col(regex)).arr.eval(fn()).arr.first()
+        expr = pl.concat_list(pl.col(regex)).list.eval(fn()).list.first()
 
         return expr.alias(f"{name}_{op}")
 
