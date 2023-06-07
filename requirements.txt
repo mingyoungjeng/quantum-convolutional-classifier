@@ -1,8 +1,0 @@
-attrs
-PennyLane
-qiskit
-torch
-torchvision
-Pillow
-astropy
-polars
