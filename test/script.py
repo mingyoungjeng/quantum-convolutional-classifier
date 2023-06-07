@@ -13,7 +13,7 @@ from qcnn.cnn import CNN
 from pathlib import Path
 from qcnn.file import save_dataframe_as_csv
 
-# from thesis.quantum.operation.ansatz.convolution.v5 import ConvolutionAnsatz as A
+# from qcnn.quantum.operation.ansatz.convolution.v5 import ConvolutionAnsatz as A
 from qcnn.quantum.operation.ansatz import BaselineAnsatz as A
 
 if __name__ is "__main__":
