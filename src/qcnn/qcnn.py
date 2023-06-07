@@ -25,4 +25,4 @@ class QCNN(Model):
         circuit = self.ansatz.draw(include_axis=include_axis, decompose=decompose)
 
         fig, ax = zip(plot, circuit)
-        return fig, ax if include_axis else fig
+        return (fig, ax) if include_axis else fig

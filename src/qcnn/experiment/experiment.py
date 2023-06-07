@@ -85,4 +85,4 @@ class Experiment:
             subplots += [(fig, ax)]
 
         figs, axes = zip(*subplots)
-        return figs, axes if include_axis else figs
+        return (figs, axes) if include_axis else figs

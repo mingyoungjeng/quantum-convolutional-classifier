@@ -61,7 +61,7 @@ class Model:
         ax.set_xlabel("Iteration")
         ax.set_ylabel("Cost")
 
-        return fig, ax if include_axis else fig
+        return (fig, ax) if include_axis else fig
 
     def save(self, filename: Optional[Path] = None):
         # TODO: Save loss history

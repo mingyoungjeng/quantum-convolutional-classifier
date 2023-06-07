@@ -143,7 +143,7 @@ class Ansatz(Module, ABC):
             self.qnode, expansion_strategy="device" if decompose else "gradient"
         )()
 
-        return fig, ax if include_axis else fig
+        return (fig, ax) if include_axis else fig
 
     # Instance factories
 
