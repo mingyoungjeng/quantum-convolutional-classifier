@@ -1,13 +1,17 @@
+# General
+
 .DS_Store
 .env/*
 **/.ipynb_checkpoint/*
 **/data/*
 **/__pycache__/*
 *.pyc
-test/pennylane/qcnn/result/*
-test/**/*.png
 **/*.egg-info
 **/*.csv
+
+# Testing
+test/pennylane/qcnn/result/*
+test/**/*.png
 
 # LATEX
 *.aux 
