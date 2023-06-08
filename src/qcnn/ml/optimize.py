@@ -113,6 +113,8 @@ def test(
 ):
     correct = total = 0
     for data, labels in testing_dataloader:
+        if USE_CUDA:
+            data, labels = data.cuda(), labels.cuda()
         predictions = fn(data) if params is None else fn(data, params)
         predictions = torch.argmax(predictions, 1)
         correct += torch.count_nonzero(predictions == labels).numpy()
