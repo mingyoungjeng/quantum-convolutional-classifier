@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Iterable
 from numbers import Number
 import torch
 from torch import optim
-from qcnn.ml import create_tensor
+from qcnn.ml import create_tensor, USE_CUDA
 
 if TYPE_CHECKING:
     from typing import Callable, Optional
@@ -74,8 +74,8 @@ def init_params(size):
 
 
 def backpropagate(
-    predictions: Iterable[Number],
-    labels: Iterable[Number],
+    predictions: torch.Tensor,
+    labels: torch.Tensor,
     optimizer: optim.Optimizer,
     cost_fn: Callable,
 ):
@@ -97,6 +97,8 @@ def train(
 ):
     for i in range(epoch):
         for j, (data, labels) in enumerate(training_dataloader):
+            if USE_CUDA:
+                data, labels = data.cuda(), labels.cuda()
             predictions = fn(data) if params is None else fn(data, params)
             backpropagate(predictions, labels, optimizer, cost_fn)
 

@@ -1,7 +1,7 @@
 from torchvision.datasets import MNIST, FashionMNIST, CIFAR10
 from torch.optim import SGD, Adam
 from torch.nn import CrossEntropyLoss, MSELoss
-from pennylane import NesterovMomentumOptimizer
+# from pennylane import NesterovMomentumOptimizer
 from qcnn.qcnn import QCNN
 
 from qcnn.ml.data import BinaryData
@@ -16,7 +16,7 @@ from qcnn.file import save_dataframe_as_csv
 # from qcnn.quantum.operation.ansatz.convolution.v5 import ConvolutionAnsatz as A
 from qcnn.quantum.operation.ansatz import BaselineAnsatz as A
 
-if __name__ is "__main__":
+if __name__ == "__main__":
     # dims = (16, 16), (28, 28), (32, 32)
     num_trials = 10
 
