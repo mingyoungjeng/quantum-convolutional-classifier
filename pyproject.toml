@@ -17,3 +17,6 @@ dependencies = [
     "polars>=0.18",
     "matplotlib",
 ]
+
+[project.optional-dependencies]
+development = ["black", "pylint"]
