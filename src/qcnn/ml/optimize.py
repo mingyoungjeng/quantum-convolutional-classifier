@@ -115,7 +115,7 @@ def test(
     for data, labels in testing_dataloader:
         predictions = fn(data) if params is None else fn(data, params)
         predictions = torch.argmax(predictions, 1)
-        correct += torch.count_nonzero(predictions == labels).numpy()
+        correct += torch.count_nonzero(predictions == labels)
         total += len(data)
 
     return correct / total
