@@ -50,10 +50,8 @@ if __name__ == "__main__":
     # Run experiment
     experiment = Experiment(model, num_trials, results_schema=["accuracy"])
 
-    if is_quantum:
-        results = experiment(Ansatz, dims, silent=silent, num_layers=num_layers)
-    else:
-        results = experiment(dims, num_layers, silent=silent)
+    args = (Ansatz,) if is_quantum else ()
+    results = experiment(*args, dims, num_layers=num_layers, silent=silent)
 
     # Save and print accuracy results
     save_dataframe_as_csv(path.with_suffix(".csv"), results)
