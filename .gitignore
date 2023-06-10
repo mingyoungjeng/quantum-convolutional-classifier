@@ -8,6 +8,7 @@
 *.pyc
 **/*.egg-info
 **/*.csv
+**/*.log
 
 # Testing
 test/pennylane/qcnn/result/*

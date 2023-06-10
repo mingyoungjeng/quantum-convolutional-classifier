@@ -25,9 +25,9 @@ if TYPE_CHECKING:
 
 class ConvolutionAnsatz(Base):
     __slots__ = "_feature_qubits"
-    U_filter = ConvolutionComplexAngleFilter
-    U_fully_connected = BasicFiltering
-    num_features = 1
+    U_filter = BasicFiltering
+    U_fully_connected = BasicFiltering2
+    num_features = 4
 
     def __init__(self, qubits, num_layers=None, measure_all=True):
         Module.__init__(self)
@@ -61,6 +61,15 @@ class ConvolutionAnsatz(Base):
     @property
     def feature_wires(self):
         return Wires.all_wires(self.feature_qubits)
+    
+    def _filter(self, qubits, params):
+        wires = [q[:fsq] for q, fsq in zip(qubits, self.filter_shape_qubits)]
+        wires = Wires.all_wires(wires)
+
+        shape = (self.num_features, len(params) // self.num_features)
+        params = params.reshape(shape)
+
+        Multiplex(params, wires, self.feature_wires, self.U_filter)
 
     def circuit(self, params: Parameters) -> Wires:
         n_dim = len(self.main_qubits)
@@ -82,13 +91,7 @@ class ConvolutionAnsatz(Base):
             Convolution.shift(self.filter_shape_qubits, qubits, H=False)
 
             ### FILTER
-            wires = [q[:fsq] for q, fsq in zip(qubits, self.filter_shape_qubits)]
-            wires = Wires.all_wires(wires)
-
-            shape = (self.num_features, len(conv_params) // self.num_features)
-            conv_params = conv_params.reshape(shape)
-
-            Multiplex(conv_params, wires, self.feature_wires, self.U_filter)
+            self._filter(qubits, conv_params)
 
             ### PERMUTE
             # Convolution.permute(self.filter_shape_qubits, qubits)
