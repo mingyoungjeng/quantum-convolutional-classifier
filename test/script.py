@@ -22,16 +22,16 @@ if __name__ == "__main__":
     path = Path(f"results/{name}")
     num_trials = 10
     silent = False
-    is_classical = False
+    is_quantum = True
     
     # Ansatz parameters
     dims = (28, 28)
     num_layers = 4
 
     # Create model
-    cls = CNN if is_classical else QCNN
+    cls = QCNN if is_quantum else CNN
     data = BinaryData(
-        FashionMNIST, image_transform(dims, flatten=True)
+        FashionMNIST, image_transform(dims, flatten=is_quantum)
     )
     optimizer = Optimizer(Adam)
     loss = CrossEntropyLoss()
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     model.logger.info(f"Circuit ID: {name}")
 
     # Save circuit drawing
-    if not is_classical:
+    if is_quantum:
         model.ansatz = Ansatz.from_dims(dims, num_layers=num_layers)
         circuit_drawing = model.ansatz.draw(decompose=True)
         circuit_drawing.savefig(path.with_stem(f"{name}_circuit").with_suffix(".png"))
@@ -50,10 +50,10 @@ if __name__ == "__main__":
     # Run experiment
     experiment = Experiment(model, num_trials, results_schema=["accuracy"])
     
-    if is_classical:
-        results = experiment(dims, num_layers, silent=silent)
-    else:
+    if is_quantum:
         results = experiment(Ansatz, dims, silent=silent, num_layers=num_layers)
+    else:
+        results = experiment(dims, num_layers, silent=silent)
     
     # Save and print accuracy results
     save_dataframe_as_csv(path.with_suffix(".csv"), results)
