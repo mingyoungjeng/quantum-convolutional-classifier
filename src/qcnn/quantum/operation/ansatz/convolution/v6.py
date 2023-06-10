@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class ConvolutionAnsatz(Base):
     __slots__ = "_feature_qubits"
     U_filter = BasicFiltering
-    U_fully_connected = BasicFiltering2
+    U_fully_connected = BasicFiltering
 
     def __init__(self, qubits, num_layers=None, num_features=1, measure_all=True):
         Module.__init__(self)
@@ -126,11 +126,10 @@ class ConvolutionAnsatz(Base):
     def shape(self) -> int:
         n_params = (self.num_layers + 0) * self.n_params
 
-        if self.measure_all:
-            n_params += self.U_fully_connected.shape(self.wires)
-        else:
-            n_meas = self.num_wires - sum(self.filter_shape_qubits)
-            n_params += self.U_fully_connected.shape(range(n_meas))
+        n_meas = self.num_wires - (
+            (self.num_layers - 1) * sum(self.filter_shape_qubits)
+        )
+        n_params += self.U_fully_connected.shape(range(n_meas))
 
         return n_params
 
