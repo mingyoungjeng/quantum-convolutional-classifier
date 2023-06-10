@@ -66,16 +66,14 @@ class C2Q(Operation):
         transpose = hyperparameters["transpose"]
         angles = hyperparameters["angles"]
 
-        if angles:
+        if angles:  # When passing in angles directly
             if len(params) == 1:
                 (params,) = params
                 params = params, np.zeros(len(params)), np.zeros(len(params))
 
             params = zip(*(C2Q.permute_angles(p, len(wires)) for p in params))
-
-        # Flatten and normalize input state
-        # TODO: this has issues with PyTorch
-        if not angles:
+        else:  # Flatten and normalize input state
+            # TODO: this has issues with PyTorch
             (params,) = params
             params = flatten_array(params, pad=True)
             params, magnitude = normalize(params, include_magnitude=True)
