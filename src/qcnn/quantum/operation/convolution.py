@@ -85,7 +85,7 @@ class Convolution(Operation):
         wires = [q[:fsq] for q, fsq in zip(qubits, to_qubits(fltr.shape))]
         wires = Wires.all_wires(wires)
 
-        return [C2Q(fltr, wires, transpose=True)]
+        return [C2Q(fltr, wires=wires, transpose=True)]
 
     @staticmethod
     def permute(filter_shape_q, qubits):
