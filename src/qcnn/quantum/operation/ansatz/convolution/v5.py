@@ -27,14 +27,14 @@ class ConvolutionAnsatz(Base):
     __slots__ = "_feature_qubits"
     U_filter = BasicFiltering
     U_fully_connected = BasicFiltering2
-    num_features = 4
 
-    def __init__(self, qubits, num_layers=None, measure_all=True):
+    def __init__(self, qubits, num_layers=None, num_features=1, measure_all=True):
         Module.__init__(self)
         self.main_qubits = qubits
         self._feature_qubits = []
         self._ancilla_qubits = []
         self.num_layers = num_layers
+        self.num_features = num_features
         self.measure_all = measure_all
 
         # Feature qubits
@@ -61,15 +61,22 @@ class ConvolutionAnsatz(Base):
     @property
     def feature_wires(self):
         return Wires.all_wires(self.feature_qubits)
-    
+
     def _filter(self, qubits, params):
+        """Wrapper around self.U_filter that replaces Convolution.filter"""
+
+        # Setup params
+        filter_params, params = params[: self.n_params], params[self.n_params :]
+        shape = (self.num_features, len(filter_params) // self.num_features)
+        filter_params = filter_params.reshape(shape)
+
+        # Setup wires
         wires = [q[:fsq] for q, fsq in zip(qubits, self.filter_shape_qubits)]
         wires = Wires.all_wires(wires)
 
-        shape = (self.num_features, len(params) // self.num_features)
-        params = params.reshape(shape)
+        Multiplex(filter_params, wires, self.feature_wires, self.U_filter)
 
-        Multiplex(params, wires, self.feature_wires, self.U_filter)
+        return params  # Leftover parameters
 
     def circuit(self, params: Parameters) -> Wires:
         n_dim = len(self.main_qubits)
@@ -81,23 +88,26 @@ class ConvolutionAnsatz(Base):
             self.ancilla_qubits += [main_qubits[i][:fsq]]
             main_qubits[i] = main_qubits[i][fsq:]
 
+        # Pre-op on ancillas
+        params = self._filter(self.ancilla_qubits, params)
+
         # Convolution layers
         for i in range(self.num_layers):
-            conv_params, params = params[: self.n_params], params[self.n_params :]
-            # conv_params = conv_params.reshape(self.filter_shape)
-
             qubits = main_qubits + self.ancilla_qubits
 
             Convolution.shift(self.filter_shape_qubits, qubits, H=False)
 
             ### FILTER
-            self._filter(qubits, conv_params)
+            params = self._filter(qubits, params)
 
             ### PERMUTE
             # Convolution.permute(self.filter_shape_qubits, qubits)
             for j, fsq in enumerate(self.filter_shape_qubits):
                 main_qubits[n_dim + j] += main_qubits[j][:fsq]
                 main_qubits[j] = main_qubits[j][fsq:]
+
+        # Post-op on ancillas
+        # params = self._filter(self.ancilla_qubits, params)
 
         # Fully connected layer
         meas = (
@@ -114,7 +124,7 @@ class ConvolutionAnsatz(Base):
 
     @property
     def shape(self) -> int:
-        n_params = self.num_layers * self.n_params
+        n_params = (self.num_layers + 1) * self.n_params
 
         if self.measure_all:
             n_params += self.U_fully_connected.shape(self.wires)
