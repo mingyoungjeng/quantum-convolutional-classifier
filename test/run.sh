@@ -4,7 +4,7 @@
 #SBATCH --mail-type=END,FAIL                # Mail events (NONE, BEGIN, END, FAIL, ALL)
 #SBATCH --mail-user=mingyoungjeng@ku.edu    # Where to send mail
 #SBATCH --ntasks=1                          # Run on a single CPU
-#SBATCH --mem=125g                          # Job memory request
+#SBATCH --mem=30g                          # Job memory request
 #SBATCH --time=0-06:00:00                   # Time limit days-hrs:min:sec
 #SBATCH --output=%j.log                     # Standard output and error log
 #SBATCH --gres=gpu                          # 1 GPU
