@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterator
 
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
@@ -48,12 +48,29 @@ class Multiplex(Operation):
         hyperparameters: Mapping = hyperparameters["hyperparameters"]
 
         if len(ctrls) == 0:
-            return [op(params[0], wires, **hyperparameters)]
+            return [op(*params, wires=wires, **hyperparameters)]
 
+        # TODO: cleanup
         wires = wires[len(ctrls) :]
         return [
             Controlled(
-                op(param, wires, **hyperparameters), ctrls, binary(i, len(ctrls))[::-1]
+                op(
+                    *param,
+                    wires=wires,
+                    **hyperparameters,
+                ),
+                ctrls,
+                binary(i, len(ctrls))[::-1],
+            )
+            if isinstance(param, (tuple, Iterator))
+            else Controlled(
+                op(
+                    param,
+                    wires,
+                    **hyperparameters,
+                ),
+                ctrls,
+                binary(i, len(ctrls))[::-1],
             )
             for i, param in enumerate(params)
         ]

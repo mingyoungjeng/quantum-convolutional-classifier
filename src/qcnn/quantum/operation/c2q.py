@@ -7,7 +7,7 @@ from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 
 from qcnn.quantum import flatten_array, normalize
-from qcnn.quantum.operation import Multiplex
+from qcnn.quantum.operation import Multiplex, Unitary
 
 if TYPE_CHECKING:
     from typing import Iterable
@@ -18,15 +18,16 @@ class C2Q(Operation):
 
     def __init__(
         self,
-        params,
+        *params,
         wires: Wires,
+        angles: bool = False,
         transpose: bool = False,
         do_queue=True,
         id=None,
     ):
-        self._hyperparameters = {"transpose": transpose}
+        self._hyperparameters = {"transpose": transpose, "angles": angles}
 
-        super().__init__(params, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def get_params(x_in):
@@ -43,12 +44,18 @@ class C2Q(Operation):
 
                 theta = 2 * np.arctan(beta_mag / alpha_mag)
                 phi = beta_phase - alpha_phase
-                r = np.sqrt(alpha_mag**2 + beta_mag**2)
+                # r = np.sqrt(alpha_mag**2 + beta_mag**2)
                 t = beta_phase + alpha_phase
 
-            yield theta, phi, r, t
+            # yield theta, phi, r, t
+            yield theta, phi, t
 
-    # TODO: this has issues with PyTorch
+    @staticmethod
+    def permute_angles(params, num_wires):
+        idx = lambda x: 2 ** (num_wires - x) * (2**x - 1)
+        for j in range(num_wires):
+            yield params[idx(j) : idx(j + 1)]
+
     @staticmethod
     def compute_decomposition(
         *params: Iterable,
@@ -56,23 +63,36 @@ class C2Q(Operation):
         **hyperparameters,
     ) -> Iterable[Operation]:
         # Keep the type-checker happy
-        (params,) = params
         transpose = hyperparameters["transpose"]
+        angles = hyperparameters["angles"]
 
-        # Flatten and normalize input state (params)
-        params = flatten_array(params, pad=True)
-        params, magnitude = normalize(params, include_magnitude=True)
-        if magnitude != 1:
-            print(f"C2Q parameters were not normalized ({magnitude=}).")
+        if angles:  # When passing in angles directly
+            if len(params) == 1:
+                (params,) = params
+                params = params, np.zeros(len(params)), np.zeros(len(params))
 
+            params = zip(*(C2Q.permute_angles(p, len(wires)) for p in params))
+        else:  # Flatten and normalize input state
+            # TODO: this has issues with PyTorch
+            (params,) = params
+            params = flatten_array(params, pad=True)
+            params, magnitude = normalize(params, include_magnitude=True)
+            if magnitude != 1:
+                print(f"C2Q parameters were not normalized ({magnitude=}).")
+            params = C2Q.get_params(params)
+
+        return C2Q.run(params, wires, transpose)
+
+    @staticmethod
+    def run(params, wires, transpose: bool = False):
         # Loop setup
-        params = list(enumerate(C2Q.get_params(params)))
+        params = list(enumerate(params))
         if not transpose:
             params = params[::-1]
 
         # Main C2Q operation
         op_list = []
-        for j, (theta, phi, _, t) in params:
+        for j, (theta, phi, t) in params:
             if transpose:
                 theta = -theta
                 phi, t = -t, -phi
@@ -86,3 +106,26 @@ class C2Q(Operation):
                 op_list += [Multiplex(phi, wires[j], wires[j + 1 :], qml.RZ)]
 
         return op_list
+
+
+class ConvolutionAngleFilter(Unitary):
+    @staticmethod
+    def compute_decomposition(params, wires, **_):
+        return [C2Q(params, wires=wires, angles=True, transpose=True)]
+
+    @staticmethod
+    def _shape(wires: Wires) -> int:
+        return 2 ** len(wires) - 1
+
+
+# TODO: format the phi and t terms propertly
+class ConvolutionComplexAngleFilter(Unitary):
+    @staticmethod
+    def compute_decomposition(params, wires, **_):
+        theta, phi, t = params.reshape((3, len(params) // 3))
+        return [C2Q(theta, phi, t, wires=wires, angles=True, transpose=True)]
+
+    @staticmethod
+    def _shape(wires: Wires) -> int:
+        # 2 ** (len(wires)+1) - 1)
+        return 3 * (2 ** len(wires) - 1)
