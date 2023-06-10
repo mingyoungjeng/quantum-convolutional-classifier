@@ -24,8 +24,9 @@ def save(filename: Path, fn: Callable[[Path], None], overwrite=True) -> None:
 
     if not overwrite:
         i = 1
+        stem = filename.stem
         while filename.is_file():
-            filename = filename.with_name(f"{filename.stem}_{i}{filename.suffix}")
+            filename = filename.with_name(f"{stem}_{i}{filename.suffix}")
             i += 1
 
     return fn(filename)
