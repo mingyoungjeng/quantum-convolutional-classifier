@@ -13,8 +13,8 @@ from qcnn.cnn import CNN
 from pathlib import Path
 from qcnn.file import save_dataframe_as_csv
 
-from qcnn.quantum.operation.ansatz.convolution.v6 import ConvolutionAnsatz as A
-# from qcnn.quantum.operation.ansatz import SimpleAnsatz as A
+from qcnn.quantum.operation.ansatz.convolution.v6 import ConvolutionAnsatz as Ansatz
+# from qcnn.quantum.operation.ansatz import SimpleAnsatz as Ansatz
 
 if __name__ == "__main__":
     # Meta parameters
@@ -22,32 +22,38 @@ if __name__ == "__main__":
     path = Path(f"results/{name}")
     num_trials = 10
     silent = False
+    is_classical = False
     
     # Ansatz parameters
     dims = (28, 28)
     num_layers = 4
 
-    # Create QCNN
+    # Create model
+    cls = CNN if is_classical else QCNN
     data = BinaryData(
         FashionMNIST, image_transform(dims, flatten=True)
     )
     optimizer = Optimizer(Adam)
     loss = CrossEntropyLoss()
     epoch = 200
-    qcnn = QCNN.with_logging(data, optimizer, loss, epoch=epoch)
+    model = cls.with_logging(data, optimizer, loss, epoch=epoch)
     
     # Log circuit ID
-    qcnn.logger.info(f"Circuit ID: {name}")
+    model.logger.info(f"Circuit ID: {name}")
 
     # Save circuit drawing
-    qcnn.ansatz = A.from_dims(dims, num_layers=num_layers)
-    circuit_drawing = qcnn.ansatz.draw(decompose=True)
-    circuit_drawing.savefig(path.with_stem(f"{name}_circuit").with_suffix(".png"))
+    if not is_classical:
+        model.ansatz = Ansatz.from_dims(dims, num_layers=num_layers)
+        circuit_drawing = model.ansatz.draw(decompose=True)
+        circuit_drawing.savefig(path.with_stem(f"{name}_circuit").with_suffix(".png"))
 
     # Run experiment
-    experiment = Experiment(qcnn, num_trials, results_schema=["accuracy"])
-    # results = experiment(dims, num_layers, silent=silent)
-    results = experiment(A, dims, silent=silent, num_layers=num_layers)
+    experiment = Experiment(model, num_trials, results_schema=["accuracy"])
+    
+    if is_classical:
+        results = experiment(dims, num_layers, silent=silent)
+    else:
+        results = experiment(Ansatz, dims, silent=silent, num_layers=num_layers)
     
     # Save and print accuracy results
     save_dataframe_as_csv(path.with_suffix(".csv"), results)
