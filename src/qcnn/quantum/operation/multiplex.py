@@ -58,13 +58,9 @@ class Multiplex(Operation):
                     *param,
                     wires=wires,
                     **hyperparameters,
-                ),
-                ctrls,
-                binary(i, len(ctrls))[::-1],
-            )
-            if isinstance(param, (tuple, Iterator))
-            else Controlled(
-                op(
+                )
+                if isinstance(param, (tuple, Iterator))
+                else op(
                     param,
                     wires=wires,
                     **hyperparameters,
