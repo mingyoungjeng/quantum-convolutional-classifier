@@ -116,3 +116,16 @@ class ConvolutionAngleFilter(Unitary):
     @staticmethod
     def _shape(wires: Wires) -> int:
         return 2 ** len(wires) - 1
+
+
+# TODO: format the phi and t terms propertly
+class ConvolutionComplexAngleFilter(Unitary):
+    @staticmethod
+    def compute_decomposition(params, wires, **_):
+        theta, phi, t = params.reshape((3, len(params) // 3))
+        return [C2Q(theta, phi, t, wires=wires, angles=True, transpose=True)]
+
+    @staticmethod
+    def _shape(wires: Wires) -> int:
+        # 2 ** (len(wires)+1) - 1)
+        return 3 * (2 ** len(wires) - 1)

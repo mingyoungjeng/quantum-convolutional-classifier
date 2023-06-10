@@ -13,7 +13,10 @@ from qcnn.quantum.operation.ansatz import is_multidimensional
 from qcnn.quantum.operation.ansatz.convolution.test import ConvolutionAnsatz as Base
 from qcnn.quantum.operation.ansatz.basic import BasicFiltering, BasicFiltering2
 from qcnn.quantum.operation.ansatz.simple import SimpleFiltering, SimpleFiltering2
-from qcnn.quantum.operation.c2q import ConvolutionAngleFilter
+from qcnn.quantum.operation.c2q import (
+    ConvolutionAngleFilter,
+    ConvolutionComplexAngleFilter,
+)
 
 if TYPE_CHECKING:
     from typing import Iterable
@@ -22,7 +25,7 @@ if TYPE_CHECKING:
 
 class ConvolutionAnsatz(Base):
     __slots__ = "_feature_qubits"
-    U_filter = ConvolutionAngleFilter
+    U_filter = ConvolutionComplexAngleFilter
     U_fully_connected = BasicFiltering
     num_features = 1
 
