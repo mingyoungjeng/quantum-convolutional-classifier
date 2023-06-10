@@ -18,7 +18,7 @@ class Data:
     transform: Optional[Callable] = field(factory=transforms.ToTensor)
     target_transform: Optional[Callable] = None
     classes: Optional[Iterable] = None
-    batch_size: Optional[tuple[int, int] | int] = None
+    batch_size: tuple[int, int] | int = 0
 
     def _load(self, is_train: bool = True) -> DataLoader:
         data = self.dataset(
@@ -41,7 +41,7 @@ class Data:
 
         dataloader = DataLoader(
             data,
-            batch_size=batch_size,
+            batch_size=batch_size if batch_size > 0 else len(data),
             shuffle=is_train,
             pin_memory=USE_CUDA,
         )
