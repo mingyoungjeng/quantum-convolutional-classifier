@@ -13,8 +13,8 @@ from qcnn.cnn import CNN
 from pathlib import Path
 from qcnn.file import save_dataframe_as_csv
 
-# from qcnn.quantum.operation.ansatz.convolution.v5 import ConvolutionAnsatz as A
-from qcnn.quantum.operation.ansatz import BaselineAnsatz as A
+from qcnn.quantum.operation.ansatz.convolution.v5 import ConvolutionAnsatz as A
+# from qcnn.quantum.operation.ansatz import SimpleAnsatz as A
 
 if __name__ == "__main__":
     # dims = (16, 16), (28, 28), (32, 32)
@@ -23,6 +23,10 @@ if __name__ == "__main__":
     dims = (28, 28)
     num_layers = 4
     silent = False
+    name = "22"
+    
+    print(f"Circuit ID: {name}")
+    path = Path(f"results/{name}")
 
     data = BinaryData(
         FashionMNIST, image_transform(dims, flatten=True), batch_size=(500, 1000)
@@ -33,13 +37,13 @@ if __name__ == "__main__":
 
     qcnn.ansatz = A.from_dims(dims, num_layers=num_layers)
     circuit_drawing = qcnn.ansatz.draw(decompose=True)
+    
+    circuit_drawing.savefig(path.with_stem(f"{name}_circuit").with_suffix(".png"))
 
     experiment = Experiment(qcnn, num_trials, results_schema=["accuracy"])
     # results = experiment(dims, num_layers, silent=silent)
     results = experiment(A, dims, silent=silent, num_layers=num_layers)
 
-    name = "3"
-    path = Path(f"results/{name}")
     save_dataframe_as_csv(path.with_suffix(".csv"), results)
 
     (fig,) = experiment.draw()
