@@ -12,6 +12,7 @@
 # Testing
 test/pennylane/qcnn/result/*
 test/**/*.png
+test/**/*.log
 
 # LATEX
 *.aux 
