@@ -3,10 +3,8 @@ from typing import TYPE_CHECKING
 
 from attrs import define, field
 
-import pennylane as qml
-
-from qcnn.quantum.operation.ansatz import Ansatz
 from qcnn.ml.model import Model
+from qcnn.quantum.operation.ansatz import Ansatz
 
 if TYPE_CHECKING:
     pass
