@@ -66,7 +66,7 @@ class Multiplex(Operation):
             else Controlled(
                 op(
                     param,
-                    wires,
+                    wires=wires,
                     **hyperparameters,
                 ),
                 ctrls,
