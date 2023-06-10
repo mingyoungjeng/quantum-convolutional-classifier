@@ -11,6 +11,7 @@ from torch.nn import Module
 from qcnn.quantum import to_qubits, wires_to_qubits
 from qcnn.ml import is_iterable
 from qcnn.ml.optimize import init_params
+from qcnn.file import draw
 
 if TYPE_CHECKING:
     from typing import Iterable, Optional
@@ -138,12 +139,12 @@ class Ansatz(Module, ABC):
 
     # Miscellaneous
 
-    def draw(self, include_axis: bool = False, decompose: bool = False):
+    def draw(self, filename=None, include_axis: bool = False, decompose: bool = False):
         fig, ax = qml.draw_mpl(
             self.qnode, expansion_strategy="device" if decompose else "gradient"
         )()
 
-        return (fig, ax) if include_axis else fig
+        return draw((fig, ax), filename, overwrite=False, include_axis=include_axis)
 
     # Instance factories
 

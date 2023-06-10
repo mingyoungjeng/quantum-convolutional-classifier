@@ -5,9 +5,11 @@ from pathlib import Path
 from PIL import Image
 from astropy.io import fits
 from polars import DataFrame
+from matplotlib.figure import Figure
 
 if TYPE_CHECKING:
-    from typing import Callable
+    from matplotlib.axes import Axes
+    from typing import Callable, Optional
 
 
 def create_parent(path: Path):
@@ -47,3 +49,34 @@ def save_dataframe_as_csv(filename: Path, df: DataFrame, overwrite=True) -> None
     filename = filename.with_suffix(".csv")
 
     return save(filename, fn=df.write_csv, overwrite=overwrite)
+
+
+def draw(
+    fig_ax: tuple[Figure, Axes],
+    filename: Optional[Path] = None,
+    overwrite: bool = False,
+    include_axis: bool = False,
+) -> tuple[Figure, Axes] | Figure:
+    """Wrapper for easier handling of matplotlib figures/axes"""
+    fig, ax = fig_ax
+
+    if filename is not None:
+        save(filename, fig.savefig, overwrite=overwrite)
+
+    return (fig, ax) if include_axis else fig
+
+
+# def draw(func: Callable):
+#     """Decorator for easier handling of matplotlib figures/axes"""
+
+#     def wrapper(
+#         *args,
+#         filename: Optional[Path] = None,
+#         overwrite: bool = False,
+#         include_axis: bool = False,
+#         **kwargs,
+#     ):
+#         print(func(args, kwargs))
+#         return _draw(func(args, kwargs), filename, overwrite, include_axis)
+
+#     return wrapper
