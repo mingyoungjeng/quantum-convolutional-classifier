@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Iterable
 
 from attrs import define, field
 import numpy as np
+import torch
 from torch.utils.data import Dataset, DataLoader, Subset
 from torchvision import transforms
 from qcnn.ml import USE_CUDA
@@ -71,12 +72,12 @@ def image_transform(dims: Iterable[int], fix_bands=True, flatten=True, norm=True
     ops = [transforms.Resize(dims[:2]), transforms.ToTensor()]
 
     if fix_bands and len(dims) >= 3:
-        ops += [transforms.Lambda(lambda x: np.moveaxis(np.squeeze(x).numpy(), 0, -1))]
+        ops += [transforms.Lambda(lambda x: torch.moveaxis(torch.squeeze(x), 0, -1))]
 
     if flatten:
         ops += [transforms.Lambda(lambda x: flatten_array(x.numpy(), pad=True))]
 
     if norm:
-        ops += [transforms.Lambda(lambda x: normalize(x))]
+        ops += [transforms.Lambda(normalize)]
 
     return transforms.Compose(ops)
