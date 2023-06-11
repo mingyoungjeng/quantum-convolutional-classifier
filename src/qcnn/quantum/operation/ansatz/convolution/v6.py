@@ -11,7 +11,12 @@ from qcnn.quantum import to_qubits
 from qcnn.quantum.operation import Convolution, Multiplex
 from qcnn.quantum.operation.ansatz import is_multidimensional
 from qcnn.quantum.operation.ansatz.convolution.test import ConvolutionAnsatz as Base
-from qcnn.quantum.operation.ansatz.basic import BasicFiltering, BasicFiltering2
+from qcnn.quantum.operation.ansatz.basic import (
+    BasicFiltering,
+    BasicFiltering2,
+    BasicFiltering3,
+    BasicFiltering4,
+)
 from qcnn.quantum.operation.ansatz.simple import SimpleFiltering, SimpleFiltering2
 from qcnn.quantum.operation.c2q import (
     ConvolutionAngleFilter,
@@ -26,7 +31,7 @@ if TYPE_CHECKING:
 class ConvolutionAnsatz(Base):
     __slots__ = "_feature_qubits"
     U_filter = BasicFiltering
-    U_fully_connected = BasicFiltering
+    U_fully_connected = BasicFiltering4
 
     def __init__(self, qubits, num_layers=None, num_features=1, measure_all=True):
         Module.__init__(self)
@@ -84,7 +89,10 @@ class ConvolutionAnsatz(Base):
         main_qubits += [[] for _ in range(len(self.filter_shape))]
 
         # Pre-op on ancillas
-        # params = self._filter(self.ancilla_qubits, params)
+        params = self._filter(
+            [main_qubits[i][:fsq] for i, fsq in enumerate(self.filter_shape_qubits)],
+            params,
+        )
 
         # Convolution layers
         for i in range(self.num_layers):
@@ -118,13 +126,13 @@ class ConvolutionAnsatz(Base):
         meas += main_qubits[n_dim:] + self.feature_qubits
 
         meas = Wires.all_wires(meas)
-        self.U_fully_connected(params, meas)
+        self.U_fully_connected(params, meas[::-1])
 
-        return meas[::-1]
+        return meas[-1]
 
     @property
     def shape(self) -> int:
-        n_params = (self.num_layers + 0) * self.n_params
+        n_params = (self.num_layers + 1) * self.n_params
 
         n_meas = self.num_wires - (
             (self.num_layers - 1) * sum(self.filter_shape_qubits)

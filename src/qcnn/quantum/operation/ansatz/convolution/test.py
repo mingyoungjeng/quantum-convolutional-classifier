@@ -83,7 +83,7 @@ class ConvolutionAnsatz(Ansatz):
     def c2q(self, psi_in):
         return Initialize(psi_in, self.main_wires[::-1], pad_with=0, normalize=True)
 
-    def post_processing(self, result) -> Iterable[Iterable[Number]]:
-        result = super().post_processing(result)
+    # def post_processing(self, result) -> Iterable[Iterable[Number]]:
+    #     result = super().post_processing(result)
 
-        return parity(result)
+    #     return parity(result, self.num_classes)

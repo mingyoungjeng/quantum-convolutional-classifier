@@ -11,7 +11,12 @@ from qcnn.quantum import to_qubits
 from qcnn.quantum.operation import Convolution, Multiplex
 from qcnn.quantum.operation.ansatz import is_multidimensional
 from qcnn.quantum.operation.ansatz.convolution.test import ConvolutionAnsatz as Base
-from qcnn.quantum.operation.ansatz.basic import BasicFiltering, BasicFiltering2
+from qcnn.quantum.operation.ansatz.basic import (
+    BasicFiltering,
+    BasicFiltering2,
+    BasicFiltering3,
+    BasicFiltering4,
+)
 from qcnn.quantum.operation.ansatz.simple import SimpleFiltering, SimpleFiltering2
 from qcnn.quantum.operation.c2q import (
     ConvolutionAngleFilter,
@@ -26,7 +31,7 @@ if TYPE_CHECKING:
 class ConvolutionAnsatz(Base):
     __slots__ = "_feature_qubits"
     U_filter = BasicFiltering
-    U_fully_connected = BasicFiltering2
+    U_fully_connected = BasicFiltering4
 
     def __init__(self, qubits, num_layers=None, num_features=1, measure_all=True):
         Module.__init__(self)
@@ -120,7 +125,7 @@ class ConvolutionAnsatz(Base):
         meas = Wires.all_wires(meas)
         self.U_fully_connected(params, meas)
 
-        return meas[::-1]
+        return meas[0]
 
     @property
     def shape(self) -> int:

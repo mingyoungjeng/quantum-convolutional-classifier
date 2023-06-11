@@ -69,6 +69,58 @@ class BasicFiltering2(Unitary):
         return len(wires)
 
 
+class BasicFiltering3(Unitary):
+    @staticmethod
+    def compute_decomposition(params, wires, **_):
+        op_list = []
+        params = params.reshape((len(wires) + 1, 3))
+
+        # First Rot layer
+        op_list += [qml.Rot(*angles, wire) for angles, wire in zip(params, wires)]
+
+        # CNOT gates
+        control, target = tee(wires)
+        first = next(target, None)
+        op_list += [qml.CNOT(wires=cnot_wires) for cnot_wires in zip(control, target)]
+
+        # Final CNOT gate (last to first)
+        if len(wires) > 1:
+            op_list += [qml.CNOT(wires=(wires[-1], first))]
+
+        # Second Rot layer
+        op_list += [qml.Rot(*params[-1], first)]
+
+        return op_list
+
+    @staticmethod
+    def _shape(wires: Wires) -> int:
+        return 3 * (len(wires) + 1)
+
+
+class BasicFiltering4(Unitary):
+    @staticmethod
+    def compute_decomposition(params, wires, **_):
+        op_list = []
+
+        # CNOT gates
+        control, target = tee(wires)
+        first = next(target, None)
+        op_list += [qml.CNOT(wires=cnot_wires) for cnot_wires in zip(control, target)]
+
+        # Final CNOT gate (last to first)
+        if len(wires) > 1:
+            op_list += [qml.CNOT(wires=(wires[-1], first))]
+
+        # Second Rot layer
+        op_list += [qml.Rot(*params, first)]
+
+        return op_list
+
+    @staticmethod
+    def _shape(wires: Wires) -> int:
+        return 3
+
+
 class BasicPooling(Unitary):
     @staticmethod
     def compute_decomposition(params, wires, **_):
