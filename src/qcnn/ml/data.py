@@ -69,10 +69,14 @@ class BinaryData(Data):
 
 
 def image_transform(dims: Iterable[int], fix_bands=True, flatten=True, norm=True):
-    ops = [transforms.Resize(dims[:2]), transforms.ToTensor()]
+    ops = [
+        transforms.Resize(dims[:2]),
+        transforms.ToTensor(),
+        transforms.Lambda(torch.squeeze),
+    ]
 
     if fix_bands and len(dims) >= 3:
-        ops += [transforms.Lambda(lambda x: torch.moveaxis(torch.squeeze(x), 0, -1))]
+        ops += [transforms.Lambda(lambda x: torch.moveaxis(x, 0, -1))]
 
     if flatten:
         ops += [transforms.Lambda(lambda x: flatten_array(x.numpy(), pad=True))]
