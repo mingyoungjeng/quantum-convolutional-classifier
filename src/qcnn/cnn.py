@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Iterable
 from attrs import define, field, asdict, Factory
 from torch import nn
 import numpy as np
+from qcnn.ml import USE_CUDA
 from qcnn.ml.model import Model
 
 if TYPE_CHECKING:
@@ -107,7 +108,8 @@ class CNN(Model):
             nn.Linear(self.num_features * np.prod(dims), self.num_classes),
         ]
 
-        return nn.Sequential(*lst)
+        module = nn.Sequential(*lst)
+        return module.cuda() if USE_CUDA else module
 
     def __call__(self, dims, num_layers=1, silent=False):
         model = self.forward(dims, num_layers)
