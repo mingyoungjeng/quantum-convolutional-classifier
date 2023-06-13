@@ -20,24 +20,31 @@ if __name__ == "__main__":
     # Meta parameters
     name = "name"
     path = Path(f"results/{name}")
-    num_trials = 10
     silent = False
     is_quantum = True
 
-    # Ansatz parameters
+    # Parameters
+    num_trials = 10
     dims = (28, 28)
     num_layers = 4
+    batch_size = (32, 1000)
+    epoch = 1
 
     # Create model
     cls = QCNN if is_quantum else CNN
-    data = BinaryData(FashionMNIST, image_transform(dims, flatten=is_quantum))
+    transform = image_transform(dims, flatten=is_quantum)
+    data = BinaryData(FashionMNIST, transform, batch_size=batch_size)
     optimizer = Optimizer(Adam)
     loss = CrossEntropyLoss()
-    epoch = 1
     model = cls.with_logging(data, optimizer, loss, epoch=epoch)
 
-    # Log circuit ID
+    # Log important values
     model.logger.info(f"Circuit ID: {name}")
+    model.logger.info(f"{num_trials=}")
+    model.logger.info(f"{dims=}")
+    model.logger.info(f"{num_layers=}")
+    model.logger.info(f"{batch_size=}")
+    model.logger.info(f"{epoch=}")
 
     # Save circuit drawing
     if is_quantum:
