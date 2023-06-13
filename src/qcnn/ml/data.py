@@ -81,3 +81,20 @@ def image_transform(dims: Iterable[int], fix_bands=True, flatten=True, norm=True
         ops += [transforms.Lambda(normalize)]
 
     return transforms.Compose(ops)
+
+
+def baseline_image_transform(
+    dims: Iterable[int], fix_bands=True, flatten=True, norm=True
+):
+    ops = [transforms.Resize(dims[:2]), transforms.ToTensor()]
+
+    if fix_bands and len(dims) >= 3:
+        ops += [transforms.Lambda(lambda x: torch.moveaxis(torch.squeeze(x), 0, -1))]
+
+    if flatten:
+        ops += [transforms.Lambda(torch.flatten)]
+
+    if norm:
+        ops += [transforms.Lambda(normalize)]
+
+    return transforms.Compose(ops)

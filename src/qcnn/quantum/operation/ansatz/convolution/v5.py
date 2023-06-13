@@ -5,7 +5,6 @@ from itertools import chain
 from torch.nn import Module
 from pennylane.wires import Wires
 
-
 from qcnn.ml.optimize import init_params
 from qcnn.quantum import to_qubits
 from qcnn.quantum.operation import Convolution, Multiplex
@@ -22,6 +21,7 @@ from qcnn.quantum.operation.c2q import (
     ConvolutionAngleFilter,
     ConvolutionComplexAngleFilter,
 )
+from qcnn.quantum.operation.fully_connected import FullyConnected
 
 if TYPE_CHECKING:
     from typing import Iterable
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 class ConvolutionAnsatz(Base):
     __slots__ = "_feature_qubits"
     U_filter = BasicFiltering
-    U_fully_connected = BasicFiltering4
+    U_fully_connected = FullyConnected
 
     def __init__(self, qubits, num_layers=None, num_features=1, measure_all=True):
         Module.__init__(self)
@@ -123,9 +123,9 @@ class ConvolutionAnsatz(Base):
         meas += main_qubits[n_dim:] + self.feature_qubits
 
         meas = Wires.all_wires(meas)
-        self.U_fully_connected(params, meas)
+        self.U_fully_connected(params, meas[::-1])
 
-        return meas[0]
+        return meas[-1]
 
     @property
     def shape(self) -> int:
@@ -135,7 +135,7 @@ class ConvolutionAnsatz(Base):
             n_params += self.U_fully_connected.shape(self.wires)
         else:
             n_meas = self.num_wires - sum(self.filter_shape_qubits)
-            n_params += self.U_fully_connected.shape(range(n_meas))
+            n_params += self.U_fully_connected.shape(n_meas)
 
         return n_params
 
@@ -145,5 +145,4 @@ class ConvolutionAnsatz(Base):
 
     @property
     def n_params(self) -> int:
-        wires = range(sum(self.filter_shape_qubits))
-        return self.num_features * self.U_filter.shape(wires)
+        return self.num_features * self.U_filter.shape(sum(self.filter_shape_qubits))
