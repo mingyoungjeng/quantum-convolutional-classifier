@@ -1,22 +1,20 @@
+from pathlib import Path
+
 from torchvision.datasets import MNIST, FashionMNIST, CIFAR10
-from torch.optim import SGD, Adam
+from torch.optim import Adam, SGD
 from torch.nn import CrossEntropyLoss, MSELoss
 
-# from pennylane import NesterovMomentumOptimizer
-from qcnn.qcnn import QCNN
-
 from qcnn.ml.data import BinaryData
+from qcnn.ml.data import image_transform, baseline_image_transform
 from qcnn.ml.optimize import Optimizer
-from qcnn.ml.data import image_transform
 from qcnn.experiment import Experiment
+from qcnn.qcnn import QCNN
 from qcnn.cnn import CNN
-
-from pathlib import Path
 from qcnn.file import save_dataframe_as_csv
 
-from qcnn.quantum.operation.ansatz.convolution.v6 import ConvolutionAnsatz as Ansatz
+from qcnn.quantum.operation.ansatz.convolution.v5 import ConvolutionAnsatz as Ansatz
 
-# from qcnn.quantum.operation.ansatz import SimpleAnsatz as Ansatz
+# from qcnn.quantum.operation.ansatz import BaselineAnsatz as Ansatz
 
 if __name__ == "__main__":
     # Meta parameters
