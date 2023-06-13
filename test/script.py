@@ -20,7 +20,7 @@ from qcnn.quantum.operation.ansatz.convolution.v6 import ConvolutionAnsatz as An
 
 if __name__ == "__main__":
     # Meta parameters
-    name = "skree2"
+    name = "name"
     path = Path(f"results/{name}")
     num_trials = 10
     silent = False
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     data = BinaryData(FashionMNIST, image_transform(dims, flatten=is_quantum))
     optimizer = Optimizer(Adam)
     loss = CrossEntropyLoss()
-    epoch = 200
+    epoch = 1
     model = cls.with_logging(data, optimizer, loss, epoch=epoch)
 
     # Log circuit ID
@@ -59,5 +59,4 @@ if __name__ == "__main__":
     print(acc.median(), acc.mean(), acc.std())
 
     # Save aggregated loss history figure
-    (fig,) = experiment.draw()
-    fig.savefig(path.with_suffix(".png"))
+    (fig,) = experiment.draw(path.with_suffix(".png"))

@@ -5,6 +5,7 @@ from itertools import product
 from attrs import define, field
 import polars as pl
 import matplotlib.pyplot as plt
+from qcnn.file import draw, save_dataframe_as_csv
 from qcnn.experiment.logger import Logger
 
 if TYPE_CHECKING:
@@ -72,7 +73,7 @@ class Experiment:
 
         return expr.alias(f"{name}_{op}")
 
-    def draw(self, include_axis: bool = False):
+    def draw(self, filename=None, include_axis: bool = False):
         subplots = []
         for metric in self.metrics:
             fig, ax = plt.subplots()
@@ -84,5 +85,9 @@ class Experiment:
             ax.set_ylabel(metric.capitalize())
             subplots += [(fig, ax)]
 
-        figs, axes = zip(*subplots)
-        return (figs, axes) if include_axis else figs
+        save_dataframe_as_csv(filename, self.df, overwrite=False)
+
+        return tuple(
+            draw((fig, ax), filename, overwrite=False, include_axis=include_axis)
+            for (fig, ax) in subplots
+        )
