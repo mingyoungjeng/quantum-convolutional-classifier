@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from abc import ABC, abstractmethod
+from math import pi
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -37,7 +38,7 @@ class Ansatz(Module, ABC):
         super().__init__()
         self.qubits = qubits
         self.num_layers = num_layers
-        self._params = init_params(self.shape)
+        self._params = 2*pi*init_params(self.shape)
 
     # Main properties
 
