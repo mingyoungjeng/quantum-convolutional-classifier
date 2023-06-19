@@ -97,12 +97,12 @@ class C2Q(Operation):
                 theta = -theta
                 phi, t = -t, -phi
 
-            if t.any():
+            if j == 0 and t.any():
                 op_list += [Multiplex(-t, wires[j], wires[j + 1 :], qml.RZ)]
 
             op_list += [Multiplex(theta, wires[j], wires[j + 1 :], qml.RY)]
 
-            if phi.any():
+            if j == 0 and phi.any():
                 op_list += [Multiplex(phi, wires[j], wires[j + 1 :], qml.RZ)]
 
         return op_list
@@ -122,10 +122,16 @@ class ConvolutionAngleFilter(Unitary):
 class ConvolutionComplexAngleFilter(Unitary):
     @staticmethod
     def compute_decomposition(params, wires, **_):
-        theta, phi, t = params.reshape((3, len(params) // 3))
-        return [C2Q(theta, phi, t, wires=wires, angles=True, transpose=True)]
+        num_phi = (len(params) + 1) // 4  # Number of t and phi parameters
+        t, theta, phi = params[:num_phi], params[num_phi:-num_phi], params[-num_phi:]
+
+        # janky method of padding
+        cls = type(params)
+        t, phi = zip(
+            *tuple((t[i], phi[i]) if i < num_phi else (0, 0) for i in range(len(theta)))
+        )
+        return [C2Q(theta, cls(phi), cls(t), wires=wires, angles=True, transpose=True)]
 
     @staticmethod
     def _shape(wires: Wires) -> int:
-        # 2 ** (len(wires)+1) - 1)
-        return 3 * (2 ** len(wires) - 1)
+        return 2 ** (len(wires) + 1) - 1
