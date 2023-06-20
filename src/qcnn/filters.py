@@ -65,7 +65,7 @@ def sobel_filter(N, dim: int = 2, axis: int = 0):
             fltr[idx] = c * vec
 
     # normalizing factor is just the sum of all of the (abs() of all) components
-    return fltr / np.sum(np.absolute(fltr))
+    return 2 * fltr / np.sum(np.abs(fltr))
 
 
 def normal(x, sigma: int = 1):
@@ -77,7 +77,7 @@ def gaussian_blur(N, sigma=1, dim: int = 2):
     fltr = np.zeros([N for _ in range(dim)])
 
     for idx in np.ndindex(fltr.shape):
-        fltr[idx] = np.prod([normal(i - centre, sigma) for i in idx])
+        fltr[idx] = np.prod(tuple(normal(i - centre, sigma) for i in idx))
 
     fltr = fltr / np.sum(fltr)  # normalizing the matrix
 
@@ -98,3 +98,15 @@ def laplacian_of_gaussian(N, sigma=0.6, dim: int = 2):
             fltr[i][j] = fltr[i][j] - avg  # we instead normalize the LoG kernel to 0
 
     return fltr
+
+
+# TODO: only works for odd right now
+def laplacian_approx(N, dim: int = 2):
+    centre = (N - 1) // 2
+    fltr = np.ones([N for _ in range(dim)])
+
+    idx = tuple(centre for _ in range(dim))
+    fltr[idx] = -(N**dim - 1)
+
+    norm = (N**dim) - N
+    return fltr / norm

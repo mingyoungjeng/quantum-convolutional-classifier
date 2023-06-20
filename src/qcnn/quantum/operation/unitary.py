@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 from abc import abstractmethod
 from numbers import Number
@@ -7,10 +7,9 @@ from pennylane.wires import Wires
 from pennylane.operation import Operation, AnyWires
 
 if TYPE_CHECKING:
-    from typing import Iterable, Optional
+    from typing import Optional
 
     Parameters = Iterable[Number]
-    Qubits = Wires | Iterable[Wires | Iterable[Wires]]
 
 
 class Unitary(Operation):

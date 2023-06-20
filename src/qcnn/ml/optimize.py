@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
 from numbers import Number
+from math import pi
 import torch
 from torch import optim
 from qcnn.ml import create_tensor, USE_CUDA
@@ -69,8 +70,13 @@ class Optimizer(optim.Optimizer):
         return n
 
 
-def init_params(size):
-    return torch.nn.Parameter(create_tensor(torch.randn, size, requires_grad=True))
+def init_params(size, angle=False):
+    params = torch.nn.Parameter(create_tensor(torch.randn, size, requires_grad=True))
+
+    if angle:
+        with torch.no_grad():
+            params *= 2 * pi
+    return params
 
 
 def backpropagate(

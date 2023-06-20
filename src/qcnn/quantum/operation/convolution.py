@@ -8,7 +8,7 @@ from pennylane.ops import Controlled
 from pennylane.wires import Wires
 
 from qcnn.quantum import to_qubits, wires_to_qubits
-from qcnn.quantum.operation import Shift, C2Q
+from qcnn.quantum.operation import Shift, C2Q, Qubits
 
 if TYPE_CHECKING:
     from typing import Iterable
@@ -82,10 +82,8 @@ class Convolution(Operation):
 
     @staticmethod
     def filter(fltr: np.ndarray, qubits):
-        wires = [q[:fsq] for q, fsq in zip(qubits, to_qubits(fltr.shape))]
-        wires = Wires.all_wires(wires)
-
-        return [C2Q(fltr, wires=wires, transpose=True)]
+        qubits = Qubits(q[:fsq] for q, fsq in zip(qubits, to_qubits(fltr.shape)))
+        return [C2Q(fltr, wires=qubits.flatten(), transpose=True)]
 
     @staticmethod
     def permute(filter_shape_q, qubits):

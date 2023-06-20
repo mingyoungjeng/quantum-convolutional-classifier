@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from abc import ABC, abstractmethod
-from math import pi
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -10,6 +9,7 @@ from pennylane.templates import AmplitudeEmbedding
 
 from torch.nn import Module
 from qcnn.quantum import to_qubits, wires_to_qubits
+from qcnn.quantum.operation import Qubits
 from qcnn.ml import is_iterable
 from qcnn.ml.optimize import init_params
 from qcnn.file import draw
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from typing import Iterable, Optional
     from numbers import Number
     from pennylane.operation import Operation
-    from qcnn.quantum.operation import Parameters, Qubits
+    from qcnn.quantum.operation import Parameters
 
     Statevector = Iterable[Number]
 
@@ -34,21 +34,24 @@ def is_multidimensional(wires: Qubits):
 class Ansatz(Module, ABC):
     __slots__ = "_qubits", "_num_layers", "_params"
 
+    _qubits: Qubits
+    _num_layers: int
+
     def __init__(self, qubits, num_layers: int = 1):
         super().__init__()
         self.qubits = qubits
         self.num_layers = num_layers
-        self._params = 2*pi*init_params(self.shape)
+        self._params = init_params(self.shape, angle=True)
 
     # Main properties
 
     @property
-    def qubits(self) -> Iterable[Iterable[int]]:
+    def qubits(self) -> Qubits:
         return self._qubits.copy()
 
     @qubits.setter
     def qubits(self, q) -> None:
-        self._qubits = [Wires(w) for w in q] if is_multidimensional(q) else [Wires(q)]
+        self._qubits = Qubits(q)
 
     @property
     def num_layers(self) -> int:
@@ -67,34 +70,14 @@ class Ansatz(Module, ABC):
 
     @property
     def qnode(self) -> qml.QNode:
-        wires = self.wires[::-1]  # Big-endian format
+        wires = self.qubits.flatten()[::-1]  # Big-endian format
         device = qml.device("default.qubit", wires=wires)
         return qml.QNode(self._circuit, device, interface="torch")
-
-    @property
-    def wires(self) -> Wires:
-        return Wires.all_wires(self.qubits)
-
-    @property
-    def num_wires(self) -> int:
-        return len(self.wires)
-
-    @property
-    def num_qubits(self) -> Iterable[int] | int:
-        return [len(q) for q in self.qubits]
-
-    @property
-    def ndim(self) -> int:
-        return len(self.num_qubits)
-
-    @property
-    def min_dim(self) -> int:
-        return min(self.num_qubits)
 
     # Abstract methods
 
     @abstractmethod
-    def circuit(self, params: Parameters) -> Wires:
+    def circuit(self, *params: Parameters) -> Wires:
         pass
 
     @property
@@ -110,8 +93,10 @@ class Ansatz(Module, ABC):
 
     # Circuit operation
 
-    def c2q(self, psi_in: Statevector) -> Operation:
-        return AmplitudeEmbedding(psi_in, self.wires[::-1], pad_with=0, normalize=True)
+    def c2q(self, psi_in: Statevector, wires=None) -> Operation:
+        if wires is None:
+            wires = self.qubits.flatten()
+        return AmplitudeEmbedding(psi_in, wires[::-1], pad_with=0, normalize=True)
 
     def q2c(self, wires: Wires):
         return qml.probs(wires)
@@ -130,7 +115,7 @@ class Ansatz(Module, ABC):
     ):
         if psi_in is not None:  # this is done to facilitate drawing
             self.c2q(psi_in)
-        meas = self.circuit(next(self.parameters()) if params is None else params)
+        meas = self.circuit(*self.parameters() if params is None else params)
         return self.q2c(meas)
 
     def forward(self, psi_in: Optional[Statevector] = None):

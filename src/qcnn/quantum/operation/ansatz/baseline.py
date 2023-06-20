@@ -103,7 +103,7 @@ class BaselineAnsatz(Ansatz):
 
     def circuit(self, params):
         idx = np.cumsum([self.convolve.shape(), self.pool.shape()])
-        wires = self.wires
+        wires = self.qubits.flatten()
         for _ in range(self.num_layers):
             conv_params, pool_params, params = np.split(params, idx)
             self._convolution(conv_params, wires)
@@ -117,4 +117,4 @@ class BaselineAnsatz(Ansatz):
 
     @property
     def max_layers(self) -> int:
-        return int(np.ceil(np.log2(self.num_wires)))
+        return int(np.ceil(np.log2(self.qubits.total)))

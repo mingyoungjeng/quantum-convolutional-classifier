@@ -39,3 +39,26 @@ class FullyConnected(Unitary):
         return 2 * total
 
         # return 2 * to_qubits(len(wires))
+
+
+class FullyConnectedSimple(Unitary):
+    @staticmethod
+    def compute_decomposition(*params, wires, **_):
+        # Keep the type-checker happy
+        (params,) = params
+
+        op_list = []
+        num_layers = to_qubits(len(wires))
+        for i in range(num_layers):
+            wires, controls = wires[0::2], wires[1::2]
+
+            op_list += [
+                Multiplex(params[2 * i : 2 * (i + 1)], wire, ctrl, qml.RY)
+                for ctrl, wire in zip(controls, wires)
+            ]
+
+        return op_list
+
+    @staticmethod
+    def _shape(wires: Wires) -> int:
+        return 2 * to_qubits(len(wires))
