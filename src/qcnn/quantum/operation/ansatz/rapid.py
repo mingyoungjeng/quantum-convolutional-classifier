@@ -4,7 +4,8 @@ from qcnn.quantum.operation.ansatz import SimpleAnsatz
 
 
 class RapidAnsatz(SimpleAnsatz):
-    def circuit(self, params):
+    def circuit(self, *params):
+        (params,) = params
         max_wires = np.cumsum(self.num_qubits)
         n_dim = min(self.num_qubits)  # Min number of qubits per dimension
 

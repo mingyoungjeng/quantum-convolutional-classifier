@@ -9,7 +9,7 @@ from qcnn.ml.optimize import init_params
 from qcnn.quantum import to_qubits
 from qcnn.quantum.operation import Convolution, Multiplex, Qubits
 from qcnn.quantum.operation.ansatz import Ansatz
-from qcnn.quantum.operation.c2q import ConvolutionComplexAngleFilter
+from qcnn.quantum.operation.c2q import ConvolutionAngleFilter
 from qcnn.quantum.operation.fully_connected import FullyConnected
 
 if TYPE_CHECKING:
@@ -45,7 +45,7 @@ class ConvolutionAnsatz(Ansatz):
         self,
         qubits,
         num_layers=None,
-        U_filter=ConvolutionComplexAngleFilter,
+        U_filter=ConvolutionAngleFilter,
         U_fully_connected=FullyConnected,
         num_features=1,
         pre_op=False,
@@ -62,38 +62,11 @@ class ConvolutionAnsatz(Ansatz):
         self.post_op = post_op
         self.filter_shape = filter_shape
 
-        # Feature qubits
-        top = self.main_qubits.total
-        self.feature_qubits = [list(range(top, top + to_qubits(self.num_features)))]
-        top += to_qubits(self.num_features)
-
-        # Setup ancilla qubits
-        self.ancilla_qubits = []
-        for i, fsq in enumerate(self.filter_shape_qubits):
-            self.ancilla_qubits += [qubits[i][:fsq]]
-            qubits[i] = qubits[i][fsq:]
-        self.main_qubits = qubits
+        # Setup feature and ancilla qubits
+        self._setup_features()
+        self._setup_ancilla()
 
         self._params = init_params(self.shape, angle=True)
-
-    def _filter(self, qubits, params):
-        """Wrapper around self.U_filter that replaces Convolution.filter"""
-
-        # Setup params
-        filter_params, params = params[: self.n_params], params[self.n_params :]
-        shape = (self.num_features, len(filter_params) // self.num_features)
-        filter_params = filter_params.reshape(shape)
-
-        # Setup wires
-        qubits = Qubits(q[:fsq] for q, fsq in zip(qubits, self.filter_shape_qubits))
-        Multiplex(
-            filter_params,
-            qubits.flatten(),
-            self.feature_qubits.flatten(),
-            self.U_filter,
-        )
-
-        return params  # Leftover parameters
 
     def circuit(self, *params: Parameters) -> Wires:
         (params,) = params
@@ -108,14 +81,14 @@ class ConvolutionAnsatz(Ansatz):
         for i in range(self.num_layers):
             qubits = main_qubits + self.ancilla_qubits
 
-            Convolution.shift(self.filter_shape_qubits, qubits, H=False)
+            ### SHIFT
+            Convolution.shift(self._filter_shape_qubits, qubits, H=False)
 
             ### FILTER
             params = self._filter(qubits, params)
 
             ### PERMUTE
-            # Convolution.permute(self.filter_shape_qubits, qubits)
-            for j, fsq in enumerate(self.filter_shape_qubits):
+            for j, fsq in enumerate(self._filter_shape_qubits):
                 main_qubits[n_dim + j] += main_qubits[j][:fsq]
                 main_qubits[j] = main_qubits[j][fsq:]
 
@@ -135,7 +108,7 @@ class ConvolutionAnsatz(Ansatz):
 
     @property
     def shape(self) -> int:
-        n_params = (self.num_layers + self.pre_op + self.post_op) * self.n_params
+        n_params = self._n_params * (self.num_layers + self.pre_op + self.post_op)
         n_params += self.U_fully_connected.shape(self.qubits.flatten())
 
         return n_params
@@ -144,18 +117,14 @@ class ConvolutionAnsatz(Ansatz):
     def max_layers(self) -> int:
         return min((len(q) for q in self.main_qubits))
 
-    @property
-    def filter_shape_qubits(self):
-        return to_qubits(self.filter_shape)
+    def c2q(self, psi_in, _=None):
+        return super().c2q(psi_in=psi_in, wires=self._data_qubits.flatten())
+
+    ### QUBIT PROPERTIES
 
     @property
     def qubits(self) -> Qubits:
         return self._data_qubits + self.feature_qubits
-
-    @property
-    def _data_qubits(self) -> Qubits:
-        data_qubits = zip_longest(self.ancilla_qubits, self.main_qubits, fillvalue=[])
-        return Qubits(chain(*data_qubits))
 
     @property
     def main_qubits(self) -> Qubits:
@@ -181,9 +150,49 @@ class ConvolutionAnsatz(Ansatz):
     def ancilla_qubits(self, q) -> None:
         self._ancilla_qubits = Qubits(q)
 
-    def c2q(self, psi_in, **_):
-        return super().c2q(psi_in=psi_in, wires=self._data_qubits.flatten())
+    ### PRIVATE
+
+    def _setup_features(self) -> None:
+        top = self.main_qubits.total
+        self.feature_qubits = Qubits([range(top, top + to_qubits(self.num_features))])
+        top += to_qubits(self.num_features)
+
+    def _setup_ancilla(self) -> None:
+        self.ancilla_qubits = []
+        qubits = self.main_qubits
+        for i, fsq in enumerate(self._filter_shape_qubits):
+            self.ancilla_qubits += [qubits[i][:fsq]]
+            qubits[i] = qubits[i][fsq:]
+        self.main_qubits = qubits
+
+    def _filter(self, qubits, params):
+        """Wrapper around self.U_filter that replaces Convolution.filter"""
+
+        # Setup params
+        filter_params, params = params[: self._n_params], params[self._n_params :]
+        shape = (self.num_features, len(filter_params) // self.num_features)
+        filter_params = filter_params.reshape(shape)
+
+        # Setup wires
+        qubits = Qubits(q[:fsq] for q, fsq in zip(qubits, self._filter_shape_qubits))
+        Multiplex(
+            filter_params,
+            qubits.flatten(),
+            self.feature_qubits.flatten(),
+            self.U_filter,
+        )
+
+        return params  # Leftover parameters
 
     @property
-    def n_params(self) -> int:
-        return self.num_features * self.U_filter.shape(sum(self.filter_shape_qubits))
+    def _data_qubits(self) -> Qubits:
+        data_qubits = zip_longest(self.ancilla_qubits, self.main_qubits, fillvalue=[])
+        return Qubits(chain(*data_qubits))
+
+    @property
+    def _filter_shape_qubits(self):
+        return to_qubits(self.filter_shape)
+
+    @property
+    def _n_params(self) -> int:
+        return self.num_features * self.U_filter.shape(sum(self._filter_shape_qubits))

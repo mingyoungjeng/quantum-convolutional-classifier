@@ -81,7 +81,8 @@ class SimpleAnsatz(Ansatz):
     pool: type[Operation] = SimplePooling
     fully_connected: type[Operation] = SimpleFiltering
 
-    def circuit(self, params):
+    def circuit(self, *params):
+        (params,) = params
         max_wires = np.cumsum(self.num_qubits)
         offset = -int(
             np.log2(self.num_classes) // -len(self.num_qubits)

@@ -101,7 +101,8 @@ class BaselineAnsatz(Ansatz):
 
         return controlled
 
-    def circuit(self, params):
+    def circuit(self, *params):
+        (params,) = params
         idx = np.cumsum([self.convolve.shape(), self.pool.shape()])
         wires = self.qubits.flatten()
         for _ in range(self.num_layers):

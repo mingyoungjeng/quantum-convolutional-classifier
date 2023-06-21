@@ -39,7 +39,8 @@ class FullyConnectedAnsatz(Ansatz):
     # def _shape(self):
     #     return BasicEntanglerLayers.shape(self.num_layers, self.num_wires)
 
-    def circuit(self, params):
+    def circuit(self, *params):
+        params, = params
         params = params.reshape((self.num_layers, self.layer.shape(self.num_wires)))
         # BasicEntanglerLayers(params, wires=self.wires)
         for p in params:

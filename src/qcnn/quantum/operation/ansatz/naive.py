@@ -10,7 +10,8 @@ class NaiveAnsatz(Ansatz):
     convolve: type[Operation] = FullyConnectedLayer
     fully_connected: type[Operation] = FullyConnectedLayer
 
-    def circuit(self, params):
+    def circuit(self, *params):
+        (params,) = params
         max_wires = np.cumsum(self.num_qubits)
 
         idx = [self.convolve.shape(len(self.num_qubits))]
