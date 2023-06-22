@@ -16,4 +16,4 @@ from .rapid import RapidAnsatz
 
 # v4
 from .convolution import ConvolutionAnsatz
-from .convolution_alt import ConvolutionAnsatz as ConvolutionAltAnsatz
+from .convolution_pooling import ConvolutionPoolingAnsatz
