@@ -6,7 +6,7 @@ from pennylane.wires import Wires
 from qcnn.quantum.operation import Convolution, Qubits
 from qcnn.quantum.operation.ansatz import Ansatz
 
-from qcnn.quantum.operation.ansatz import ConvolutionPoolingAnsatz
+from qcnn.quantum.operation.ansatz.convolution_pooling import ConvolutionPoolingAnsatz
 
 if TYPE_CHECKING:
     from qcnn.quantum.operation import Parameters
