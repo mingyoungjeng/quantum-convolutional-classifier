@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     # Create model
     cls = QCNN if is_quantum else CNN
-    transform = image_transform(dims, flatten=is_quantum)
+    transform = ImageTransform(dims, flatten=is_quantum)
     data = BinaryData(FashionMNIST, transform, batch_size=batch_size)
     optimizer = Optimizer(Adam)
     loss = CrossEntropyLoss()
