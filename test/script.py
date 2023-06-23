@@ -22,7 +22,7 @@ if __name__ == "__main__":
     num_trials = 10
     dims = (28, 28)
     num_layers = 4
-    batch_size = (32, 1000)
+    batch_size = (4, 1000)
     epoch = 1
     options = {}
 
