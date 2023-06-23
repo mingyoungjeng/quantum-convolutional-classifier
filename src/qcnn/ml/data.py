@@ -83,7 +83,7 @@ class ImageTransform(transforms.Compose):
             ops += [self._flatten()]
 
         if norm:
-            ops += [self._norm]
+            ops += [self._norm()]
 
         super().__init__(ops)
 
