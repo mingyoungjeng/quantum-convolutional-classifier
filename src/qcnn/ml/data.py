@@ -68,37 +68,45 @@ class BinaryData(Data):
             raise ValueError("Binary data must have only two classes")
 
 
-def image_transform(dims: Iterable[int], fix_bands=True, flatten=True, norm=True):
-    ops = [
-        transforms.Resize(dims[:2]),
-        transforms.ToTensor(),
-        transforms.Lambda(torch.squeeze),
-    ]
+class ImageTransform(transforms.Compose):
+    def __init__(self, dims: Iterable[int], fix_bands=True, flatten=True, norm=True):
+        ops = [
+            transforms.Resize(dims[:2]),
+            transforms.ToTensor(),
+            transforms.Lambda(torch.squeeze),
+        ]
 
-    if fix_bands and len(dims) >= 3:
-        ops += [transforms.Lambda(lambda x: torch.moveaxis(x, 0, -1))]
+        if fix_bands and len(dims) >= 3:
+            ops += [self._fix_bands()]
 
-    if flatten:
-        ops += [transforms.Lambda(lambda x: flatten_array(x.numpy(), pad=True))]
+        if flatten:
+            ops += [self._flatten()]
 
-    if norm:
-        ops += [transforms.Lambda(normalize)]
+        if norm:
+            ops += [self._norm]
 
-    return transforms.Compose(ops)
+        super().__init__(ops)
+
+    def __repr__(self) -> str:
+        return "image_transform"
+
+    @staticmethod
+    def _fix_bands():
+        return transforms.Lambda(lambda x: torch.moveaxis(x, 0, -1))
+
+    @staticmethod
+    def _flatten():
+        return transforms.Lambda(lambda x: flatten_array(x.numpy(), pad=True))
+
+    @staticmethod
+    def _norm():
+        return transforms.Lambda(normalize)
 
 
-def baseline_image_transform(
-    dims: Iterable[int], fix_bands=True, flatten=True, norm=True
-):
-    ops = [transforms.Resize(dims[:2]), transforms.ToTensor()]
+class ImageTransform1D(ImageTransform):
+    def __repr__(self) -> str:
+        return "image_transform_1D"
 
-    if fix_bands and len(dims) >= 3:
-        ops += [transforms.Lambda(lambda x: torch.moveaxis(torch.squeeze(x), 0, -1))]
-
-    if flatten:
-        ops += [transforms.Lambda(torch.flatten)]
-
-    if norm:
-        ops += [transforms.Lambda(normalize)]
-
-    return transforms.Compose(ops)
+    @staticmethod
+    def _flatten():
+        return transforms.Lambda(torch.flatten)

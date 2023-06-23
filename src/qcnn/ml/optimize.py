@@ -43,6 +43,8 @@ class Optimizer(optim.Optimizer):
             self.reset()
         else:
             cls.__init__(self, params, *args, **kwargs)
+            
+        self.args, self.kwargs = args, kwargs
 
     def __call__(self, params: Tensor | int) -> Optimizer:
         self.reset()
@@ -68,6 +70,9 @@ class Optimizer(optim.Optimizer):
 
         n = sum([param.flatten().shape[0] for param in params])
         return n
+
+    def __repr__(self) -> str:
+        return f"{type(self).__bases__[-1]}, {self.args=}, {self.kwargs=}"
 
 
 def init_params(size, angle=False):

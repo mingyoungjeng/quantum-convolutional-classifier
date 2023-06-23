@@ -74,8 +74,14 @@ class BaselinePooling3(Unitary):
 
 # TODO: work with num_classes > 2
 class BaselineAnsatz(Ansatz):
-    convolve: type[Operation] = BaselineFiltering
-    pool: type[Operation] = BaselinePooling1
+    __slots__ = "convolve", "pool"
+    convolve: type[Operation]
+    pool: type[Operation]
+    
+    def __init__(self, qubits, num_layers: int = 1, convolve=BaselineFiltering, pool=BaselinePooling1):
+        self.convolve = convolve
+        self.pool = pool
+        super().__init__(qubits, num_layers)
 
     @classmethod
     def _convolution(cls, params, iterable):
@@ -114,7 +120,7 @@ class BaselineAnsatz(Ansatz):
 
     @property
     def shape(self):
-        return (self.convolve.shape() + self.pool.shape()) * self.num_layers
+        return (self.convolve.shape(2) + self.pool.shape(2)) * self.num_layers
 
     @property
     def max_layers(self) -> int:

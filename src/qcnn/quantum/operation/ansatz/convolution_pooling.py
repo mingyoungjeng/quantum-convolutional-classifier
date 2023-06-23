@@ -15,6 +15,7 @@ from qcnn.quantum.operation.fully_connected import FullyConnected
 if TYPE_CHECKING:
     from typing import Iterable
     from qcnn.quantum.operation import Parameters, Unitary
+    from pennylane.operation import Operation
 
 
 class ConvolutionPoolingAnsatz(Ansatz):
@@ -32,8 +33,8 @@ class ConvolutionPoolingAnsatz(Ansatz):
     _ancilla_qubits: Qubits
     _feature_qubits: Qubits
 
-    U_filter: Unitary
-    U_fully_connected: Unitary
+    U_filter: type[Unitary]
+    U_fully_connected: type[Unitary]
 
     num_features: int
     pre_op: bool
@@ -43,19 +44,19 @@ class ConvolutionPoolingAnsatz(Ansatz):
 
     def __init__(
         self,
-        qubits,
-        num_layers=None,
-        U_filter=ConvolutionAngleFilter,
-        U_fully_connected=FullyConnected,
-        num_features=1,
-        pre_op=False,
-        post_op=False,
-        filter_shape=(2, 2),
+        qubits: Qubits,
+        num_layers: int = None,
+        U_filter: type[Unitary] = ConvolutionAngleFilter,
+        U_fully_connected: type[Unitary] = FullyConnected,
+        num_features: int = 1,
+        pre_op: bool = False,
+        post_op: bool = False,
+        filter_shape: Iterable[int] = (2, 2),
     ):
-        Module.__init__(self)
+        Module.__init__(self)  # pylint: disable=non-parent-init-called
         self.main_qubits = qubits
-        self.U_filter = U_filter
-        self.U_fully_connected = U_fully_connected
+        self.U_filter = U_filter # pylint: disable=invalid-name
+        self.U_fully_connected = U_fully_connected # pylint: disable=invalid-name
         self.num_features = num_features
         self.pre_op = pre_op
         self.post_op = post_op
@@ -78,7 +79,7 @@ class ConvolutionPoolingAnsatz(Ansatz):
             params = self._filter(self.ancilla_qubits, params)
 
         # Convolution layers
-        for i in range(self.num_layers):
+        for i in range(self.num_layers): # pylint: disable=unused-variable
             qubits = main_qubits + self.ancilla_qubits
 
             ### SHIFT
@@ -117,7 +118,7 @@ class ConvolutionPoolingAnsatz(Ansatz):
     def max_layers(self) -> int:
         return min((len(q) for q in self.main_qubits))
 
-    def c2q(self, psi_in, _=None):
+    def c2q(self, psi_in, _=None) -> Operation:
         return super().c2q(psi_in=psi_in, wires=self._data_qubits.flatten())
 
     ### QUBIT PROPERTIES
