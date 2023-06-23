@@ -66,7 +66,9 @@ if __name__ == "__main__":
     # Save and print accuracy results
     save_dataframe_as_csv(path.with_suffix(".csv"), results)
     acc = results["accuracy"]
-    print(acc.median(), acc.mean(), acc.std())
+    model.logger.info(
+        f"Accuracy: median={acc.median()}, mean={acc.mean()}, max={acc.max()}, min={acc.min()}, std={acc.std()}"
+    )
 
     # Save aggregated loss history figure
     (fig,) = experiment.draw(path.with_suffix(".png"))
