@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools"]
-requires-python = ">=3.10"
+# requires-python = ">=3.10"
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-development = ["black", "pylint"]
+development = ["black", "pylint", "ipykernel"]
 
 [project.scripts]
 qcc = "qcc.cli:cli"

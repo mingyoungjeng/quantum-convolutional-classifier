@@ -2,7 +2,8 @@
 
 ## Installation
 
-`pip install -e .`
+`pip install --upgrade build`
+`pip install -e .[development]`
 
 ## Execution
 
