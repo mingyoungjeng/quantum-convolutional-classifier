@@ -16,7 +16,11 @@ dependencies = [
     "astropy",
     "polars>=0.18",
     "matplotlib",
+    "click",
 ]
 
 [project.optional-dependencies]
 development = ["black", "pylint"]
+
+[project.scripts]
+qcnn-run = "qcnn.cli:cli"

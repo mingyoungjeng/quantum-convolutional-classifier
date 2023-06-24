@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import sys
 from pathlib import Path
 from PIL import Image
 from astropy.io import fits
@@ -81,3 +82,16 @@ def draw(
 #         return _draw(func(args, kwargs), filename, overwrite, include_axis)
 
 #     return wrapper
+
+
+def lookup(module: str, root: str = None):
+    if "." in module:
+        root, module = module.rsplit(".", 1)
+    
+    if root is None:
+        root = __name__ 
+        
+    if isinstance(root, str):
+        root = sys.modules[root]
+        
+    return getattr(root, module)
