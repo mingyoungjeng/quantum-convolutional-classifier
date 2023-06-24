@@ -1,3 +1,9 @@
 # Quantum Convolutional Classifier (QCC)
 
-To install, run `pip install -e .`
+## Installation
+
+`pip install -e .`
+
+## Execution
+
+`qcc --help`
