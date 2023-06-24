@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, Iterable
 from attrs import define, field, asdict, Factory
 from torch import nn
 import numpy as np
-from qcnn.ml import USE_CUDA
-from qcnn.ml.model import Model
+from qcc.ml import USE_CUDA
+from qcc.ml.model import Model
 
 if TYPE_CHECKING:
     # from typing import Iterable

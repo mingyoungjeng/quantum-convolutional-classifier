@@ -6,7 +6,7 @@ from pathlib import Path
 from datetime import datetime
 from attrs import define, field
 import polars as pl
-from qcnn.file import save_dataframe_as_csv
+from qcc.file import save_dataframe_as_csv
 
 if TYPE_CHECKING:
     from typing import Optional

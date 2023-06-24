@@ -1,6 +1,6 @@
 import numpy as np
-from qcnn.quantum import to_qubits
-from qcnn.quantum.operation.ansatz import SimpleAnsatz
+from qcc.quantum import to_qubits
+from qcc.quantum.operation.ansatz import SimpleAnsatz
 
 
 class RapidAnsatz(SimpleAnsatz):

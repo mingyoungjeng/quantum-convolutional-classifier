@@ -4,12 +4,12 @@ from ast import literal_eval
 
 import click
 
-from qcnn.ml.data import Data
-from qcnn.ml.optimize import Optimizer
-from qcnn.experiment import Experiment
-from qcnn.qcnn import QCNN
-from qcnn.cnn import CNN
-from qcnn.file import save_dataframe_as_csv, lookup
+from qcc.ml.data import Data
+from qcc.ml.optimize import Optimizer
+from qcc.experiment import Experiment
+from qcc.qcnn import QCNN
+from qcc.cnn import CNN
+from qcc.file import save_dataframe_as_csv, lookup
 
 
 class ObjectType(click.ParamType):
@@ -25,7 +25,7 @@ class ObjectType(click.ParamType):
 
 class AnsatzType(ObjectType):
     name = "ansatz"
-    root = "qcnn.quantum.operation.ansatz"
+    root = "qcc.quantum.operation.ansatz"
 
 
 class DatasetType(ObjectType):
@@ -45,7 +45,7 @@ class LossType(ObjectType):
 
 class TransformType(ObjectType):
     name = "transform"
-    root = "qcnn.ml.data"
+    root = "qcc.ml.data"
 
 
 class TupleType(click.ParamType):

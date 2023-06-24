@@ -6,8 +6,8 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader, Subset
 from torchvision import transforms
-from qcnn.ml import USE_CUDA
-from qcnn.quantum import flatten_array, normalize
+from qcc.ml import USE_CUDA
+from qcc.quantum import flatten_array, normalize
 
 if TYPE_CHECKING:
     from typing import Optional, Callable

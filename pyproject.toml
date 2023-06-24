@@ -4,7 +4,7 @@ requires-python = ">=3.10"
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "qcnn"
+name = "qcc"
 dynamic = ["version"] # "dependencies"
 dependencies = [
     "attrs",
@@ -23,4 +23,4 @@ dependencies = [
 development = ["black", "pylint"]
 
 [project.scripts]
-qcnn-run = "qcnn.cli:cli"
+qcc = "qcc.cli:cli"

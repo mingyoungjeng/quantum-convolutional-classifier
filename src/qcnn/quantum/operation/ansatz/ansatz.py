@@ -8,17 +8,17 @@ from pennylane.wires import Wires
 from pennylane.templates import AmplitudeEmbedding
 
 from torch.nn import Module
-from qcnn.quantum import to_qubits, wires_to_qubits
-from qcnn.quantum.operation import Qubits
-from qcnn.ml import is_iterable
-from qcnn.ml.optimize import init_params
-from qcnn.file import draw
+from qcc.quantum import to_qubits, wires_to_qubits
+from qcc.quantum.operation import Qubits
+from qcc.ml import is_iterable
+from qcc.ml.optimize import init_params
+from qcc.file import draw
 
 if TYPE_CHECKING:
     from typing import Iterable, Optional
     from numbers import Number
     from pennylane.operation import Operation
-    from qcnn.quantum.operation import Parameters
+    from qcc.quantum.operation import Parameters
 
     Statevector = Iterable[Number]
 

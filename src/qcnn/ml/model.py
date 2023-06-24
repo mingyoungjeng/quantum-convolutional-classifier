@@ -3,15 +3,15 @@ from typing import TYPE_CHECKING
 
 from attrs import define
 from torch.nn import Module
-from qcnn.ml.data import Data
-from qcnn.ml.optimize import Optimizer, train, test
-from qcnn.experiment.logger import Logger
+from qcc.ml.data import Data
+from qcc.ml.optimize import Optimizer, train, test
+from qcc.experiment.logger import Logger
 import matplotlib.pyplot as plt
 
 if TYPE_CHECKING:
     from typing import Optional
     from pathlib import Path
-    from qcnn.ml import MLFunction, CostFunction
+    from qcc.ml import MLFunction, CostFunction
 
 
 @define

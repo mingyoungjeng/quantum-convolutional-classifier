@@ -5,16 +5,16 @@ from itertools import chain, zip_longest
 from torch.nn import Module
 from pennylane.wires import Wires
 
-from qcnn.ml.optimize import init_params
-from qcnn.quantum import to_qubits
-from qcnn.quantum.operation import Convolution, Multiplex, Qubits
-from qcnn.quantum.operation.ansatz import Ansatz
-from qcnn.quantum.operation.c2q import ConvolutionAngleFilter
-from qcnn.quantum.operation.fully_connected import FullyConnected
+from qcc.ml.optimize import init_params
+from qcc.quantum import to_qubits
+from qcc.quantum.operation import Convolution, Multiplex, Qubits
+from qcc.quantum.operation.ansatz import Ansatz
+from qcc.quantum.operation.c2q import ConvolutionAngleFilter
+from qcc.quantum.operation.fully_connected import FullyConnected
 
 if TYPE_CHECKING:
     from typing import Iterable
-    from qcnn.quantum.operation import Parameters, Unitary
+    from qcc.quantum.operation import Parameters, Unitary
     from pennylane.operation import Operation
 
 
@@ -55,8 +55,8 @@ class ConvolutionPoolingAnsatz(Ansatz):
     ):
         Module.__init__(self)  # pylint: disable=non-parent-init-called
         self.main_qubits = qubits
-        self.U_filter = U_filter # pylint: disable=invalid-name
-        self.U_fully_connected = U_fully_connected # pylint: disable=invalid-name
+        self.U_filter = U_filter  # pylint: disable=invalid-name
+        self.U_fully_connected = U_fully_connected  # pylint: disable=invalid-name
         self.num_features = num_features
         self.pre_op = pre_op
         self.post_op = post_op
@@ -79,7 +79,7 @@ class ConvolutionPoolingAnsatz(Ansatz):
             params = self._filter(self.ancilla_qubits, params)
 
         # Convolution layers
-        for i in range(self.num_layers): # pylint: disable=unused-variable
+        for i in range(self.num_layers):  # pylint: disable=unused-variable
             qubits = main_qubits + self.ancilla_qubits
 
             ### SHIFT

@@ -5,12 +5,12 @@ from itertools import product
 from attrs import define, field
 import polars as pl
 import matplotlib.pyplot as plt
-from qcnn.file import draw, save_dataframe_as_csv
-from qcnn.experiment.logger import Logger
+from qcc.file import draw, save_dataframe_as_csv
+from qcc.experiment.logger import Logger
 
 if TYPE_CHECKING:
     from typing import Optional, Callable
-    from qcnn.experiment.logger import SchemaDefinition
+    from qcc.experiment.logger import SchemaDefinition
 
 
 @define

@@ -5,7 +5,7 @@ from numbers import Number
 from math import pi
 import torch
 from torch import optim
-from qcnn.ml import create_tensor, USE_CUDA
+from qcc.ml import create_tensor, USE_CUDA
 
 if TYPE_CHECKING:
     from typing import Callable, Optional
@@ -43,7 +43,7 @@ class Optimizer(optim.Optimizer):
             self.reset()
         else:
             cls.__init__(self, params, *args, **kwargs)
-            
+
         self.args, self.kwargs = args, kwargs
 
     def __call__(self, params: Tensor | int) -> Optimizer:

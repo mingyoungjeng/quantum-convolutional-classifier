@@ -3,9 +3,9 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.ops import Controlled
-from qcnn.quantum.operation.ansatz import Ansatz
-from qcnn.quantum.operation import Unitary
-from qcnn.quantum import parity
+from qcc.quantum.operation.ansatz import Ansatz
+from qcc.quantum.operation import Unitary
+from qcc.quantum import parity
 
 
 class SimpleFiltering(Unitary):

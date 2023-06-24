@@ -6,8 +6,8 @@ from itertools import zip_longest, tee
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
-from qcnn.quantum.operation import Unitary
-from qcnn.quantum.operation.ansatz import Ansatz
+from qcc.quantum.operation import Unitary
+from qcc.quantum.operation.ansatz import Ansatz
 
 
 class BaselineFiltering(Unitary):
@@ -77,8 +77,14 @@ class BaselineAnsatz(Ansatz):
     __slots__ = "convolve", "pool"
     convolve: type[Operation]
     pool: type[Operation]
-    
-    def __init__(self, qubits, num_layers: int = 1, convolve=BaselineFiltering, pool=BaselinePooling1):
+
+    def __init__(
+        self,
+        qubits,
+        num_layers: int = 1,
+        convolve=BaselineFiltering,
+        pool=BaselinePooling1,
+    ):
         self.convolve = convolve
         self.pool = pool
         super().__init__(qubits, num_layers)

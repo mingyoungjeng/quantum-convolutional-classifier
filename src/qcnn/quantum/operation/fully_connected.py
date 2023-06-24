@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING
 
 import pennylane as qml
 
-from qcnn.quantum import to_qubits
-from qcnn.quantum.operation import Unitary, Multiplex
+from qcc.quantum import to_qubits
+from qcc.quantum.operation import Unitary, Multiplex
 
 if TYPE_CHECKING:
     from pennylane.wires import Wires

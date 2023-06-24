@@ -5,7 +5,7 @@ from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 from pennylane.ops import Controlled
 
-from qcnn.quantum import binary
+from qcc.quantum import binary
 
 if TYPE_CHECKING:
     from typing import Iterable, Optional, Mapping

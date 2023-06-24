@@ -1,9 +1,9 @@
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
-from qcnn.quantum.operation.ansatz import Ansatz
-from qcnn.quantum.operation.ansatz.fully_connected import FullyConnectedLayer
-from qcnn.quantum import parity
+from qcc.quantum.operation.ansatz import Ansatz
+from qcc.quantum.operation.ansatz.fully_connected import FullyConnectedLayer
+from qcc.quantum import parity
 
 
 class NaiveAnsatz(Ansatz):

@@ -6,8 +6,8 @@ import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 
-from qcnn.quantum import flatten_array, normalize
-from qcnn.quantum.operation import Multiplex, Unitary
+from qcc.quantum import flatten_array, normalize
+from qcc.quantum.operation import Multiplex, Unitary
 
 if TYPE_CHECKING:
     from typing import Iterable

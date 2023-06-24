@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING
 
 from attrs import define, field
 
-from qcnn.ml.model import Model
-from qcnn.quantum.operation.ansatz import Ansatz
+from qcc.ml.model import Model
+from qcc.quantum.operation.ansatz import Ansatz
 
 if TYPE_CHECKING:
     pass

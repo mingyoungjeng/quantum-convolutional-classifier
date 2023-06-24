@@ -6,7 +6,7 @@ from PIL import Image
 from astropy.io import fits
 import torch
 import torch.nn.functional as F
-from qcnn.ml import create_tensor
+from qcc.ml import create_tensor
 
 if TYPE_CHECKING:
     from typing import Optional, Iterable

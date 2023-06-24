@@ -3,9 +3,9 @@ from itertools import tee
 import pennylane as qml
 
 # from pennylane.templates import BasicEntanglerLayers
-from qcnn.quantum.operation.ansatz import Ansatz
-from qcnn.quantum.operation import Unitary
-from qcnn.quantum import parity
+from qcc.quantum.operation.ansatz import Ansatz
+from qcc.quantum.operation import Unitary
+from qcc.quantum import parity
 
 
 class FullyConnectedLayer(Unitary):
@@ -40,7 +40,7 @@ class FullyConnectedAnsatz(Ansatz):
     #     return BasicEntanglerLayers.shape(self.num_layers, self.num_wires)
 
     def circuit(self, *params):
-        params, = params
+        (params,) = params
         params = params.reshape((self.num_layers, self.layer.shape(self.num_wires)))
         # BasicEntanglerLayers(params, wires=self.wires)
         for p in params:
