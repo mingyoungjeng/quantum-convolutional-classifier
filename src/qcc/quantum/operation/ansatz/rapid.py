@@ -6,8 +6,8 @@ from qcc.quantum.operation.ansatz import SimpleAnsatz
 class RapidAnsatz(SimpleAnsatz):
     def circuit(self, *params):
         (params,) = params
-        max_wires = np.cumsum(self.num_qubits)
-        n_dim = min(self.num_qubits)  # Min number of qubits per dimension
+        max_wires = np.cumsum(self.qubits.shape)
+        n_dim = min(self.qubits.shape)  # Min number of qubits per dimension
 
         # Final behavior has different behavior
         for i in reversed(range(1, self.num_layers)):
@@ -42,15 +42,15 @@ class RapidAnsatz(SimpleAnsatz):
         # return np.sort(meas[: int(np.ceil(np.log2(num_classes)))])
         return np.sort(meas)
 
-    @property
+    @Ansatz.parameter  # pylint: disable=no-member
     def shape(self):
         n_params = 0
-        n_dim = min(self.num_qubits)  # Min number of qubits per dimension
+        n_dim = min(self.qubits.shape)  # Min number of qubits per dimension
 
         for i in range(self.num_layers):
             n_params += self.convolve.shape()  # * n_dim  # * len(dims_q)
             half, mod = np.divmod(n_dim, 2)
-            n_params += self.pool.shape() * len(self.num_qubits)  # * half
+            n_params += self.pool.shape() * len(self.qubits.shape)  # * half
             n_dim = half + mod
 
         n_params += self.convolve.shape()  # * n_dim * len(dims_q)
@@ -59,4 +59,4 @@ class RapidAnsatz(SimpleAnsatz):
 
     @property
     def max_layers(self) -> int:
-        return to_qubits(min(self.num_qubits))
+        return to_qubits(min(self.qubits.shape))

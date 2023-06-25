@@ -38,6 +38,9 @@ class ModuleMeta(type):
     def __new__(cls, name, bases, namespace):
         bases = *bases, TorchModule
 
+        if "parameter" not in namespace:
+            namespace["parameter"] = parameter
+
         if "__init__" in namespace:
             old_init = namespace["__init__"]
 

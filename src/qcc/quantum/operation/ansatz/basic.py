@@ -171,9 +171,9 @@ class BasicAnsatz(Ansatz):
 
     def circuit(self, *params):
         (params,) = params
-        max_wires = np.cumsum(self.num_qubits)
+        max_wires = np.cumsum(self.qubits.shape)
         offset = -int(
-            np.log2(self.num_classes) // -len(self.num_qubits)
+            np.log2(self.num_classes) // -len(self.qubits.shape)
         )  # Ceiling division
         wires = max_wires - offset
 
@@ -213,19 +213,19 @@ class BasicAnsatz(Ansatz):
 
         return parity(result)
 
-    @property
+    @Ansatz.parameter
     def shape(self):
         """
         This formula was calculated pre-refactoring and I'm too lazy to recompute it
         """
-        n_conv_params = self.convolve.shape(self.num_qubits) * self.num_layers
+        n_conv_params = self.convolve.shape(self.qubits.shape) * self.num_layers
         n_pool_params = int(
             self.pool.shape(range(2))
-            * len(self.num_qubits)
+            * len(self.qubits.shape)
             * (self.num_layers - 1)
             * (
                 self.num_layers / 2
-                - (np.log2(self.num_classes) // -len(self.num_qubits))
+                - (np.log2(self.num_classes) // -len(self.qubits.shape))
                 - 1
             )
         )
@@ -236,6 +236,6 @@ class BasicAnsatz(Ansatz):
     def max_layers(self) -> int:
         return (
             1
-            + min(self.num_qubits)
-            + int(np.log2(self.num_classes) // -len(self.num_qubits))
+            + min(self.qubits.shape)
+            + int(np.log2(self.num_classes) // -len(self.qubits.shape))
         )

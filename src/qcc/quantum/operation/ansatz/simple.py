@@ -83,9 +83,9 @@ class SimpleAnsatz(Ansatz):
 
     def circuit(self, *params):
         (params,) = params
-        max_wires = np.cumsum(self.num_qubits)
+        max_wires = np.cumsum(self.qubits.shape)
         offset = -int(
-            np.log2(self.num_classes) // -len(self.num_qubits)
+            np.log2(self.num_classes) // -len(self.qubits.shape)
         )  # Ceiling division
         wires = max_wires - offset
 
@@ -121,7 +121,7 @@ class SimpleAnsatz(Ansatz):
 
         return parity(result)
 
-    @property
+    @Ansatz.parameter  # pylint: disable=no-member
     def shape(self):
         n_conv_params = self.convolve.shape() * self.num_layers
         n_pool_params = self.pool.shape() * (self.num_layers - 1)
@@ -132,6 +132,6 @@ class SimpleAnsatz(Ansatz):
     def max_layers(self) -> int:
         return (
             1
-            + min(self.num_qubits)
-            + int(np.log2(self.num_classes) // -len(self.num_qubits))
+            + min(self.qubits.shape)
+            + int(np.log2(self.num_classes) // -len(self.qubits.shape))
         )

@@ -37,26 +37,26 @@ class FullyConnectedAnsatz(Ansatz):
     layer = FullyConnectedLayer
     # @property
     # def _shape(self):
-    #     return BasicEntanglerLayers.shape(self.num_layers, self.num_wires)
+    #     return BasicEntanglerLayers.shape(self.num_layers, self.qubits.total)
 
     def circuit(self, *params):
         (params,) = params
-        params = params.reshape((self.num_layers, self.layer.shape(self.num_wires)))
-        # BasicEntanglerLayers(params, wires=self.wires)
+        params = params.reshape((self.num_layers, self.layer.shape(self.qubits.total)))
+        # BasicEntanglerLayers(params, wires=self.qubits.flatten())
         for p in params:
-            self.layer(p, wires=self.wires)
+            self.layer(p, wires=self.qubits.flatten())
 
-        return self.wires
+        return self.qubits.flatten()
 
     def post_processing(self, result):
         result = super().post_processing(result)
 
         return parity(result)
 
-    @property
+    @Ansatz.parameter  # pylint: disable=no-member
     def shape(self):
         # return np.prod(self._shape)
-        return self.num_layers * self.layer.shape(self.num_wires)
+        return self.num_layers * self.layer.shape(self.qubits.total)
 
     @property
     def max_layers(self) -> int:

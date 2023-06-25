@@ -9,7 +9,6 @@ from qcc.quantum.operation import Convolution, Multiplex, Qubits
 from qcc.quantum.operation.ansatz import Ansatz
 from qcc.quantum.operation.c2q import ConvolutionAngleFilter
 from qcc.quantum.operation.fully_connected import FullyConnected
-from qcc.ml import parameter
 
 if TYPE_CHECKING:
     from typing import Iterable
@@ -104,7 +103,7 @@ class ConvolutionPoolingAnsatz(Ansatz):
 
         return meas[-1]
 
-    @parameter
+    @Ansatz.parameter  # pylint: disable=no-member
     def shape(self) -> int:
         n_params = self._n_params * (self.num_layers + self.pre_op + self.post_op)
         n_params += self.U_fully_connected.shape(self.qubits.flatten())

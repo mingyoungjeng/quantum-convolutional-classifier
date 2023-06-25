@@ -35,4 +35,4 @@ class Shift(Operation):
         return op_list
 
     def adjoint(self) -> Operation:
-        return Shift(-self.parameters, self.wires)
+        return Shift(-self.parameters, self.qubits.flatten())

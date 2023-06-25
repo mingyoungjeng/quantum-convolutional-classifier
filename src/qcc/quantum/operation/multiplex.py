@@ -72,4 +72,6 @@ class Multiplex(Operation):
         ]
 
     def adjoint(self) -> Operation:
-        return Multiplex(self.hyperparameters["op"], -self.parameters, self.wires)
+        return Multiplex(
+            self.hyperparameters["op"], -self.parameters, self.qubits.flatten()
+        )
