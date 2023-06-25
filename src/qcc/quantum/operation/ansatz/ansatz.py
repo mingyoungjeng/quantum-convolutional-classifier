@@ -1,17 +1,15 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.templates import AmplitudeEmbedding
 
-from torch.nn import Module
 from qcc.quantum import to_qubits, wires_to_qubits
 from qcc.quantum.operation import Qubits
-from qcc.ml import is_iterable
-from qcc.ml.optimize import init_params
+from qcc.ml import is_iterable, ModuleMeta
 from qcc.file import draw
 
 if TYPE_CHECKING:
@@ -29,19 +27,19 @@ def is_multidimensional(wires: Qubits):
     return False
 
 
-# TODO: turn into metaclass / decorator
-# (especially useful for post_init parameters initialization)
-class Ansatz(Module, ABC):
-    __slots__ = "_qubits", "_num_layers", "_params"
+class MetaAnsatz(ModuleMeta, ABCMeta):
+    pass
+
+
+class Ansatz(metaclass=MetaAnsatz):
+    __slots__ = "_qubits", "_num_layers"
 
     _qubits: Qubits
     _num_layers: int
 
     def __init__(self, qubits, num_layers: int = 1):
-        super().__init__()
         self.qubits = qubits
         self.num_layers = num_layers
-        self._params = init_params(self.shape, angle=True)
 
     # Main properties
 
@@ -78,12 +76,6 @@ class Ansatz(Module, ABC):
 
     @abstractmethod
     def circuit(self, *params: Parameters) -> Wires:
-        pass
-
-    @property
-    @abstractmethod
-    def shape(self) -> int:
-        # TODO: for now, parameters are set using self.shape(), but want to change that
         pass
 
     @property

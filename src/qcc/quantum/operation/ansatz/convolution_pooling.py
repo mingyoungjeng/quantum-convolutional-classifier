@@ -2,15 +2,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from itertools import chain, zip_longest
-from torch.nn import Module
 from pennylane.wires import Wires
 
-from qcc.ml.optimize import init_params
 from qcc.quantum import to_qubits
 from qcc.quantum.operation import Convolution, Multiplex, Qubits
 from qcc.quantum.operation.ansatz import Ansatz
 from qcc.quantum.operation.c2q import ConvolutionAngleFilter
 from qcc.quantum.operation.fully_connected import FullyConnected
+from qcc.ml import parameter
 
 if TYPE_CHECKING:
     from typing import Iterable
@@ -53,7 +52,6 @@ class ConvolutionPoolingAnsatz(Ansatz):
         post_op: bool = False,
         filter_shape: Iterable[int] = (2, 2),
     ):
-        Module.__init__(self)  # pylint: disable=non-parent-init-called
         self.main_qubits = qubits
         self.U_filter = U_filter  # pylint: disable=invalid-name
         self.U_fully_connected = U_fully_connected  # pylint: disable=invalid-name
@@ -67,7 +65,6 @@ class ConvolutionPoolingAnsatz(Ansatz):
         self._setup_ancilla()
 
         self.num_layers = num_layers
-        self._params = init_params(self.shape, angle=True)
 
     def circuit(self, *params: Parameters) -> Wires:
         (params,) = params
@@ -107,7 +104,7 @@ class ConvolutionPoolingAnsatz(Ansatz):
 
         return meas[-1]
 
-    @property
+    @parameter
     def shape(self) -> int:
         n_params = self._n_params * (self.num_layers + self.pre_op + self.post_op)
         n_params += self.U_fully_connected.shape(self.qubits.flatten())

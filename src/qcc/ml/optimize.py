@@ -2,10 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
 from numbers import Number
-from math import pi
 import torch
 from torch import optim
-from qcc.ml import create_tensor, USE_CUDA
+from qcc.ml import USE_CUDA
 
 if TYPE_CHECKING:
     from typing import Callable, Optional
@@ -73,15 +72,6 @@ class Optimizer(optim.Optimizer):
 
     def __repr__(self) -> str:
         return f"{type(self).__bases__[-1]}, {self.args=}, {self.kwargs=}"
-
-
-def init_params(size, angle=False):
-    params = torch.nn.Parameter(create_tensor(torch.randn, size, requires_grad=True))
-
-    if angle:
-        with torch.no_grad():
-            params *= 2 * pi
-    return params
 
 
 def backpropagate(
