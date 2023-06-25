@@ -52,24 +52,27 @@ class ModuleMeta(type):
 
         return super().__new__(cls, name, bases, namespace)
 
-    def __call__(self, *args, **kwds):
-        cls = super().__call__(*args, **kwds)
+    def __init__(self, *args, **kwargs):
+        self._id = 0
+        super().__init__(*args, **kwargs)
 
-        params = (getattr(cls, attr) for attr in dir(cls))
+    def count(self, val) -> int:
+        if val is None:
+            val = self._id
+            self._id += 1
+        return str(val)
+
+    def __call__(cls, *args, **kwds):
+        self = super().__call__(*args, **kwds)
+
+        params = (getattr(self, attr) for attr in dir(self))
         params = (f for f in params if hasattr(f, "__parameter__"))
         params = ((f.__parameter__, init_params(f(), angle=True)) for f in params)
-
-        parameters, count = [], 0
-        for key, value in params:
-            if key is None:
-                key = count
-                count += 1
-
-            parameters += [(str(key), value)]
-
-        parameters.sort()
-        cls.__parameters__ = ParameterDict(parameters)
-        return cls
+        params = [(cls.count(k), v) for k, v in params]
+        params.sort()
+        
+        self.__parameters__ = ParameterDict(params)
+        return self
 
 
 class Module(metaclass=ModuleMeta):
