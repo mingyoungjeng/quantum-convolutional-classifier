@@ -55,13 +55,12 @@ class ModuleMeta(type):
     def __call__(self, *args, **kwds):
         cls = super().__call__(*args, **kwds)
 
-        funcs = (getattr(cls, attr) for attr in dir(cls))
-        funcs = filter(lambda f: hasattr(f, "__parameter__"), funcs)
+        params = (getattr(cls, attr) for attr in dir(cls))
+        params = (f for f in params if hasattr(f, "__parameter__"))
+        params = ((f.__parameter__, init_params(f(), angle=True)) for f in params)
 
         parameters, count = [], 0
-        for f in funcs:
-            value = init_params(f(), angle=True)
-            key = f.__parameter__
+        for key, value in params:
             if key is None:
                 key = count
                 count += 1
