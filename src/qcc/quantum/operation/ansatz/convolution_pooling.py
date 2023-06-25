@@ -52,6 +52,7 @@ class ConvolutionPoolingAnsatz(Ansatz):
         filter_shape: Iterable[int] = (2, 2),
     ):
         self.main_qubits = qubits
+        self._num_layers = num_layers
         self.U_filter = U_filter  # pylint: disable=invalid-name
         self.U_fully_connected = U_fully_connected  # pylint: disable=invalid-name
         self.num_features = num_features
@@ -62,7 +63,6 @@ class ConvolutionPoolingAnsatz(Ansatz):
         # Setup feature and ancilla qubits
         self._setup_features()
         self._setup_ancilla()
-
         self.num_layers = num_layers
 
     def circuit(self, *params: Parameters) -> Wires:
