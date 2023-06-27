@@ -7,7 +7,7 @@ import pennylane as qml
 from pennylane.templates import AmplitudeEmbedding
 
 from qcc.quantum import to_qubits, wires_to_qubits
-from qcc.quantum.operation import Qubits
+from qcc.quantum.operation import Qubits, QubitsProperty
 from qcc.ml import is_iterable, Module
 from qcc.file import draw
 
@@ -28,24 +28,16 @@ def is_multidimensional(wires: Qubits):
 
 
 class Ansatz(Module):
-    __slots__ = "_qubits", "_num_layers"
+    __slots__ = "_num_layers"
 
-    _qubits: Qubits
+    qubits: Qubits = QubitsProperty()
     _num_layers: int
 
-    def __init__(self, qubits, num_layers: int = 1):
+    def __init__(self, qubits, num_layers: int = 0):
         self.qubits = qubits
         self.num_layers = num_layers
 
     # Main properties
-
-    @property
-    def qubits(self) -> Qubits:
-        return self._qubits.copy()
-
-    @qubits.setter
-    def qubits(self, q) -> None:
-        self._qubits = Qubits(q)
 
     @property
     def num_layers(self) -> int:
@@ -81,20 +73,19 @@ class Ansatz(Module):
 
     # Circuit operation
 
-    def c2q(self, psi_in: Statevector, wires=None) -> Operation:
-        if wires is None:
-            wires = self.qubits.flatten()
-        return AmplitudeEmbedding(psi_in, wires[::-1], pad_with=0, normalize=True)
+    def _data_wires(self) -> Wires:
+        return self.qubits.flatten()
+
+    def c2q(self, psi_in: Statevector) -> Operation:
+        wires = self._data_wires()[::-1]
+        return AmplitudeEmbedding(psi_in, wires, pad_with=0, normalize=True)
 
     def q2c(self, wires: Wires):
         return qml.probs(wires)
 
     def post_processing(self, result) -> Iterable[Iterable[Number]]:
         # Makes sure batch is 2D array
-        if result.dim() == 1:
-            result = result.unsqueeze(0)
-
-        return result
+        return result.unsqueeze(0) if result.dim() == 1 else result
 
     def _circuit(
         self,
@@ -114,9 +105,8 @@ class Ansatz(Module):
     # Miscellaneous
 
     def draw(self, filename=None, include_axis: bool = False, decompose: bool = False):
-        fig, ax = qml.draw_mpl(
-            self.qnode, expansion_strategy="device" if decompose else "gradient"
-        )()
+        expansion_strategy = "device" if decompose else "gradient"
+        fig, ax = qml.draw_mpl(self.qnode, expansion_strategy=expansion_strategy)()
 
         return draw((fig, ax), filename, overwrite=False, include_axis=include_axis)
 

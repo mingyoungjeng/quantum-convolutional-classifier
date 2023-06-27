@@ -89,8 +89,7 @@ class BaselineAnsatz(Ansatz):
         self.pool = pool
         super().__init__(qubits, num_layers)
 
-    @classmethod
-    def _convolution(cls, params, iterable):
+    def _convolution(self, params, iterable):
         a, b = tee(iterable)
         first = next(b, None)
         lst = list(zip_longest(a, b, fillvalue=first))
@@ -101,15 +100,14 @@ class BaselineAnsatz(Ansatz):
             lst.insert(0, last)
 
         for wires in lst:
-            cls.convolve(params, wires=wires)
+            self.convolve(params, wires=wires)
 
-    @classmethod
-    def _pooling(cls, params, iterable):
+    def _pooling(self, params, iterable):
         measurements = iterable[1::2]
         controlled = iterable[0::2]
 
         for wires in zip(measurements, controlled):
-            cls.pool(params, wires=wires)
+            self.pool(params, wires=wires)
 
         return controlled
 
