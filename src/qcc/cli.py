@@ -29,7 +29,7 @@ def run(
     dataset: type[Dataset],
     optimizer: type[TorchOptimizer],
     loss: Callable,
-    num_trials: int = 0,
+    num_trials: int = 1,
     num_layers: int = 0,
     classes: Iterable[int] = (0, 1),
     epoch: int = 1,
