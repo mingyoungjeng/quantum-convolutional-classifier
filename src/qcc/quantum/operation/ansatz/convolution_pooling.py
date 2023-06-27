@@ -53,7 +53,6 @@ class ConvolutionPoolingAnsatz(Ansatz):
         pre_op: bool = False,
         post_op: bool = False,
     ):
-        self.data_qubits = qubits
         self._num_layers = num_layers
         self.num_features = num_features
         self.filter_shape = filter_shape
@@ -115,21 +114,20 @@ class ConvolutionPoolingAnsatz(Ansatz):
 
     @property
     def max_layers(self) -> int:
-        return min((len(q) for q in self.data_qubits))
+        dims_qubits = zip(self.data_qubits, self._filter_shape_qubits)
+        return min((len(q) // f for q, f in dims_qubits))
 
     ### PRIVATE
 
     def _setup_qubits(self, qubits: Qubits) -> Qubits:
         # Feature qubits
-        top = qubits.total
-        self.feature_qubits = [range(top, top + to_qubits(self.num_features))]
+        num_feature_qubits = to_qubits(self.num_features)
+        self.feature_qubits = [(qubits.total + i for i in range(num_feature_qubits))]
 
-        # Ancilla qubits
-        data_qubits = Qubits()
+        # Data and ancilla qubits
         for q, fsq in zip(qubits, self._filter_shape_qubits):
+            self.data_qubits += [q[fsq:]]
             self.ancilla_qubits += [q[:fsq]]
-            data_qubits += [q[fsq:]]
-        self.data_qubits = data_qubits
 
         return qubits + self.feature_qubits
 

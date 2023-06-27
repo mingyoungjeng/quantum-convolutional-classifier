@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 
 class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
     def _setup_qubits(self, qubits: Qubits) -> Qubits:
+        # Data qubits
+        self.data_qubits = qubits
+        
         # Feature qubits
         top = qubits.total
         self.feature_qubits = [range(top, top + to_qubits(self.num_features))]
