@@ -1,35 +1,45 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING
 
-from pennylane.wires import Wires
-
+from qcc.quantum import to_qubits
 from qcc.quantum.operation import Convolution, Qubits
 from qcc.quantum.operation.ansatz import Ansatz
 
 from qcc.quantum.operation.ansatz.convolution_pooling import ConvolutionPoolingAnsatz
 
 if TYPE_CHECKING:
+    from pennylane.wires import Wires
     from qcc.quantum.operation import Parameters
 
 
 class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
-    def _setup_ancilla(self) -> None:
-        self.ancilla_qubits = []
-        top = self.qubits.total
+    def _setup_qubits(self, qubits: Qubits) -> Qubits:
+        # Feature qubits
+        top = qubits.total
+        self.feature_qubits = [range(top, top + to_qubits(self.num_features))]
+        top += self.feature_qubits.total
+
+        # Ancilla qubits
         for _ in range(self.num_layers):
             for fsq in self._filter_shape_qubits:
                 self.ancilla_qubits += [list(range(top, top + fsq))]
                 top += fsq
 
-    @property
-    def qubits(self) -> Qubits:
-        return self.main_qubits + self.feature_qubits + self.ancilla_qubits
+        return self.data_qubits + self.feature_qubits + self.ancilla_qubits
+
+    def _setup_ancilla(self) -> None:
+        self.ancilla_qubits = []
+        top = self.data_qubits.total
+        for _ in range(self.num_layers):
+            for fsq in self._filter_shape_qubits:
+                self.ancilla_qubits += [list(range(top, top + fsq))]
+                top += fsq
 
     def circuit(self, *params: Parameters) -> Wires:
         (params,) = params
         fltr_dim = len(self.filter_shape)
-        main_qubits = self.main_qubits
-        main_qubits += [[] for _ in range(fltr_dim)]
+        data_qubits = self.data_qubits
+        data_qubits += [[] for _ in range(fltr_dim)]
         ancilla_qubits = [
             self.ancilla_qubits[fltr_dim * i : fltr_dim * (i + 1)]
             for i in range(self.num_layers)
@@ -41,7 +51,7 @@ class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
 
         # Convolution layers
         for i in range(self.num_layers):
-            qubits = main_qubits + ancilla_qubits[i]
+            qubits = data_qubits + ancilla_qubits[i]
 
             ### SHIFT
             Convolution.shift(self._filter_shape_qubits, qubits)
@@ -69,8 +79,9 @@ class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
 
         return n_params
 
-    def c2q(self, psi_in, _=None):
-        return Ansatz.c2q(self, psi_in=psi_in, wires=self.main_qubits.flatten())
+    @property
+    def _data_wires(self) -> Wires:
+        return self.data_qubits.flatten()
 
     # def post_processing(self, result):
     #     return super().post_processing(result)[:][

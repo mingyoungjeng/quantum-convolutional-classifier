@@ -18,6 +18,9 @@ if TYPE_CHECKING:
 
 class ConvolutionPoolingAnsatz(Ansatz):
     __slots__ = (
+        "_data_qubits",
+        "_ancilla_qubits",
+        "_feature_qubits",
         "U_filter",
         "U_fully_connected",
         "filter_shape",
@@ -26,9 +29,9 @@ class ConvolutionPoolingAnsatz(Ansatz):
         "post_op",
     )
 
-    data_qubits: Qubits = QubitsProperty()
-    ancilla_qubits: Qubits = QubitsProperty()
-    feature_qubits: Qubits = QubitsProperty()
+    data_qubits: Qubits = QubitsProperty(slots=True)
+    ancilla_qubits: Qubits = QubitsProperty(slots=True)
+    feature_qubits: Qubits = QubitsProperty(slots=True)
 
     filter_shape: Iterable[int]
     num_features: int
@@ -61,10 +64,9 @@ class ConvolutionPoolingAnsatz(Ansatz):
         self.post_op = post_op
 
         # Setup feature and ancilla qubits
-        self._setup_features()
-        self._setup_ancilla()
+        qubits = self._setup_qubits(Qubits(qubits))
 
-        super().__init__(qubits + self.feature_qubits, num_layers)
+        super().__init__(qubits, num_layers)
 
     def circuit(self, *params: Parameters) -> Wires:
         (params,) = params
@@ -117,20 +119,19 @@ class ConvolutionPoolingAnsatz(Ansatz):
 
     ### PRIVATE
 
-    def _setup_features(self) -> None:
-        top = self.data_qubits.total
+    def _setup_qubits(self, qubits: Qubits) -> Qubits:
+        # Feature qubits
+        top = qubits.total
         self.feature_qubits = [range(top, top + to_qubits(self.num_features))]
-        top += to_qubits(self.num_features)
 
-    def _setup_ancilla(self) -> None:
-        # TODO: this might be able to be removed
-        self.ancilla_qubits = []
+        # Ancilla qubits
+        data_qubits = Qubits()
+        for q, fsq in zip(qubits, self._filter_shape_qubits):
+            self.ancilla_qubits += [q[:fsq]]
+            data_qubits += [q[fsq:]]
+        self.data_qubits = data_qubits
 
-        qubits = self.data_qubits
-        for i, fsq in enumerate(self._filter_shape_qubits):
-            self.ancilla_qubits += [qubits[i][:fsq]]
-            qubits[i] = qubits[i][fsq:]
-        self.data_qubits = qubits
+        return qubits + self.feature_qubits
 
     def _filter(self, qubits, params):
         """Wrapper around self.U_filter that replaces Convolution.filter"""
@@ -151,6 +152,7 @@ class ConvolutionPoolingAnsatz(Ansatz):
 
         return params  # Leftover parameters
 
+    @property
     def _data_wires(self) -> Wires:
         data_qubits = zip_longest(self.ancilla_qubits, self.data_qubits, fillvalue=[])
         return Qubits(chain(*data_qubits)).flatten()

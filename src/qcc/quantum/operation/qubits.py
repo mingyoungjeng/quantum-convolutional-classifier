@@ -60,11 +60,27 @@ class Qubits(list):
 
 
 class QubitsProperty:
-    def __set_name__(self, owner, name):
+    __slots__ = "name", "slots"
+
+    def __init__(self, name: str = None, slots: bool = False) -> None:
         self.name = name
+        self.slots = slots
+
+    def __set_name__(self, owner, name) -> None:
+        if self.name is not None:
+            return
+
+        self.name = f"_{name}" if self.slots else name
 
     def __get__(self, obj: object, type=None) -> Qubits:
-        return obj.__dict__.get(self.name, Qubits()).copy()
+        if self.slots:
+            qubits = getattr(obj, self.name, Qubits())
+        else:
+            qubits = obj.__dict__.get(self.name, Qubits())
+        return qubits.copy()
 
     def __set__(self, obj: object, value: Iterable) -> None:
-        obj.__dict__[self.name] = Qubits(value)
+        if self.slots:
+            setattr(obj, self.name, Qubits(value))
+        else:
+            obj.__dict__[self.name] = Qubits(value)

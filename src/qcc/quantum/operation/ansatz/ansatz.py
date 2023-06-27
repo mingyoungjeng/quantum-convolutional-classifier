@@ -28,9 +28,9 @@ def is_multidimensional(wires: Qubits):
 
 
 class Ansatz(Module):
-    __slots__ = "_num_layers"
+    __slots__ = "_qubits", "_num_layers"
 
-    qubits: Qubits = QubitsProperty()
+    qubits: Qubits = QubitsProperty(slots=True)
     _num_layers: int
 
     def __init__(self, qubits, num_layers: int = 0):
@@ -73,11 +73,12 @@ class Ansatz(Module):
 
     # Circuit operation
 
+    @property
     def _data_wires(self) -> Wires:
         return self.qubits.flatten()
 
     def c2q(self, psi_in: Statevector) -> Operation:
-        wires = self._data_wires()[::-1]
+        wires = self._data_wires[::-1]
         return AmplitudeEmbedding(psi_in, wires, pad_with=0, normalize=True)
 
     def q2c(self, wires: Wires):
