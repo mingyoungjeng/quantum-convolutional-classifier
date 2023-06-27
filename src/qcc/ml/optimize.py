@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Iterable
 
 from numbers import Number
 import torch
-from torch import optim
+from torch.optim import Optimizer as TorchOptimizer
 from qcc.ml import USE_CUDA, init_params
 
 if TYPE_CHECKING:
@@ -16,14 +16,14 @@ if TYPE_CHECKING:
     MLFunction = Callable[[Parameters, Parameters], Iterable[Number]]
 
 
-class Optimizer(optim.Optimizer):
+class Optimizer(TorchOptimizer):
     """
     Extension of torch.optim.Optimizer
     """
 
-    def __new__(self, cls: type[optim.Optimizer], *_, **__):
+    def __new__(self, cls: type[TorchOptimizer], *_, **__):
         """
-        Workaround to take a type[optim.Optimizer] as a parameter
+        Workaround to take a type[torch.optim.Optimizer] as a parameter
 
         if works and is_readable:
             pass
@@ -37,7 +37,7 @@ class Optimizer(optim.Optimizer):
 
         return super().__new__(Opti)
 
-    def __init__(self, cls: type[optim.Optimizer], *args, params=None, **kwargs):
+    def __init__(self, cls: type[TorchOptimizer], *args, params=None, **kwargs):
         if params is None:
             cls.__init__(self, [torch.empty(0)], *args, **kwargs)
             self.reset()
@@ -78,7 +78,7 @@ class Optimizer(optim.Optimizer):
 def backpropagate(
     predictions: torch.Tensor,
     labels: torch.Tensor,
-    optimizer: optim.Optimizer,
+    optimizer: TorchOptimizer,
     cost_fn: Callable,
 ):
     optimizer.zero_grad()
@@ -91,7 +91,7 @@ def backpropagate(
 
 def train(
     fn: MLFunction,
-    optimizer: Optimizer,
+    optimizer: TorchOptimizer,
     training_dataloader: DataLoader,
     cost_fn: CostFunction,
     epoch: int = 1,

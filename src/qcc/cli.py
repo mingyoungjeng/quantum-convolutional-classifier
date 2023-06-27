@@ -1,3 +1,6 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 import re
 from pathlib import Path
 from ast import literal_eval
@@ -10,6 +13,83 @@ from qcc.experiment import Experiment
 from qcc.qcnn import QCNN
 from qcc.cnn import CNN
 from qcc.file import save_dataframe_as_csv, lookup
+
+if TYPE_CHECKING:
+    from typing import Any, Iterable, Optional, Callable
+    from torch.utils.data import Dataset
+    from torch.optim import Optimizer as TorchOptimizer
+    from qcc.quantum.operation.ansatz import Ansatz
+    from qcc.ml.data import ImageTransform
+
+
+def run(
+    name: str,
+    dimensions: Iterable[int],
+    ansatz: type[Ansatz],
+    dataset: type[Dataset],
+    optimizer: type[TorchOptimizer],
+    loss: Callable,
+    num_trials: int = 0,
+    num_layers: int = 0,
+    classes: Iterable[int] = (0, 1),
+    epoch: int = 1,
+    batch_size: int | tuple[int, int] = 1,
+    transform: Optional[Callable | type[ImageTransform]] = None,
+    ansatz_options: Optional[Iterable[tuple[str, Any]]] = None,
+    optimizer_options: Optional[Iterable[tuple[str, Any]]] = None,
+    quantum: bool = True,
+    verbose: bool = False,
+):
+    path = Path(f"results/{name}")
+    is_quantum = quantum  # clearer notation
+    ansatz_options = {} if ansatz_options is None else dict(ansatz_options)
+    optimizer_options = {} if optimizer_options is None else dict(optimizer_options)
+
+    # Create model
+    cls = QCNN if is_quantum else CNN
+    if isinstance(transform, type):
+        transform = transform(dimensions, flatten=is_quantum)
+    data = Data(dataset, transform, batch_size=batch_size, classes=classes)
+    optimizer = Optimizer(optimizer, **optimizer_options)
+    loss = loss()
+    model = cls.with_logging(data, optimizer, loss, epoch=epoch)
+
+    # Log important values
+    model.logger.info(f"Circuit ID: {name}")
+    model.logger.info(f"{data=}")
+    model.logger.info(f"{optimizer=}")
+    model.logger.info(f"{loss=}")
+
+    model.logger.info(f"{num_trials=}")
+    model.logger.info(f"{dimensions=}")
+    model.logger.info(f"{num_layers=}")
+    model.logger.info(f"{epoch=}")
+    model.logger.info(f"{ansatz_options=}")
+
+    # Save circuit drawing
+    if is_quantum:
+        model.ansatz = ansatz.from_dims(
+            dimensions, num_layers=num_layers, **ansatz_options
+        )
+        filename = path.with_stem(f"{name}_circuit").with_suffix(".png")
+        model.ansatz.draw(filename=filename, decompose=True)
+
+    # Run experiment
+    experiment = Experiment(model, num_trials, results_schema=["accuracy"])
+
+    args = (ansatz,) if is_quantum else ()
+    results = experiment(
+        *args, dimensions, num_layers=num_layers, silent=not verbose, **ansatz_options
+    )
+
+    # Save and print accuracy results
+    save_dataframe_as_csv(path.with_suffix(".csv"), results)
+    acc = results["accuracy"]
+    msg = f"Accuracy: median={acc.median()}, mean={acc.mean()}, max={acc.max()}, min={acc.min()}, std={acc.std()}"
+    model.logger.info(msg)
+
+    # Save aggregated loss history figure
+    experiment.draw(path.with_suffix(".png"))
 
 
 class ObjectType(click.ParamType):
@@ -102,74 +182,8 @@ class OptionType(click.ParamType):
 @click.option("-t", "--num_trials", default=1, type=int)
 @click.option("--quantum/--classical", default=True)
 @click.option("--verbose", is_flag=True)
-def cli(
-    name,
-    num_trials,
-    dimensions,
-    num_layers,
-    classes,
-    epoch,
-    batch_size,
-    quantum,
-    verbose,
-    ansatz,
-    dataset,
-    optimizer,
-    loss,
-    transform,
-    ansatz_options,
-    optimizer_options,
-):
-    path = Path(f"results/{name}")
-    is_quantum = quantum  # clearer notation
-    ansatz_options = dict(ansatz_options)
-    optimizer_options = dict(optimizer_options)
-
-    # Create model
-    cls = QCNN if is_quantum else CNN
-    transform = transform(dimensions, flatten=is_quantum)
-    data = Data(dataset, transform, batch_size=batch_size, classes=classes)
-    optimizer = Optimizer(optimizer, **optimizer_options)
-    loss = loss()
-    model = cls.with_logging(data, optimizer, loss, epoch=epoch)
-
-    # Log important values
-    model.logger.info(f"Circuit ID: {name}")
-    model.logger.info(f"{data=}")
-    model.logger.info(f"{optimizer=}")
-    model.logger.info(f"{loss=}")
-
-    model.logger.info(f"{num_trials=}")
-    model.logger.info(f"{dimensions=}")
-    model.logger.info(f"{num_layers=}")
-    model.logger.info(f"{epoch=}")
-    model.logger.info(f"{ansatz_options=}")
-
-    # Save circuit drawing
-    if is_quantum:
-        model.ansatz = ansatz.from_dims(
-            dimensions, num_layers=num_layers, **ansatz_options
-        )
-        filename = path.with_stem(f"{name}_circuit").with_suffix(".png")
-        model.ansatz.draw(filename=filename, decompose=True)
-
-    # Run experiment
-    experiment = Experiment(model, num_trials, results_schema=["accuracy"])
-
-    args = (ansatz,) if is_quantum else ()
-    results = experiment(
-        *args, dimensions, num_layers=num_layers, silent=not verbose, **ansatz_options
-    )
-
-    # Save and print accuracy results
-    save_dataframe_as_csv(path.with_suffix(".csv"), results)
-    acc = results["accuracy"]
-    model.logger.info(
-        f"Accuracy: median={acc.median()}, mean={acc.mean()}, max={acc.max()}, min={acc.min()}, std={acc.std()}"
-    )
-
-    # Save aggregated loss history figure
-    experiment.draw(path.with_suffix(".png"))
+def cli(**kwargs):
+    run(**kwargs)
 
 
 if __name__ == "__main__":
