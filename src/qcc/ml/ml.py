@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from math import pi
 from itertools import chain, pairwise
 from functools import partial, wraps
+from abc import ABCMeta
 
 import torch
 from torch import cuda
@@ -34,12 +35,12 @@ def parameter(arg):
     return wraps(arg)(partial(decorator, key=arg))
 
 
-class ModuleMeta(type):
-    def __new__(cls, name, bases, namespace):
+class ModuleMeta(ABCMeta):
+    def __new__(mcls, name, bases, namespace, /, **kwargs):
         bases = *bases, TorchModule
 
-        if "parameter" not in namespace:
-            namespace["parameter"] = parameter
+        # if "parameter" not in namespace:
+        #     namespace["parameter"] = parameter
 
         if "__init__" in namespace:
             old_init = namespace["__init__"]
@@ -50,33 +51,33 @@ class ModuleMeta(type):
 
             namespace["__init__"] = pre_init
 
-        return super().__new__(cls, name, bases, namespace)
+        return super().__new__(mcls, name, bases, namespace, **kwargs)
 
-    def __init__(self, *args, **kwargs):
-        self._id = 0
+    def __init__(mcls, *args, **kwargs):
+        mcls._id = 0
         super().__init__(*args, **kwargs)
 
-    def count(self, val) -> int:
+    def count(mcls, val) -> int:
         if val is None:
-            val = self._id
-            self._id += 1
+            val = mcls._id
+            mcls._id += 1
         return str(val)
 
-    def __call__(cls, *args, **kwds):
+    def __call__(mcls, *args, **kwds):
         self = super().__call__(*args, **kwds)
 
         params = (getattr(self, attr) for attr in dir(self))
         params = (f for f in params if hasattr(f, "__parameter__"))
         params = ((f.__parameter__, init_params(f(), angle=True)) for f in params)
-        params = [(cls.count(k), v) for k, v in params]
+        params = [(mcls.count(k), v) for k, v in params]
         params.sort()
-        
+
         self.__parameters__ = ParameterDict(params)
         return self
 
 
 class Module(metaclass=ModuleMeta):
-    pass
+    parameter = parameter
 
 
 def is_iterable(x: Any):

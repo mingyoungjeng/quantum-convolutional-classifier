@@ -5,8 +5,11 @@ from pennylane.wires import Wires
 
 
 class Qubits(list):
-    def __init__(self, iterable):
-        super().__init__(self._convert(item) for item in iterable)
+    def __init__(self, iterable=None):
+        if iterable is None:
+            super().__init__()
+        else:
+            super().__init__(self._convert(item) for item in iterable)
 
     def __setitem__(self, index, item):
         super().__setitem__(index, self._convert(item))
@@ -54,3 +57,14 @@ class Qubits(list):
     @property
     def ndim(self) -> int:
         return len(self)
+
+
+class QubitsProperty:
+    def __set_name__(self, owner, name):
+        self.name = name
+
+    def __get__(self, obj: object, type=None) -> Qubits:
+        return obj.__dict__.get(self.name, Qubits()).copy()
+
+    def __set__(self, obj: object, value: Iterable) -> None:
+        obj.__dict__[self.name] = Qubits(value)

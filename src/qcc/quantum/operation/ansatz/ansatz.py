@@ -1,20 +1,20 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 
 import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.templates import AmplitudeEmbedding
 
 from qcc.quantum import to_qubits, wires_to_qubits
 from qcc.quantum.operation import Qubits
-from qcc.ml import is_iterable, ModuleMeta
+from qcc.ml import is_iterable, Module
 from qcc.file import draw
 
 if TYPE_CHECKING:
     from typing import Iterable, Optional
     from numbers import Number
+    from pennylane.wires import Wires
     from pennylane.operation import Operation
     from qcc.quantum.operation import Parameters
 
@@ -27,11 +27,7 @@ def is_multidimensional(wires: Qubits):
     return False
 
 
-class MetaAnsatz(ModuleMeta, ABCMeta):
-    pass
-
-
-class Ansatz(metaclass=MetaAnsatz):
+class Ansatz(Module):
     __slots__ = "_qubits", "_num_layers"
 
     _qubits: Qubits

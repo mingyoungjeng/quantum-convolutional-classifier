@@ -4,15 +4,16 @@ from typing import TYPE_CHECKING, Iterable
 from numbers import Number
 import torch
 from torch import optim
-from qcc.ml import USE_CUDA
+from qcc.ml import USE_CUDA, init_params
 
 if TYPE_CHECKING:
     from typing import Callable, Optional
     from torch import Tensor
     from torch.utils.data import DataLoader
+    from qcc.quantum.operation import Parameters
 
-    LossFunction = CostFunction = Callable[[Iterable[Number], Iterable[Number]], Number]
-    MLFunction = Callable[[Iterable[Number], Iterable[Number]], Iterable[Number]]
+    LossFunction = CostFunction = Callable[[Parameters, Parameters], Number]
+    MLFunction = Callable[[Parameters, Parameters], Iterable[Number]]
 
 
 class Optimizer(optim.Optimizer):
