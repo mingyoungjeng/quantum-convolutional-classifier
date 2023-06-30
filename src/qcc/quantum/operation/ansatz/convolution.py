@@ -1,11 +1,13 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 from qcc.quantum import to_qubits
-from qcc.quantum.operation import Convolution, Qubits
+from qcc.quantum.operation import Convolution, Qubits, Unitary
 from qcc.quantum.operation.ansatz import Ansatz
 
 from qcc.quantum.operation.ansatz.convolution_pooling import ConvolutionPoolingAnsatz
+from qcc.quantum.operation.c2q import ConvolutionAngleFilter
+from qcc.quantum.operation.fully_connected import FullyConnected
 
 if TYPE_CHECKING:
     from pennylane.wires import Wires
@@ -13,10 +15,14 @@ if TYPE_CHECKING:
 
 
 class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
+    def __init__(self, *args, pooling: bool = True, **kwargs):
+        self.pooling = pooling
+        super().__init__(*args, **kwargs)
+
     def _setup_qubits(self, qubits: Qubits) -> Qubits:
         # Data qubits
         self.data_qubits = qubits
-        
+
         # Feature qubits
         top = qubits.total
         self.feature_qubits = [range(top, top + to_qubits(self.num_features))]
@@ -42,7 +48,6 @@ class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
         (params,) = params
         fltr_dim = len(self.filter_shape)
         data_qubits = self.data_qubits
-        data_qubits += [[] for _ in range(fltr_dim)]
         ancilla_qubits = [
             self.ancilla_qubits[fltr_dim * i : fltr_dim * (i + 1)]
             for i in range(self.num_layers)
@@ -65,12 +70,16 @@ class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
             ### PERMUTE
             Convolution.permute(self._filter_shape_qubits, qubits)
 
+            if self.pooling:
+                for i, fsq in enumerate(self._filter_shape_qubits):
+                    data_qubits[i] = data_qubits[i][fsq:]
+
         if self.post_op:  # Post-op on ancillas
             for ancilla in ancilla_qubits:
                 params = self._filter(ancilla, params)
 
         # Fully connected layer
-        meas = self.qubits.flatten()
+        meas = (data_qubits + ancilla_qubits).flatten()
         self.U_fully_connected(params, meas[::-1])
 
         return meas[-1]
