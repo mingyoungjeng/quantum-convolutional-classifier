@@ -9,7 +9,7 @@
 > **After installing, run the following in the main directory of the repo.**
 >
 > ```bash
-> mamba create --prefix $PWD/.env
+> mamba create --prefix $PWD/.env python
 > mamba activate $PWD/.env
 > ```
 
