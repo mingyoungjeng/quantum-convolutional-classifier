@@ -151,6 +151,74 @@ class BasicFiltering5(Unitary):
         return 4 * len(wires)
 
 
+class BasicFiltering6(Unitary):
+    n = 4
+
+    @staticmethod
+    def compute_decomposition(params, wires, **_):
+        op_list = []
+        params = params.reshape((BasicFiltering6.n, len(wires)))
+
+        for i, theta in enumerate(params):
+            # Rotation gate layer
+            op_list += [qml.RY(t, wire) for t, wire in zip(theta, wires)]
+
+            if i >= len(params) - 1:
+                continue
+
+            # CNOT gates
+            wires = wires[::-1]
+            control, target = tee(wires)
+            first = next(target, None)
+            op_list += [
+                qml.CNOT(wires=cnot_wires) for cnot_wires in zip(control, target)
+            ]
+
+            # Final CNOT gate (last to first)
+            if len(wires) > 1:
+                op_list += [qml.CNOT(wires=(wires[-1], first))]
+
+        return op_list
+
+    @staticmethod
+    def _shape(wires: Wires) -> int:
+        return BasicFiltering6.n * len(wires)
+
+
+class BasicFilteringSimple(Unitary):
+    n = 4
+
+    @staticmethod
+    def compute_decomposition(params, wires, **_):
+        op_list = []
+        params = params.reshape((BasicFilteringSimple.n, 3))
+
+        for i, param in enumerate(params):
+            # Rotation gate layer
+            op_list += [qml.Rot(*param, wire) for wire in wires]
+
+            # if i >= len(params) - 1:
+            #     continue
+
+            # CNOT gates
+            # wires = wires[::-1]
+            control, target = tee(wires)
+            first = next(target, None)
+            op_list += [
+                qml.CNOT(wires=cnot_wires) for cnot_wires in zip(control, target)
+            ]
+
+            # Final CNOT gate (last to first)
+            if len(wires) > 1:
+                op_list += [qml.CNOT(wires=(wires[-1], first))]
+
+        return op_list
+
+    @staticmethod
+    def _shape(wires: Wires) -> int:
+        return BasicFilteringSimple.n * 3
+
+
 class BasicPooling(Unitary):
     @staticmethod
     def compute_decomposition(params, wires, **_):

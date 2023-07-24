@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-development = ["black", "pylint", "ipykernel"]
+development = ["black", "pylint", "ipykernel", "pylatexenc"]
 
 [project.scripts]
 qcc = "qcc.cli:cli"

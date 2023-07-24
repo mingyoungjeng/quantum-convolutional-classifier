@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 
 @define
 class Experiment:
+    """Perform and aggregate multiple experimental trials"""
+    
     cls: Any = field()
     num_trials: int = 1
 

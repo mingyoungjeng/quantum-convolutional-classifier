@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
-    def __init__(self, *args, pooling: bool = True, **kwargs):
+    def __init__(self, *args, pooling: bool = False, **kwargs):
         self.pooling = pooling
         super().__init__(*args, **kwargs)
 

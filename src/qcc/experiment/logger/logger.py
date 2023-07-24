@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 
 @define(frozen=True)
 class Logger:
+    """Logs important values"""
+    
     df: pl.DataFrame = field(repr=False)
     name: str = field(default=__name__)
     format: str = None

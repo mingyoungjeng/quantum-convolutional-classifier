@@ -83,7 +83,7 @@ def run(
     )
 
     # Save and print accuracy results
-    save_dataframe_as_csv(path.with_suffix(".csv"), results)
+    save_dataframe_as_csv(path.with_suffix(".csv"), results, overwrite=False)
     acc = results["accuracy"]
     msg = f"Accuracy: median={acc.median()}, mean={acc.mean()}, max={acc.max()}, min={acc.min()}, std={acc.std()}"
     model.logger.info(msg)
