@@ -22,12 +22,11 @@ class C2Q(Operation):
         wires: Wires,
         angles: bool = False,
         transpose: bool = False,
-        do_queue=True,
         id=None,
     ):
         self._hyperparameters = {"transpose": transpose, "angles": angles}
 
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(*params, wires=wires, id=id)
 
     @staticmethod
     def get_params(x_in):

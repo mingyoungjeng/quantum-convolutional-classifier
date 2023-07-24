@@ -28,7 +28,6 @@ class Convolution(Operation):
         # padding: ConvolutionSetting = 0,
         # dilation: ConvolutionSetting = 1,
         do_swaps=True,
-        do_queue=True,
         id=None,
     ):
         dims_q = [len(q) for q in qubits]
@@ -42,7 +41,7 @@ class Convolution(Operation):
         }
 
         wires = Wires.all_wires(qubits)
-        super().__init__(params, wires, do_queue=do_queue, id=id)
+        super().__init__(params, wires, id=id)
 
     @property
     def dims_q(self) -> ConvolutionSetting:

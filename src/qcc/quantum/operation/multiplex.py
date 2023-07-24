@@ -21,7 +21,6 @@ class Multiplex(Operation):
         control_wires: Optional[Wires] = None,
         op: type[Operation] = Operation,
         hyperparameters: Optional[Mapping] = None,
-        do_queue=True,
         id=None,
     ):
         wires = Wires(wires)
@@ -36,7 +35,7 @@ class Multiplex(Operation):
         if len(control_wires) > 0:
             wires = control_wires + wires
 
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(*params, wires=wires, id=id)
 
     @staticmethod
     def compute_decomposition(
