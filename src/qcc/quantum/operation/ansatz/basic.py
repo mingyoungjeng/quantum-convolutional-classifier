@@ -152,16 +152,20 @@ class BasicFiltering5(Unitary):
 
 
 class BasicFiltering6(Unitary):
-    n = 4
+    op = qml.RY
+    num_layers = 5
+    p = 1
 
     @staticmethod
     def compute_decomposition(params, wires, **_):
         op_list = []
-        params = params.reshape((BasicFiltering6.n, len(wires)))
+        params = params.reshape(
+            (BasicFiltering6.num_layers, len(wires), BasicFiltering6.p)
+        )
 
-        for i, theta in enumerate(params):
+        for i, angles in enumerate(params):
             # Rotation gate layer
-            op_list += [qml.RY(t, wire) for t, wire in zip(theta, wires)]
+            op_list += [BasicFiltering6.op(*a, wire) for a, wire in zip(angles, wires)]
 
             if i >= len(params) - 1:
                 continue
@@ -182,7 +186,7 @@ class BasicFiltering6(Unitary):
 
     @staticmethod
     def _shape(wires: Wires) -> int:
-        return BasicFiltering6.n * len(wires)
+        return BasicFiltering6.num_layers * len(wires) * BasicFiltering6.p
 
 
 class BasicFilteringSimple(Unitary):

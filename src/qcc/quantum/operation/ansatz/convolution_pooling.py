@@ -3,16 +3,16 @@ from typing import TYPE_CHECKING
 
 from itertools import chain, zip_longest
 
-from qcc.quantum import to_qubits
+from qcc.quantum import to_qubits, parity
 from qcc.quantum.operation import Convolution, Multiplex, Qubits, QubitsProperty
 from qcc.quantum.operation.ansatz import Ansatz
 from qcc.quantum.operation.c2q import ConvolutionAngleFilter
 from qcc.quantum.operation.fully_connected import FullyConnected
 
 if TYPE_CHECKING:
-    from typing import Iterable
+    from numbers import Number
+    from typing import Iterable, Optional
     from pennylane.wires import Wires
-    from pennylane.operation import Operation
     from qcc.quantum.operation import Parameters, Unitary
 
 
@@ -37,7 +37,7 @@ class ConvolutionPoolingAnsatz(Ansatz):
     num_features: int
 
     U_filter: type[Unitary]
-    U_fully_connected: type[Unitary]
+    U_fully_connected: Optional[type[Unitary]]
 
     pre_op: bool
     post_op: bool
@@ -49,7 +49,7 @@ class ConvolutionPoolingAnsatz(Ansatz):
         num_features: int = 1,
         filter_shape: Iterable[int] = (2, 2),
         U_filter: type[Unitary] = ConvolutionAngleFilter,
-        U_fully_connected: type[Unitary] = FullyConnected,
+        U_fully_connected: Optional[type[Unitary]] = FullyConnected,
         pre_op: bool = False,
         post_op: bool = False,
     ):
@@ -99,19 +99,27 @@ class ConvolutionPoolingAnsatz(Ansatz):
             chain(*zip_longest(self.ancilla_qubits, data_qubits[:n_dim], fillvalue=[]))
         )
         meas += data_qubits[n_dim:] + self.feature_qubits
-
         meas = meas.flatten()
-        self.U_fully_connected(params, meas[::-1])
 
-        return meas[-1]
+        if self.U_fully_connected:
+            self.U_fully_connected(params, meas[::-1])
+            return meas[-1]
+        
+        return meas
 
     @Ansatz.parameter  # pylint: disable=no-member
     def shape(self) -> int:
         n_params = self._n_params * (self.num_layers + self.pre_op + self.post_op)
-        n_params += self.U_fully_connected.shape(self.qubits.flatten())
+
+        if self.U_fully_connected:
+            n_params += self.U_fully_connected.shape(self.qubits.flatten())
 
         return n_params
 
+    def post_processing(self, result) -> Iterable[Iterable[Number]]:
+        result = super().post_processing(result)
+        return parity(result)
+    
     @property
     def max_layers(self) -> int:
         dims_qubits = zip(self.data_qubits, self._filter_shape_qubits)
