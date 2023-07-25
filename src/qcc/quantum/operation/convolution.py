@@ -132,7 +132,7 @@ class Convolution(Operation):
         for i, fsq in enumerate(filter_shape_q):
             data_wires = qubits[i]
             filter_wires = qubits[i - len(filter_shape_q)][:fsq]
-            
+
             if len(data_wires) == 0:
                 continue
 

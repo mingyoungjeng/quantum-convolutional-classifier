@@ -1,0 +1,18 @@
+ansatz = "qcc.quantum.operation.ansatz.BaselineAnsatz"
+dataset = "torchvision.datasets.MNIST"
+optimizer = "torch.optim.Adam"
+loss = "torch.nn.CrossEntropyLoss"
+transform = "qcc.ml.data.ImageTransform"
+dimensions = [28, 28]
+num_layers = 4
+classes = [0, 1]
+epoch = 1
+batch_size = [4, 1000]
+num_trials = 10
+is_quantum = true
+verbose = true
+
+[ansatz_options]
+
+[optimizer_options]
+lr = 0.001

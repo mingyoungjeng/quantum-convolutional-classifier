@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-import sys
+import importlib
+import tomllib
 from pathlib import Path
 from PIL import Image
 from astropy.io import fits
@@ -10,11 +11,26 @@ from matplotlib.figure import Figure
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
-    from typing import Callable, Optional
+    from typing import Callable, Optional, Any
 
 
 def create_parent(path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
+    
+def new_dir(dir: Path) -> None:
+    if not isinstance(dir, Path):
+        dir = Path(dir)
+
+    i = 1
+    stem = dir.stem
+    while dir.is_file():
+        dir = dir.with_name(stem)
+        i += 1
+        
+    dir.mkdir(parents=True, exist_ok=False)
+
+    # Return path in case stem change needed
+    return dir
 
 
 def save(filename: Path, fn: Callable[[Path], None], overwrite=True) -> None:
@@ -29,8 +45,10 @@ def save(filename: Path, fn: Callable[[Path], None], overwrite=True) -> None:
         while filename.is_file():
             filename = filename.with_name(f"{stem}_{i}{filename.suffix}")
             i += 1
+    fn(filename)
 
-    return fn(filename)
+    # Return filename in case stem change needed
+    return filename
 
 
 def save_img(filename: Path, img: Image.Image, overwrite=True) -> None:
@@ -87,11 +105,16 @@ def draw(
 def lookup(module: str, root: str = None):
     if "." in module:
         root, module = module.rsplit(".", 1)
-    
+
     if root is None:
-        root = __name__ 
-        
+        root = __name__
+
     if isinstance(root, str):
-        root = sys.modules[root]
-        
+        root = importlib.import_module(root)
+
     return getattr(root, module)
+
+
+def load_toml(filename: Path) -> dict[str, Any]:
+    with open(filename, mode="rb") as file:
+        return tomllib.load(file)

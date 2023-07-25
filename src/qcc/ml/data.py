@@ -69,12 +69,14 @@ class BinaryData(Data):
 
 
 class ImageTransform(transforms.Compose):
-    def __init__(self, dims: Iterable[int], fix_bands=True, flatten=True, norm=True):
+    def __init__(self, dims: Optional[Iterable[int]] = None, fix_bands=True, flatten=True, norm=True):
         ops = [
-            transforms.Resize(dims[:2]),
             transforms.ToTensor(),
-            transforms.Lambda(torch.squeeze),
+            transforms.Lambda(torch.squeeze)
         ]
+        
+        if dims is not None:
+            ops = [transforms.Resize(dims[:2]), *ops]
 
         if fix_bands and len(dims) >= 3:
             ops += [self._fix_bands()]

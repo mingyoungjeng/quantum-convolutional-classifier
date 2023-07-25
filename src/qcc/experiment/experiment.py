@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
+from pathlib import Path
 from itertools import product
 from attrs import define, field
 import polars as pl
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
 @define
 class Experiment:
     """Perform and aggregate multiple experimental trials"""
-    
+
     cls: Any = field()
     num_trials: int = 1
 
@@ -34,14 +35,23 @@ class Experiment:
         else:
             raise AttributeError("No Logger")
 
-    def __call__(self, *args, fn: Optional[Callable] = None, **kwargs):
+    def __call__(
+        self, fn: Optional[Callable] = None, filename: Path = None, merge: bool = False
+    ):
         if fn is None:
             fn = self.cls.__call__
 
         logger_name = self.cls.logger.name
         self.metrics = self.cls.logger.df.columns[1:]
 
-        results = []
+        results = pl.DataFrame(schema=self.results_schema)
+
+        if filename is not None:
+            # Reserve file name
+            filename = save_dataframe_as_csv(filename, pl.DataFrame(), overwrite=False)
+            results_filename = filename.with_stem(f"{filename.stem}_results")
+            results_filename = save_dataframe_as_csv(results_filename, results, False)
+
         for i in range(self.num_trials):
             # Setup DataFrame
             idf = pl.DataFrame(schema=self.cls.logger.df.schema)
@@ -54,18 +64,31 @@ class Experiment:
             )
 
             # Perform trial
-            results += [fn(*args, **kwargs)]
+            results_row = pl.DataFrame([fn()], schema=self.results_schema)
 
             # Combine DataFrames
             idf = idf.select(pl.col(self.metrics).suffix(f"_{i}"))
-            df = idf if i == 0 else df.hstack(idf)
+            if i == 0:
+                df = idf
+                results = results_row
+            else:
+                df.hstack(idf, in_place=True)
+                results.vstack(results_row, in_place=True)
+
+            if filename is not None:
+                save_dataframe_as_csv(filename, df, overwrite=True)
+                save_dataframe_as_csv(results_filename, results, overwrite=True)
 
         # Aggregate columns
         exprs = product(self.metrics, ["mean", "std"])
         exprs = tuple(self.aggregate(*expr) for expr in exprs)
         self.df = df.with_columns(*exprs)  # df.select(*exprs)
 
-        return pl.DataFrame(results, schema=self.results_schema)
+        if filename is not None:
+            save_dataframe_as_csv(filename, self.df, overwrite=True)
+            # save_dataframe_as_csv(results_filename, results, overwrite=True)
+
+        return results
 
     @staticmethod
     def aggregate(name: str, op: str):
@@ -87,9 +110,10 @@ class Experiment:
             ax.set_ylabel(metric.capitalize())
             subplots += [(fig, ax)]
 
-        save_dataframe_as_csv(filename, self.df, overwrite=False)
-
         return tuple(
             draw((fig, ax), filename, overwrite=False, include_axis=include_axis)
             for (fig, ax) in subplots
         )
+
+    def callable_wrapper(self, *args, **kwargs):
+        return lambda: self.cls(*args, **kwargs)
