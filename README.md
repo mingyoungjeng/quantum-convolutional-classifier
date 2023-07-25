@@ -25,4 +25,7 @@ pip install -e .[development] # --editable installation
 ```bash
 # List the various options for running QCC
 qcc --help
+
+# Run the test suite
+cd test; qcc from-file config/
 ```
