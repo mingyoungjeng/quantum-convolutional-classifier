@@ -38,7 +38,7 @@ class Model:
         training_time = time.perf_counter()
         parameters = train(model, opt, training_dataloader, self._cost, self.epoch)
         training_time = time.perf_counter() - training_time
-        self.logger.info(f"Training took {training_time:.03} sec", silent=silent)
+        self.logger.info(f"Training took {training_time:.05} sec", silent=silent)
 
         testing_time = time.perf_counter()
         accuracy = test(model, testing_dataloader, parameters)

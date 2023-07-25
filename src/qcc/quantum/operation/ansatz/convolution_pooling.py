@@ -70,29 +70,30 @@ class ConvolutionPoolingAnsatz(Ansatz):
     def circuit(self, *params: Parameters) -> Wires:
         (params,) = params
         n_dim = self.data_qubits.ndim
+        fltr_shape_q = to_qubits(self.filter_shape)
         data_qubits = self.data_qubits
         data_qubits += [[] for _ in range(len(self.filter_shape))]
 
         if self.pre_op:  # Pre-op on ancillas
-            params = self._filter(self.ancilla_qubits, params)
+            params = self._filter(params, self.ancilla_qubits)
 
         # Convolution layers
         for i in range(self.num_layers):  # pylint: disable=unused-variable
             qubits = data_qubits + self.ancilla_qubits
 
             ### SHIFT
-            Convolution.shift(self._filter_shape_qubits, qubits, H=False)
+            Convolution.shift(fltr_shape_q, qubits, H=False)
 
             ### FILTER
-            params = self._filter(qubits, params)
+            params = self._filter(params, qubits)
 
             ### PERMUTE
-            for j, fsq in enumerate(self._filter_shape_qubits):
+            for j, fsq in enumerate(fltr_shape_q):
                 data_qubits[n_dim + j] += data_qubits[j][:fsq]
                 data_qubits[j] = data_qubits[j][fsq:]
 
         if self.post_op:  # Post-op on ancillas
-            params = self._filter(self.ancilla_qubits, params)
+            params = self._filter(params, self.ancilla_qubits)
 
         # Fully connected layer
         meas = zip_longest(self.ancilla_qubits, data_qubits[:n_dim], fillvalue=[])
@@ -100,7 +101,7 @@ class ConvolutionPoolingAnsatz(Ansatz):
         meas += data_qubits[n_dim:] + self.feature_qubits
         meas = meas.flatten()
 
-        if self.U_fully_connected:
+        if self.U_fully_connected is not None:
             self.U_fully_connected(params, meas[::-1])
             return meas[-1]
 
@@ -108,21 +109,31 @@ class ConvolutionPoolingAnsatz(Ansatz):
 
     @Ansatz.parameter  # pylint: disable=no-member
     def shape(self) -> int:
-        n_params = self._n_params * (self.num_layers + self.pre_op + self.post_op)
+        data_shape_q = self.data_qubits.shape
+        fltr_shape_q = to_qubits(self.filter_shape)
+
+        num_params = self.pre_op + self.post_op
+        num_params *= self.U_filter.shape(sum(fltr_shape_q))
+
+        for i in range(self.num_layers):
+            fsq = (1 for (d, f) in zip(data_shape_q, fltr_shape_q) if d - (i * f))
+            num_params += self.U_filter.shape(sum(fsq))
+
+        num_params *= self.num_features
 
         if self.U_fully_connected:
-            n_params += self.U_fully_connected.shape(self.qubits.flatten())
+            num_params += self.U_fully_connected.shape(self.qubits.flatten())
 
-        return n_params
+        return num_params
 
     def post_processing(self, result) -> Iterable[Iterable[Number]]:
         result = super().post_processing(result)
-        return parity(result)
+        return parity(result) if self.U_fully_connected is None else result
 
     @property
     def max_layers(self) -> int:
-        dims_qubits = zip(self.data_qubits, self._filter_shape_qubits)
-        return min((len(q) // f for q, f in dims_qubits))
+        dims_qubits = zip(self.data_qubits, to_qubits(self.filter_shape))
+        return max((len(q) // max(f, 1) for q, f in dims_qubits))
 
     ### PRIVATE
 
@@ -132,22 +143,27 @@ class ConvolutionPoolingAnsatz(Ansatz):
         self.feature_qubits = [(qubits.total + i for i in range(num_feature_qubits))]
 
         # Data and ancilla qubits
-        for q, fsq in zip(qubits, self._filter_shape_qubits):
-            self.data_qubits += [q[fsq:]]
-            self.ancilla_qubits += [q[:fsq]]
+        fltr_shape_q = to_qubits(self.filter_shape)
+        pairs = (([q[fsq:]], [q[:fsq]]) for q, fsq in zip(qubits, fltr_shape_q))
+        self.data_qubits, self.ancilla_qubits = zip(*pairs)
+
+        # Catches scenarios where user defines filter
+        # with smaller dimensionality than data
+        self.data_qubits += qubits[len(fltr_shape_q) :]
 
         return qubits + self.feature_qubits
 
-    def _filter(self, qubits: Qubits, params):
+    def _filter(self, params, qubits: Qubits):
         """Wrapper around self.U_filter that replaces Convolution.filter"""
 
         # Setup params
-        filter_params, params = params[: self._n_params], params[self._n_params :]
+        qubits = Qubits(q[:fsq] for q, fsq in zip(qubits, to_qubits(self.filter_shape)))
+        num_params = self.num_features * self.U_filter.shape(qubits.total)
+        filter_params, params = params[:num_params], params[num_params:]
         shape = (self.num_features, len(filter_params) // self.num_features)
         filter_params = filter_params.reshape(shape)
 
         # Setup wires
-        qubits = Qubits(q[:fsq] for q, fsq in zip(qubits, self._filter_shape_qubits))
         Multiplex(
             filter_params,
             qubits.flatten(),
@@ -161,11 +177,3 @@ class ConvolutionPoolingAnsatz(Ansatz):
     def _data_wires(self) -> Wires:
         data_qubits = zip_longest(self.ancilla_qubits, self.data_qubits, fillvalue=[])
         return Qubits(chain(*data_qubits)).flatten()
-
-    @property
-    def _filter_shape_qubits(self):
-        return to_qubits(self.filter_shape)
-
-    @property
-    def _n_params(self) -> int:
-        return self.num_features * self.U_filter.shape(sum(self._filter_shape_qubits))

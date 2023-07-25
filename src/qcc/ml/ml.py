@@ -24,7 +24,7 @@ USE_CUDA = cuda.is_available()
 # DEVICE = torch.device("cuda" if USE_CUDA else "cpu")
 
 if USE_CUDA:
-    logging.info(f"Using CUDA on device {torch.device('cuda')}")
+    log.info(f"Using CUDA on device {torch.device('cuda')}")
 
 
 def parameter(arg):

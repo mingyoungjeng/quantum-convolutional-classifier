@@ -53,8 +53,8 @@ class Qubits(list):
 
     @property
     def shape(self) -> Iterable[int] | int:
-        shape = [len(q) for q in self]
-        return shape and shape[0]
+        shape = tuple(len(q) for q in self)
+        return shape[0] if len(shape) == 1 else shape
 
     @property
     def ndim(self) -> int:

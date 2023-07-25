@@ -63,7 +63,7 @@ class FilterQML(Unitary):
                 continue
 
             # CNOT gates
-            wires = wires[::-1]
+            # wires = wires[::-1]
             control, target = tee(wires)
             first = next(target, None)
             op_list += [qml.CNOT(wires=w) for w in zip(control, target)]
@@ -130,17 +130,20 @@ class Convolution(Operation):
         op_list = []
 
         for i, fsq in enumerate(filter_shape_q):
-            filter_wires = qubits[i]
-            ancilla_wires = qubits[i - len(filter_shape_q)][:fsq]
+            data_wires = qubits[i]
+            filter_wires = qubits[i - len(filter_shape_q)][:fsq]
+            
+            if len(data_wires) == 0:
+                continue
 
             # Apply Hadamard to ancilla wires
             if H:
-                op_list += [qml.Hadamard(aq) for aq in ancilla_wires]
+                op_list += [qml.Hadamard(aq) for aq in filter_wires]
 
             # Shift operation
             op_list += [
-                Controlled(Shift(-stride, wires=filter_wires[j:]), control)
-                for j, control in enumerate(ancilla_wires)
+                Controlled(Shift(-stride, wires=data_wires[j:]), control)
+                for j, control in enumerate(filter_wires)
             ]
 
         return op_list

@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import logging
+from functools import cached_property
 from abc import abstractmethod
 
 import pennylane as qml
@@ -19,6 +21,8 @@ if TYPE_CHECKING:
     from qcc.quantum.operation import Parameters
 
     Statevector = Iterable[Number]
+
+log = logging.getLogger(__name__)
 
 
 def is_multidimensional(wires: Qubits):
@@ -54,7 +58,7 @@ class Ansatz(Module):
 
     # Derived properties
 
-    @property
+    @cached_property
     def qnode(self) -> qml.QNode:
         wires = self.qubits.flatten()[::-1]  # Big-endian format
         device = qml.device("default.qubit", wires=wires)
@@ -100,7 +104,6 @@ class Ansatz(Module):
 
     def forward(self, psi_in: Optional[Statevector] = None):
         result = self.qnode(psi_in=psi_in)  # pylint: disable=not-callable
-
         return self.post_processing(result)
 
     # Miscellaneous
@@ -119,5 +122,10 @@ class Ansatz(Module):
         qubits = wires_to_qubits(dims_q)
 
         ansatz = cls(qubits, *args, **kwargs)
+
+        info = qml.specs(ansatz.qnode)()["resources"]
+        log.info(f"Depth: {info.depth}")
+        gate_count = sum(key * value for key, value in info.gate_sizes.items())
+        log.info(f"Gate Count: {gate_count}")
 
         return ansatz
