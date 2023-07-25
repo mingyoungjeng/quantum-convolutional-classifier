@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=qcnn                     # Job name
+#SBATCH --job-name=qcc                     # Job name
 #SBATCH --partition=sixhour                 # Partition Name (Required)
 #SBATCH --mail-type=END,FAIL                # Mail events (NONE, BEGIN, END, FAIL, ALL)
 #SBATCH --mail-user=mingyoungjeng@ku.edu    # Where to send mail
@@ -15,17 +15,17 @@ pwd; hostname; date
 module purge
 module load conda/latest
 
-# conda remove -n qcnn --all -y
-# conda create -n qcnn python=3.10.9 -y
-conda activate qcnn
+# conda remove -n qcc --all -y
+# conda create -n qcc python=3.10.9 -y
+conda activate qcc
 
 # conda install -c conda-forge pennylane -y
 # conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia -y
 # pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 # pip install -e .
 
-echo "running QCNN"
-cd /home/m174j393/work/qcnn/test
-python /home/m174j393/work/qcnn/test/script.py
+echo "running QCC"
+cd /home/m174j393/work/qcc/test
+qcc from-file $1
 
 date
