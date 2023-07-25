@@ -25,11 +25,11 @@ class Unitary(Operation):
 
     @staticmethod
     @abstractmethod
-    def _shape(wires: Wires) -> int:
+    def _shape(num_wires: int, **hyperparameters) -> int:
         pass
 
     @classmethod
-    def shape(cls, wires: Optional[Wires | int] = None) -> int:
+    def shape(cls, wires: Optional[Wires | int] = None, **hyperparameters) -> int:
         """
         Total trainable parameters required when applying operation to a set of qubits
 
@@ -39,6 +39,6 @@ class Unitary(Operation):
         Returns:
             int: required number of parameters
         """
-        if isinstance(wires, Number):
-            wires = range(wires)
-        return cls._shape(wires)
+        if isinstance(wires, Wires):
+            wires = len(wires)
+        return cls._shape(wires, **hyperparameters)

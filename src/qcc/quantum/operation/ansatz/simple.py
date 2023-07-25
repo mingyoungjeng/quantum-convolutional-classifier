@@ -32,7 +32,7 @@ class SimpleFiltering(Unitary):
         return op_list
 
     @staticmethod
-    def _shape(*_) -> int:
+    def _shape(*_, **__) -> int:
         return 6
 
 
@@ -59,7 +59,7 @@ class SimpleFiltering2(Unitary):
         return op_list
 
     @staticmethod
-    def _shape(*_) -> int:
+    def _shape(*_, **__) -> int:
         return 3
 
 
@@ -71,7 +71,7 @@ class SimplePooling(Unitary):
         return [Controlled(SimpleFiltering(params, wires), ctrl)]
 
     @staticmethod
-    def _shape(*_) -> int:
+    def _shape(*_, **__) -> int:
         return 6
 
 

@@ -30,12 +30,11 @@ class FullyConnected(Unitary):
         return op_list
 
     @staticmethod
-    def _shape(wires: Wires) -> int:
-        n = len(wires)
+    def _shape(num_wires: Wires, **_) -> int:
         total = 0
-        for _ in range(to_qubits(len(wires))):
-            total += n // 2
-            n = (n + 1) // 2
+        for _ in range(to_qubits(num_wires)):
+            total += num_wires // 2
+            num_wires = (num_wires + 1) // 2
         return 2 * total
 
         # return 2 * to_qubits(len(wires))
@@ -60,5 +59,5 @@ class FullyConnectedSimple(Unitary):
         return op_list
 
     @staticmethod
-    def _shape(wires: Wires) -> int:
-        return 2 * to_qubits(len(wires))
+    def _shape(num_wires: Wires, **_) -> int:
+        return 2 * to_qubits(num_wires)

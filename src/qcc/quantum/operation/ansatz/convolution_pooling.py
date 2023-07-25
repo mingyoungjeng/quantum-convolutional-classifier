@@ -6,7 +6,7 @@ from itertools import chain, zip_longest
 from qcc.quantum import to_qubits, parity
 from qcc.quantum.operation import Convolution, Multiplex, Qubits, QubitsProperty
 from qcc.quantum.operation.ansatz import Ansatz
-from qcc.quantum.operation.c2q import ConvolutionAngleFilter
+from qcc.quantum.operation.convolution import define_filter
 from qcc.quantum.operation.fully_connected import FullyConnected
 
 if TYPE_CHECKING:
@@ -48,7 +48,7 @@ class ConvolutionPoolingAnsatz(Ansatz):
         num_layers: int = None,
         num_features: int = 1,
         filter_shape: Iterable[int] = (2, 2),
-        U_filter: type[Unitary] = ConvolutionAngleFilter,
+        U_filter: type[Unitary] = define_filter(num_layers=4),
         U_fully_connected: Optional[type[Unitary]] = FullyConnected,
         pre_op: bool = False,
         post_op: bool = False,
@@ -95,16 +95,15 @@ class ConvolutionPoolingAnsatz(Ansatz):
             params = self._filter(self.ancilla_qubits, params)
 
         # Fully connected layer
-        meas = Qubits(
-            chain(*zip_longest(self.ancilla_qubits, data_qubits[:n_dim], fillvalue=[]))
-        )
+        meas = zip_longest(self.ancilla_qubits, data_qubits[:n_dim], fillvalue=[])
+        meas = Qubits(chain(*meas))
         meas += data_qubits[n_dim:] + self.feature_qubits
         meas = meas.flatten()
 
         if self.U_fully_connected:
             self.U_fully_connected(params, meas[::-1])
             return meas[-1]
-        
+
         return meas
 
     @Ansatz.parameter  # pylint: disable=no-member
@@ -119,7 +118,7 @@ class ConvolutionPoolingAnsatz(Ansatz):
     def post_processing(self, result) -> Iterable[Iterable[Number]]:
         result = super().post_processing(result)
         return parity(result)
-    
+
     @property
     def max_layers(self) -> int:
         dims_qubits = zip(self.data_qubits, self._filter_shape_qubits)
@@ -139,7 +138,7 @@ class ConvolutionPoolingAnsatz(Ansatz):
 
         return qubits + self.feature_qubits
 
-    def _filter(self, qubits, params):
+    def _filter(self, qubits: Qubits, params):
         """Wrapper around self.U_filter that replaces Convolution.filter"""
 
         # Setup params

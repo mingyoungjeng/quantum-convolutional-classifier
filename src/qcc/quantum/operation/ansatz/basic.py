@@ -37,8 +37,8 @@ class BasicFiltering(Unitary):
         return op_list
 
     @staticmethod
-    def _shape(wires: Wires) -> int:
-        return 6 * len(wires)
+    def _shape(num_wires: Wires, **_) -> int:
+        return 6 * num_wires
 
 
 class BasicFiltering2(Unitary):
@@ -65,9 +65,8 @@ class BasicFiltering2(Unitary):
         return op_list
 
     @staticmethod
-    def _shape(wires: Wires) -> int:
-        return len(wires)
-
+    def _shape(num_wires: Wires, **_) -> int:
+        return num_wires
 
 class BasicFiltering3(Unitary):
     @staticmethod
@@ -93,8 +92,8 @@ class BasicFiltering3(Unitary):
         return op_list
 
     @staticmethod
-    def _shape(wires: Wires) -> int:
-        return 3 * (len(wires) + 1)
+    def _shape(num_wires: Wires, **_) -> int:
+        return 3 * (num_wires + 1)
 
 
 class BasicFiltering4(Unitary):
@@ -117,7 +116,7 @@ class BasicFiltering4(Unitary):
         return op_list
 
     @staticmethod
-    def _shape(wires: Wires) -> int:
+    def _shape(num_wires: Wires, **_) -> int:
         return 3
 
 
@@ -147,46 +146,8 @@ class BasicFiltering5(Unitary):
         return op_list
 
     @staticmethod
-    def _shape(wires: Wires) -> int:
-        return 4 * len(wires)
-
-
-class BasicFiltering6(Unitary):
-    op = qml.RY
-    num_layers = 5
-    p = 1
-
-    @staticmethod
-    def compute_decomposition(params, wires, **_):
-        op_list = []
-        params = params.reshape(
-            (BasicFiltering6.num_layers, len(wires), BasicFiltering6.p)
-        )
-
-        for i, angles in enumerate(params):
-            # Rotation gate layer
-            op_list += [BasicFiltering6.op(*a, wire) for a, wire in zip(angles, wires)]
-
-            if i >= len(params) - 1:
-                continue
-
-            # CNOT gates
-            wires = wires[::-1]
-            control, target = tee(wires)
-            first = next(target, None)
-            op_list += [
-                qml.CNOT(wires=cnot_wires) for cnot_wires in zip(control, target)
-            ]
-
-            # Final CNOT gate (last to first)
-            if len(wires) > 1:
-                op_list += [qml.CNOT(wires=(wires[-1], first))]
-
-        return op_list
-
-    @staticmethod
-    def _shape(wires: Wires) -> int:
-        return BasicFiltering6.num_layers * len(wires) * BasicFiltering6.p
+    def _shape(num_wires: Wires, **_) -> int:
+        return 4 * num_wires
 
 
 class BasicFilteringSimple(Unitary):
@@ -219,7 +180,7 @@ class BasicFilteringSimple(Unitary):
         return op_list
 
     @staticmethod
-    def _shape(wires: Wires) -> int:
+    def _shape(num_wires: Wires, **_) -> int:
         return BasicFilteringSimple.n * 3
 
 
@@ -231,8 +192,8 @@ class BasicPooling(Unitary):
         return qml.ctrl(BasicFiltering, ctrl)(params, wires)
 
     @staticmethod
-    def _shape(wires: Wires) -> int:
-        return 6 * (len(wires) - 1)
+    def _shape(num_wires: Wires, **_) -> int:
+        return 6 * (lnum_wires - 1)
 
 
 class BasicAnsatz(Ansatz):

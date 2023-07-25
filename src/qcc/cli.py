@@ -75,11 +75,16 @@ def run(
         model.ansatz.draw(filename=filename, decompose=True)
 
     # Run experiment
-    experiment = Experiment(model, num_trials, results_schema=["accuracy"])
+    results_schema=["accuracy", "training_time", "testing_time"]
+    experiment = Experiment(model, num_trials, results_schema=results_schema)
 
     args = (ansatz,) if is_quantum else ()
     results = experiment(
-        *args, dimensions, num_layers=num_layers, silent=not verbose, **ansatz_options
+        *args, 
+        dimensions, 
+        num_layers=num_layers, 
+        silent=not verbose, 
+        **ansatz_options,
     )
 
     # Save and print accuracy results

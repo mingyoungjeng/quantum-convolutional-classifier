@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import logging
 from math import pi
 from itertools import chain, pairwise
 from functools import partial, wraps
@@ -18,8 +19,12 @@ if TYPE_CHECKING:
     LossFunction = CostFunction = Callable[[Iterable[Number], Iterable[Number]], Number]
     MLFunction = Callable[[Iterable[Number], Iterable[Number]], Iterable[Number]]
 
+log = logging.getLogger(__name__)
 USE_CUDA = cuda.is_available()
 # DEVICE = torch.device("cuda" if USE_CUDA else "cpu")
+
+if USE_CUDA:
+    logging.info(f"Using CUDA on device {torch.device('cuda')}")
 
 
 def parameter(arg):

@@ -33,7 +33,7 @@ class Ansatz(Module):
     qubits: Qubits = QubitsProperty(slots=True)
     _num_layers: int
 
-    def __init__(self, qubits, num_layers: int = 0):
+    def __init__(self, qubits: Qubits, num_layers: int = 0):
         self.qubits = qubits
         self.num_layers = num_layers
 

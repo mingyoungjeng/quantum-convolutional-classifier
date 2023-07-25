@@ -27,7 +27,7 @@ class BaselineFiltering(Unitary):
         ]
 
     @staticmethod
-    def _shape(*_) -> int:
+    def _shape(*_, **__) -> int:
         return 15
 
 
@@ -41,7 +41,7 @@ class BaselinePooling1(Unitary):
         ]
 
     @staticmethod
-    def _shape(*_) -> int:
+    def _shape(*_, **__) -> int:
         return 2
 
 
@@ -56,7 +56,7 @@ class BaselinePooling2(Unitary):
         ]
 
     @staticmethod
-    def _shape(*_) -> int:
+    def _shape(*_, **__) -> int:
         return 2
 
 
@@ -68,7 +68,7 @@ class BaselinePooling3(Unitary):
         qml.cond(m_0 == 1, qml.RY)(params[1], wires=wires[1])
 
     @staticmethod
-    def _shape(*_) -> int:
+    def _shape(*_, **__) -> int:
         return 2
 
 

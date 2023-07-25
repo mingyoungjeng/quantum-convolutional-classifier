@@ -29,8 +29,8 @@ class FullyConnectedLayer(Unitary):
         return op_list
 
     @staticmethod
-    def _shape(wires) -> int:
-        return 3 * len(wires)
+    def _shape(num_wires, **_) -> int:
+        return 3 * num_wires
 
 
 class FullyConnectedAnsatz(Ansatz):

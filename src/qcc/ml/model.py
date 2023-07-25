@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import time
 from attrs import define
 from torch.nn import Module
 from qcc.ml.data import Data
@@ -34,12 +35,19 @@ class Model:
         opt = self.optimizer(model.parameters() if params is None else params)
         self.logger.info(f"Number of Parameters: {opt.num_parameters}", silent=silent)
 
+        training_time = time.perf_counter()
         parameters = train(model, opt, training_dataloader, self._cost, self.epoch)
+        training_time = time.perf_counter() - training_time
+        self.logger.info(f"Training took {training_time:.03} sec", silent=silent)
 
+        testing_time = time.perf_counter()
         accuracy = test(model, testing_dataloader, parameters)
-        self.logger.info(f"Accuracy: {accuracy:.03%}", silent=silent)
+        testing_time = time.perf_counter() - testing_time
 
-        return accuracy
+        self.logger.info(f"Testing took: {testing_time:.05} sec", silent=silent)
+        self.logger.info(f"Accuracy: {accuracy:.05%}", silent=silent)
+
+        return accuracy, training_time, testing_time
 
     @classmethod
     def with_logging(cls, *args, name: Optional[str] = None, **kwargs):

@@ -5,6 +5,8 @@ from pennylane.wires import Wires
 
 
 class Qubits(list):
+    """Multidimensional qubits"""
+
     def __init__(self, iterable=None):
         if iterable is None:
             super().__init__()
@@ -60,27 +62,32 @@ class Qubits(list):
 
 
 class QubitsProperty:
-    __slots__ = "name", "slots"
+    """Descriptor that handles getting and setting Qubits"""
+
+    __slots__ = "name", "use_slots"
+
+    name: str
+    use_slots: bool
 
     def __init__(self, name: str = None, slots: bool = False) -> None:
         self.name = name
-        self.slots = slots
+        self.use_slots = slots
 
-    def __set_name__(self, owner, name) -> None:
+    def __set_name__(self, _, name) -> None:
         if self.name is not None:
             return
 
-        self.name = f"_{name}" if self.slots else name
+        self.name = f"_{name}" if self.use_slots else name
 
-    def __get__(self, obj: object, type=None) -> Qubits:
-        if self.slots:
+    def __get__(self, obj: object, _=None) -> Qubits:
+        if self.use_slots:
             qubits = getattr(obj, self.name, Qubits())
         else:
             qubits = obj.__dict__.get(self.name, Qubits())
         return qubits.copy()
 
     def __set__(self, obj: object, value: Iterable) -> None:
-        if self.slots:
+        if self.use_slots:
             setattr(obj, self.name, Qubits(value))
         else:
             obj.__dict__[self.name] = Qubits(value)
