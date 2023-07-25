@@ -16,17 +16,18 @@ if TYPE_CHECKING:
 
 def create_parent(path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
-    
+
+
 def new_dir(dir: Path) -> None:
     if not isinstance(dir, Path):
         dir = Path(dir)
 
     i = 1
     stem = dir.stem
-    while dir.is_file():
-        dir = dir.with_name(stem)
+    while dir.is_dir():
+        dir = dir.with_name(f"{stem}_{i}")
         i += 1
-        
+
     dir.mkdir(parents=True, exist_ok=False)
 
     # Return path in case stem change needed
