@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
+import gc
 from numbers import Number
 import torch
 from torch.optim import Optimizer as TorchOptimizer
@@ -86,7 +87,16 @@ def backpropagate(
     cost.backward()
     optimizer.step()
 
-    return cost
+    return cost.item()
+
+
+def delete(*args):
+    for arg in args:
+        del arg
+
+    if USE_CUDA:
+        gc.collect()
+        torch.cuda.empty_cache()
 
 
 def train(

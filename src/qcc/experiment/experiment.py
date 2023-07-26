@@ -6,7 +6,11 @@ from itertools import product
 from attrs import define, field
 import polars as pl
 import matplotlib.pyplot as plt
-from qcc.file import draw, save_dataframe_as_csv
+from qcc.file import (
+    draw,
+    save_dataframe_as_csv as save,
+    load_dataframe_from_csv as load,
+)
 from qcc.experiment.logger import Logger
 
 if TYPE_CHECKING:
@@ -22,7 +26,7 @@ class Experiment:
     num_trials: int = 1
 
     results_schema: SchemaDefinition = None
-    df: pl.DataFrame = field(init=None, default=None)
+    dfs: list[Optional[pl.DataFrame]] = field(init=None, default=[None, None])
     metrics: list[str] = field(init=None, factory=list)
 
     @cls.validator
@@ -36,7 +40,7 @@ class Experiment:
             raise AttributeError("No Logger")
 
     def __call__(
-        self, fn: Optional[Callable] = None, filename: Path = None, merge: bool = False
+        self, fn: Optional[Callable] = None, filename: Path = None, merge: bool = True
     ):
         if fn is None:
             fn = self.cls.__call__
@@ -44,15 +48,19 @@ class Experiment:
         logger_name = self.cls.logger.name
         self.metrics = self.cls.logger.df.columns[1:]
 
-        results = pl.DataFrame(schema=self.results_schema)
+        if filename is not None:  # ideal output filenames
+            filenames = filename, filename.with_stem(f"{filename.stem}_results")
 
-        if filename is not None:
-            # Reserve file name
-            filename = save_dataframe_as_csv(filename, pl.DataFrame(), overwrite=False)
-            results_filename = filename.with_stem(f"{filename.stem}_results")
-            results_filename = save_dataframe_as_csv(results_filename, results, False)
+            if merge:
+                self.dfs = [load(f) for f in filenames]
+                offset = len(self.dfs[0].columns) if self.dfs[0] is not None else 0
+            else:
+                # Reserve file names
+                filenames = [save(f, pl.DataFrame(), False) for f in filenames]
 
         for i in range(self.num_trials):
+            i += offset
+
             # Setup DataFrame
             idf = pl.DataFrame(schema=self.cls.logger.df.schema)
 
@@ -68,27 +76,22 @@ class Experiment:
 
             # Combine DataFrames
             idf = idf.select(pl.col(self.metrics).suffix(f"_{i}"))
-            if i == 0:
-                df = idf
-                results = results_row
+
+            if self.dfs[0] is None:
+                self.dfs[0] = idf
             else:
-                df.hstack(idf, in_place=True)
-                results.vstack(results_row, in_place=True)
+                self.dfs[0].hstack(idf, in_place=True)
+
+            if self.dfs[1] is None:
+                self.dfs[1] = results_row
+            else:
+                self.dfs[1].vstack(results_row, in_place=True)
 
             if filename is not None:
-                save_dataframe_as_csv(filename, df, overwrite=True)
-                save_dataframe_as_csv(results_filename, results, overwrite=True)
+                for f, df in zip(filenames, self.dfs):
+                    save(f, df, overwrite=True)
 
-        # Aggregate columns
-        exprs = product(self.metrics, ["mean", "std"])
-        exprs = tuple(self.aggregate(*expr) for expr in exprs)
-        self.df = df.with_columns(*exprs)  # df.select(*exprs)
-
-        if filename is not None:
-            save_dataframe_as_csv(filename, self.df, overwrite=True)
-            # save_dataframe_as_csv(results_filename, results, overwrite=True)
-
-        return results
+        return self.dfs[1]
 
     @staticmethod
     def aggregate(name: str, op: str):
@@ -99,10 +102,15 @@ class Experiment:
         return expr.alias(f"{name}_{op}")
 
     def draw(self, filename=None, include_axis: bool = False):
+        # Aggregate columns
+        exprs = product(self.metrics, ["mean", "std"])
+        exprs = tuple(self.aggregate(*expr) for expr in exprs)
+        df = self.dfs[0].with_columns(*exprs)  # df.select(*exprs)
+
         subplots = []
         for metric in self.metrics:
             fig, ax = plt.subplots()
-            mean = self.df.get_column(f"{metric}_mean").to_numpy()
+            mean = df.get_column(f"{metric}_mean").to_numpy()
             # std = self.df.get_column(f"{metric}_std").to_numpy()
             ax.plot(mean)
             # ax.errorbar(x=range(len(mean)), y=mean, yerr=std)

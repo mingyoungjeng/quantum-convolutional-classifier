@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import logging
-from functools import cached_property
 from abc import abstractmethod
 
 import pennylane as qml
@@ -32,7 +31,7 @@ def is_multidimensional(wires: Qubits):
 
 
 class Ansatz(Module):
-    __slots__ = "_qubits", "_num_layers"
+    __slots__ = "_qubits", "_num_layers", "_qnode"
 
     qubits: Qubits = QubitsProperty(slots=True)
     _num_layers: int
@@ -41,6 +40,10 @@ class Ansatz(Module):
         self.qubits = qubits
         self.num_layers = num_layers
 
+        wires = self.qubits.flatten()[::-1]  # Big-endian format
+        device = qml.device("default.qubit", wires=wires)
+        self._qnode = qml.QNode(self._circuit, device, interface="torch")
+        
     # Main properties
 
     @property
@@ -58,11 +61,13 @@ class Ansatz(Module):
 
     # Derived properties
 
-    @cached_property
+    @property
     def qnode(self) -> qml.QNode:
-        wires = self.qubits.flatten()[::-1]  # Big-endian format
-        device = qml.device("default.qubit", wires=wires)
-        return qml.QNode(self._circuit, device, interface="torch")
+        return self._qnode
+    
+    @qnode.deleter
+    def qnode(self) -> None:
+        del self._qnode
 
     # Abstract methods
 
@@ -104,6 +109,7 @@ class Ansatz(Module):
 
     def forward(self, psi_in: Optional[Statevector] = None):
         result = self.qnode(psi_in=psi_in)  # pylint: disable=not-callable
+
         return self.post_processing(result)
 
     # Miscellaneous

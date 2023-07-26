@@ -6,7 +6,7 @@ import tomllib
 from pathlib import Path
 from PIL import Image
 from astropy.io import fits
-from polars import DataFrame
+from polars import DataFrame, read_csv
 from matplotlib.figure import Figure
 
 if TYPE_CHECKING:
@@ -18,17 +18,18 @@ def create_parent(path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
 
 
-def new_dir(dir: Path) -> None:
+def new_dir(dir: Path, overwrite=True) -> None:
     if not isinstance(dir, Path):
         dir = Path(dir)
 
-    i = 1
-    stem = dir.stem
-    while dir.is_dir():
-        dir = dir.with_name(f"{stem}_{i}")
-        i += 1
+    if not overwrite:
+        i = 1
+        stem = dir.stem
+        while dir.is_dir():
+            dir = dir.with_name(f"{stem}_{i}")
+            i += 1
 
-    dir.mkdir(parents=True, exist_ok=False)
+    dir.mkdir(parents=True, exist_ok=overwrite)
 
     # Return path in case stem change needed
     return dir
@@ -70,6 +71,14 @@ def save_dataframe_as_csv(filename: Path, df: DataFrame, overwrite=True) -> None
     filename = filename.with_suffix(".csv")
 
     return save(filename, fn=df.write_csv, overwrite=overwrite)
+
+
+def load_dataframe_from_csv(filename: Path) -> None:
+    if not isinstance(filename, Path):
+        filename = Path(filename)
+    filename = filename.with_suffix(".csv")
+
+    return read_csv(filename) if filename.is_file() else None
 
 
 def draw(

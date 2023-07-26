@@ -53,7 +53,7 @@ class CLIParameters:
         return cls(**kwargs)
 
     def __call__(self) -> None:
-        path = new_dir(self.output_dir / self.name)
+        path = new_dir(self.output_dir / self.name, overwrite=True)
         if isinstance(self.transform, type):
             transform = self.transform(self.dimensions, flatten=self.is_quantum)
         else:
