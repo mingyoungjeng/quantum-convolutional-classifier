@@ -7,12 +7,13 @@ dimensions = [16, 16]
 num_layers = 3
 classes = [0, 1]
 epoch = 1
-batch_size = [4, 1000]
+batch_size = [8, 1000]
 num_trials = 10
 is_quantum = true
 verbose = true
 
 [ansatz_options]
+pre_op = true
 
 [optimizer_options]
 lr = 0.001

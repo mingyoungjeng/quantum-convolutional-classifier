@@ -26,6 +26,6 @@ conda activate qcc
 
 echo "running QCC"
 cd /home/m174j393/work/qcc/test
-qcc from-file $1
+qcc load $1
 
 date

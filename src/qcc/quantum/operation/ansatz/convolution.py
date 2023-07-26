@@ -29,23 +29,20 @@ class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
         top += self.feature_qubits.total
 
         # Ancilla qubits
-        for _ in range(self.num_layers):
-            for fsq in self._filter_shape_qubits:
+        for i in range(self.num_layers):
+            for fsq, dsq in zip(to_qubits(self.filter_shape), self.data_qubits.shape):
+                if i * fsq >= dsq:
+                    self.ancilla_qubits += [[]]
+                    continue
+
                 self.ancilla_qubits += [list(range(top, top + fsq))]
                 top += fsq
 
         return self.data_qubits + self.feature_qubits + self.ancilla_qubits
 
-    def _setup_ancilla(self) -> None:
-        self.ancilla_qubits = []
-        top = self.data_qubits.total
-        for _ in range(self.num_layers):
-            for fsq in self._filter_shape_qubits:
-                self.ancilla_qubits += [list(range(top, top + fsq))]
-                top += fsq
-
     def circuit(self, *params: Parameters) -> Wires:
         (params,) = params
+        fltr_shape_q = to_qubits(self.filter_shape)
         fltr_dim = len(self.filter_shape)
         data_qubits = self.data_qubits
         ancilla_qubits = [
@@ -55,41 +52,43 @@ class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
 
         if self.pre_op:  # Pre-op on ancillas
             for ancilla in ancilla_qubits:
-                params = self._filter(ancilla, params)
+                params = self._filter(params, ancilla)
 
         # Convolution layers
         for i in range(self.num_layers):
             qubits = data_qubits + ancilla_qubits[i]
 
             ### SHIFT
-            Convolution.shift(self._filter_shape_qubits, qubits)
+            Convolution.shift(fltr_shape_q, qubits)
 
             ### FILTER
-            params = self._filter(qubits, params)
+            params = self._filter(params, qubits)
 
             ### PERMUTE
-            Convolution.permute(self._filter_shape_qubits, qubits)
+            Convolution.permute(fltr_shape_q, qubits)
 
             if self.pooling:
-                for i, fsq in enumerate(self._filter_shape_qubits):
+                for i, fsq in enumerate(fltr_shape_q):
                     data_qubits[i] = data_qubits[i][fsq:]
 
         if self.post_op:  # Post-op on ancillas
             for ancilla in ancilla_qubits:
-                params = self._filter(ancilla, params)
+                params = self._filter(params, ancilla)
 
         # Fully connected layer
         meas = (data_qubits + ancilla_qubits).flatten()
-        self.U_fully_connected(params, meas[::-1])
+        if self.U_fully_connected is not None:
+            self.U_fully_connected(params, meas[::-1])
+            return meas[-1]
 
-        return meas[-1]
+        return meas
 
-    @Ansatz.parameter  # pylint: disable=no-member
-    def shape(self) -> int:
-        n_params = self._n_params * (self.num_layers + self.pre_op + self.post_op)
-        n_params += self.U_fully_connected.shape(self.qubits.flatten())
+    # @Ansatz.parameter  # pylint: disable=no-member
+    # def shape(self) -> int:
+    #     n_params = self._n_params * (self.num_layers + self.pre_op + self.post_op)
+    #     n_params += self.U_fully_connected.shape(self.qubits.flatten())
 
-        return n_params
+    #     return n_params
 
     @property
     def _data_wires(self) -> Wires:

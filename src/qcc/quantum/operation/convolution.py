@@ -158,10 +158,10 @@ class Convolution(Operation):
         op_list = []
 
         for i, fsq in enumerate(filter_shape_q):
-            filter_wires = qubits[i][:fsq]
-            ancilla_wires = qubits[i - len(filter_shape_q)][:fsq]
+            data_wires = qubits[i][:fsq]
+            filter_wires = qubits[i - len(filter_shape_q)][:fsq]
 
-            op_list += [qml.SWAP((f, a)) for f, a in zip(filter_wires, ancilla_wires)]
+            op_list += [qml.SWAP((f, a)) for f, a in zip(data_wires, filter_wires)]
 
         return op_list
 

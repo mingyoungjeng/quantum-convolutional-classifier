@@ -1,19 +1,18 @@
-ansatz = "qcc.quantum.operation.ansatz.ConvolutionPoolingAnsatz"
-dataset = "torchvision.datasets.MNIST"
+ansatz = "qcc.quantum.operation.ansatz.BaselineAnsatz"
+dataset = "torchvision.datasets.CIFAR10"
 optimizer = "torch.optim.Adam"
 loss = "torch.nn.CrossEntropyLoss"
 transform = "qcc.ml.data.ImageTransform"
-dimensions = [28, 28]
+dimensions = [32, 32, 3]
 num_layers = 4
 classes = [0, 1]
-epoch = 1
+epoch = 10
 batch_size = [8, 1000]
 num_trials = 10
 is_quantum = true
 verbose = true
 
 [ansatz_options]
-pre_op = true
 
 [optimizer_options]
 lr = 0.001

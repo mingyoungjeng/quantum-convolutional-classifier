@@ -6,13 +6,14 @@ transform = "qcc.ml.data.ImageTransform"
 dimensions = [32, 32, 3]
 num_layers = 4
 classes = [0, 1]
-epoch = 1
-batch_size = [4, 1000]
+epoch = 10
+batch_size = [8, 1000]
 num_trials = 10
 is_quantum = true
 verbose = true
 
 [ansatz_options]
+pre_op = true
 filter_shape = [2, 2, 2]
 
 [optimizer_options]

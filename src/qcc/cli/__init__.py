@@ -183,7 +183,7 @@ def run(**kwargs):
     "--pattern",
     required=True,
     type=str,
-    default="**/*.toml",
+    default=r"**/*.toml",
     help="Config file RegEx pattern",
 )
 @click.option(
@@ -202,16 +202,15 @@ def run(**kwargs):
     callback=create_results,
     help="Output directory",
 )
-def from_file(ctx, paths: Iterable[Path], pattern: str, output_dir: Path):
+def load(ctx, paths: Iterable[Path], pattern: str, output_dir: Path):
     # TODO: handle quantum, classical in TOML
-    suffix = ""
 
     toml_files = set()
     for path in paths:
         if path.is_dir():
             toml_files.update(path.glob(pattern))
         else:
-            if path.suffix == suffix:
+            if path.suffix == ".toml":
                 toml_files.add(path)
 
     cmds = (CLIParameters.from_toml(toml) for toml in toml_files)

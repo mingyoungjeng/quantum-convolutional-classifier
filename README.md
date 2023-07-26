@@ -27,5 +27,5 @@ pip install -e .[development] # --editable installation
 qcc --help
 
 # Run the test suite
-cd test; qcc from-file config/
+cd test; qcc load config/
 ```
