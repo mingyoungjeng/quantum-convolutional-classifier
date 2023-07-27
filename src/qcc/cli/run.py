@@ -29,7 +29,7 @@ def str_to_mod(x):
 @define(kw_only=True)
 class CLIParameters:
     name: str
-    ansatz: type[Ansatz] = field(converter=str_to_mod)
+    ansatz: Optional[type[Ansatz]] = field(converter=str_to_mod, default=None)
     dataset: type[Dataset] = field(converter=str_to_mod)
     optimizer: type[TorchOptimizer] = field(converter=str_to_mod)
     loss: Callable | type[ImageTransform] = field(converter=str_to_mod)

@@ -58,7 +58,7 @@ class CNN(Model):
     convolution: Layer = Layer()
     pooling: Layer = Layer()
     num_classes: int = Factory(lambda self: len(self.data.classes), takes_self=True)
-    num_features = 3
+    num_features = 1
 
     # Convolutional layer parameters
 
