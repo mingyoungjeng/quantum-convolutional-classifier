@@ -215,7 +215,7 @@ def load(ctx, paths: Iterable[Path], pattern: str, output_dir: Path):
                 toml_files.add(path)
 
     cmds = (CLIParameters.from_toml(toml) for toml in toml_files)
-    
+
     errs = []
     for cmd in cmds:
         try:
@@ -226,7 +226,8 @@ def load(ctx, paths: Iterable[Path], pattern: str, output_dir: Path):
             log.error(e)
 
     if len(errs) > 0:
-        raise RuntimeError("One of the cmds encountered an error")
+        raise RuntimeError(f"{len(errs)} files encountered an error")
+
 
 def _setup_module(root: str, obj: str = None):
     if obj is None or "." in obj:
