@@ -79,7 +79,7 @@ class CLIParameters:
             classes=self.classes,
         )
         optimizer = Optimizer(self.optimizer, **self.optimizer_options)
-        loss = self.loss()
+        loss: Callable = self.loss()
         model = Model.with_logging(module, data, optimizer, loss, epoch=self.epoch)
 
         # Log important values
