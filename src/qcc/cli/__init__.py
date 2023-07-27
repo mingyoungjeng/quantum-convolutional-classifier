@@ -226,7 +226,7 @@ def load(ctx, paths: Iterable[Path], pattern: str, output_dir: Path):
             log.error(e)
 
     if len(errs) > 0:
-        raise RuntimeError(f"{len(errs)} files encountered an error")
+        raise RuntimeError(f"{len(errs)} file(s) encountered an error")
 
 
 def _setup_module(root: str, obj: str = None):
