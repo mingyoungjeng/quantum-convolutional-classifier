@@ -23,7 +23,12 @@ class Experiment:
     """Perform and aggregate multiple experimental trials"""
 
     cls: Any = field()
+    fn: Callable = field()
     num_trials: int = 1
+
+    @fn.default
+    def _default_fn(self):
+        return getattr(self.cls, "__call__", lambda: None)
 
     results_schema: SchemaDefinition = None
     dfs: list[Optional[pl.DataFrame]] = field(init=None, factory=lambda: [None, None])
@@ -42,11 +47,12 @@ class Experiment:
     def __call__(
         self,
         fn: Optional[Callable] = None,
-        filename: Path = None,
+        *,
+        filename: Optional[Path] = None,
         merge: bool = True,
     ):
         if fn is None:
-            fn = self.cls.__call__
+            fn = self.fn
 
         logger = self.cls.logger
         self.metrics = logger.df.columns[1:]
@@ -57,8 +63,7 @@ class Experiment:
             if merge:
                 self.dfs = [load(f) for f in filenames]
                 offset = len(self.dfs[0].columns) if self.dfs[0] is not None else 0
-            else:
-                # Reserve file names
+            else:  # Reserve file names
                 filenames = [save(f, pl.DataFrame(), False) for f in filenames]
 
         for i in range(self.num_trials):
@@ -128,5 +133,5 @@ class Experiment:
             for (fig, ax) in subplots
         )
 
-    def callable_wrapper(self, *args, **kwargs):
-        return lambda: self.cls(*args, **kwargs)
+    def pass_args(self, *args, **kwargs):
+        self.fn = lambda: self.cls(*args, **kwargs)

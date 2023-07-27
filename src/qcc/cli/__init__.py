@@ -143,7 +143,7 @@ def cli(ctx: click.Context):
 )
 @click.option(
     "-ao",
-    "--ansatz_options",
+    "--model_options",
     type=DictType(),
     multiple=True,
     callback=lambda *x: dict(x[2]),
@@ -203,7 +203,7 @@ def run(**kwargs):
     callback=create_results,
     help="Output directory",
 )
-def load(ctx, paths: Iterable[Path], pattern: str, output_dir: Path):
+def load(ctx, paths: Iterable[Path], pattern: str):
     # TODO: handle quantum, classical in TOML
 
     toml_files = set()

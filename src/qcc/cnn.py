@@ -77,7 +77,12 @@ class CNN(Model):
     #     nn.Linear(n_feature * final_layer_size, num_classes),
     # )
 
-    def forward(self, dims, num_layers=1):
+    def forward(self, dims, num_layers=1, num_features=None, num_classes=None):
+        if num_features is None:
+            num_features = self.num_features
+        if num_classes is None:
+            num_classes = self.num_classes
+
         if len(dims) > 2:
             width, height, channels, *_ = dims
             dims = width, height
@@ -90,8 +95,8 @@ class CNN(Model):
             lst += [
                 self.convolution(
                     nn.Conv2d,
-                    in_channels=channels if i == 0 else self.num_features,
-                    out_channels=self.num_features,
+                    in_channels=channels if i == 0 else num_features,
+                    out_channels=num_features,
                 )
             ]
             dims = self.convolution.update_dims(*dims)
@@ -105,12 +110,12 @@ class CNN(Model):
 
         lst += [
             nn.Flatten(),
-            nn.Linear(self.num_features * np.prod(dims), self.num_classes),
+            nn.Linear(num_features * np.prod(dims), num_classes),
         ]
 
-        module = nn.Sequential(*lst)
-        return module.cuda() if USE_CUDA else module
+        model = nn.Sequential(*lst)
+        return model.cuda() if USE_CUDA else model
 
-    def __call__(self, dims, num_layers=1, silent=False):
-        model = self.forward(dims, num_layers)
+    def __call__(self, dims, num_layers=1, silent=False, **kwargs):
+        model = self.forward(dims, num_layers, **kwargs)
         return super().__call__(model, silent=silent)

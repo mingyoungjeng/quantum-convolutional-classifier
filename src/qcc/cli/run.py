@@ -12,7 +12,7 @@ from qcc.cnn import CNN
 from qcc.file import load_toml, new_dir, lookup
 
 if TYPE_CHECKING:
-    from typing import Any, Iterable, Optional, Callable, Mapping
+    from typing import Iterable, Optional, Callable, Mapping
     from torch.utils.data import Dataset
     from torch.optim import Optimizer as TorchOptimizer
     from qcc.quantum.operation.ansatz import Ansatz
@@ -40,8 +40,8 @@ class CLIParameters:
     classes: Optional[Iterable[int]] = (0, 1)
     epoch: int = 1
     batch_size: Optional[int | tuple[int, int]] = 1
-    ansatz_options: Mapping = dict()
-    optimizer_options: Mapping = dict()
+    model_options: Mapping = field(factory=dict)
+    optimizer_options: Mapping = field(factory=dict)
     output_dir: Path = Path.cwd() / "results"
     is_quantum: bool = True
     verbose: bool = False
@@ -81,12 +81,12 @@ class CLIParameters:
         model.logger.info(f"{self.dimensions=}")
         model.logger.info(f"{self.num_layers=}")
         model.logger.info(f"{self.epoch=}")
+        model.logger.info(f"{self.model_options=}")
 
         # Save circuit drawing
         if self.is_quantum:
-            model.logger.info(f"{self.ansatz_options=}")
             a: Ansatz = self.ansatz.from_dims(
-                self.dimensions, num_layers=self.num_layers, **self.ansatz_options
+                self.dimensions, num_layers=self.num_layers, **self.model_options
             )
             filename = path / f"{self.name}_circuit.png"
             a.draw(filename=filename, decompose=True)
@@ -94,15 +94,14 @@ class CLIParameters:
         # Run experiment
         results_schema = ["accuracy", "training_time", "testing_time"]
         experiment = Experiment(model, self.num_trials, results_schema=results_schema)
-
-        fn = experiment.callable_wrapper(
+        experiment.pass_args(
             *(self.ansatz,) if self.is_quantum else (),
             self.dimensions,
             num_layers=self.num_layers,
             silent=not self.verbose,
-            **self.ansatz_options if self.is_quantum else {},
+            **self.model_options if self.is_quantum else {},
         )
-        results = experiment(fn=fn, filename=path / self.name)
+        results = experiment(filename=path / self.name)
 
         # Print accuracy results
         for name in results.columns:

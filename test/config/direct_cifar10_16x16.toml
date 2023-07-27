@@ -12,7 +12,7 @@ num_trials = 10
 is_quantum = true
 verbose = true
 
-[ansatz_options]
+[model_options]
 pooling = true
 filter_shape = [2, 2, 2]
 
