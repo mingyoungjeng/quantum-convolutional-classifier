@@ -58,7 +58,7 @@ class Model:
     @classmethod
     def with_logging(cls, *args, name: Optional[str] = None, **kwargs):
         if name is None:
-            name = args[0].__name__.lower()
+            name = type(args[0]).__name__.lower()
 
         schema = [("cost", float)]
         fmt = "%(asctime)s: (%(name)s) %(message)s"

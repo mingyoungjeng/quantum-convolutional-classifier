@@ -72,6 +72,7 @@ class CNN(nn.Sequential):
                     nn.Conv2d,
                     in_channels=channels if i == 0 else num_features,
                     out_channels=num_features,
+                    padding_mode="circular",
                 )
             ]
             dims = convolution.update_dims(*dims)
