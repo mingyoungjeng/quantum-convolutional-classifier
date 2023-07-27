@@ -69,14 +69,21 @@ class BinaryData(Data):
 
 
 class ImageTransform(transforms.Compose):
-    def __init__(self, dims: Optional[Iterable[int]] = None, fix_bands=True, flatten=True, norm=True):
-        ops = [
-            transforms.ToTensor(),
-            transforms.Lambda(torch.squeeze)
-        ]
-        
+    def __init__(
+        self,
+        dims: Optional[Iterable[int]] = None,
+        fix_bands=True,
+        flatten=True,
+        norm=True,
+        squeeze=True,
+    ):
+        ops = [transforms.ToTensor()]
+
         if dims is not None:
             ops = [transforms.Resize(dims[:2]), *ops]
+
+        if squeeze:
+            ops += [transforms.Lambda(torch.squeeze)]
 
         if fix_bands and len(dims) >= 3:
             ops += [self._fix_bands()]
@@ -103,6 +110,10 @@ class ImageTransform(transforms.Compose):
     @staticmethod
     def _norm():
         return transforms.Lambda(normalize)
+    
+    @classmethod
+    def is_quantum(cls, dims: Optional[Iterable[int]] = None, is_quantum: bool = True):
+        return cls(dims, fix_bands=is_quantum, flatten=is_quantum, norm=is_quantum, squeeze=is_quantum)
 
 
 class ImageTransform1D(ImageTransform):

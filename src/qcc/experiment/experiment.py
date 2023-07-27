@@ -26,7 +26,7 @@ class Experiment:
     num_trials: int = 1
 
     results_schema: SchemaDefinition = None
-    dfs: list[Optional[pl.DataFrame]] = field(init=None, default=[None, None])
+    dfs: list[Optional[pl.DataFrame]] = field(init=None, factory=lambda: [None, None])
     metrics: list[str] = field(init=None, factory=list)
 
     @cls.validator
@@ -40,13 +40,16 @@ class Experiment:
             raise AttributeError("No Logger")
 
     def __call__(
-        self, fn: Optional[Callable] = None, filename: Path = None, merge: bool = True
+        self,
+        fn: Optional[Callable] = None,
+        filename: Path = None,
+        merge: bool = True,
     ):
         if fn is None:
             fn = self.cls.__call__
 
-        logger_name = self.cls.logger.name
-        self.metrics = self.cls.logger.df.columns[1:]
+        logger = self.cls.logger
+        self.metrics = logger.df.columns[1:]
 
         if filename is not None:  # ideal output filenames
             filenames = filename, filename.with_stem(f"{filename.stem}_results")
@@ -59,16 +62,17 @@ class Experiment:
                 filenames = [save(f, pl.DataFrame(), False) for f in filenames]
 
         for i in range(self.num_trials):
-            i += offset
+            if filename and merge:
+                i += offset
 
             # Setup DataFrame
-            idf = pl.DataFrame(schema=self.cls.logger.df.schema)
+            idf = pl.DataFrame(schema=logger.df.schema)
 
             # Setup logging
             self.cls.logger = Logger(
                 df=idf,
-                name=f"{logger_name}_trial_{i}",
-                format=self.cls.logger.format,
+                name=f"{logger.name}_trial_{i}",
+                format=logger.format,
             )
 
             # Perform trial
@@ -91,6 +95,7 @@ class Experiment:
                 for f, df in zip(filenames, self.dfs):
                     save(f, df, overwrite=True)
 
+        self.cls.logger = logger
         return self.dfs[1]
 
     @staticmethod

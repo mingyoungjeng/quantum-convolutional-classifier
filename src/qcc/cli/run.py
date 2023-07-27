@@ -32,7 +32,7 @@ class CLIParameters:
     ansatz: type[Ansatz] = field(converter=str_to_mod)
     dataset: type[Dataset] = field(converter=str_to_mod)
     optimizer: type[TorchOptimizer] = field(converter=str_to_mod)
-    loss: Callable = field(converter=str_to_mod)
+    loss: Callable | type[ImageTransform] = field(converter=str_to_mod)
     transform: Optional[Callable] = field(converter=str_to_mod)
     dimensions: Optional[Iterable[int]] = (16, 16)
     num_trials: Optional[int] = 1
@@ -55,7 +55,7 @@ class CLIParameters:
     def __call__(self) -> None:
         path = new_dir(self.output_dir / self.name, overwrite=True)
         if isinstance(self.transform, type):
-            transform = self.transform(self.dimensions, flatten=self.is_quantum)
+            transform = self.transform.is_quantum(self.dimensions, self.is_quantum)
         else:
             transform = self.transform
 
@@ -81,27 +81,26 @@ class CLIParameters:
         model.logger.info(f"{self.dimensions=}")
         model.logger.info(f"{self.num_layers=}")
         model.logger.info(f"{self.epoch=}")
-        model.logger.info(f"{self.ansatz_options=}")
 
         # Save circuit drawing
         if self.is_quantum:
-            model.ansatz: Ansatz = self.ansatz.from_dims(
+            model.logger.info(f"{self.ansatz_options=}")
+            a: Ansatz = self.ansatz.from_dims(
                 self.dimensions, num_layers=self.num_layers, **self.ansatz_options
             )
             filename = path / f"{self.name}_circuit.png"
-            model.ansatz.draw(filename=filename, decompose=True)
+            a.draw(filename=filename, decompose=True)
 
         # Run experiment
         results_schema = ["accuracy", "training_time", "testing_time"]
         experiment = Experiment(model, self.num_trials, results_schema=results_schema)
 
-        args = (self.ansatz,) if self.is_quantum else ()
         fn = experiment.callable_wrapper(
-            *args,
+            *(self.ansatz,) if self.is_quantum else (),
             self.dimensions,
             num_layers=self.num_layers,
             silent=not self.verbose,
-            **self.ansatz_options,
+            **self.ansatz_options if self.is_quantum else {},
         )
         results = experiment(fn=fn, filename=path / self.name)
 

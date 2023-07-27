@@ -1,19 +1,15 @@
-ansatz = "qcc.quantum.operation.ansatz.ConvolutionAnsatz"
-dataset = "torchvision.datasets.MNIST"
+dataset = "torchvision.datasets.FashionMNIST"
 optimizer = "torch.optim.Adam"
 loss = "torch.nn.CrossEntropyLoss"
 transform = "qcc.ml.data.ImageTransform"
 dimensions = [16, 16]
-num_layers = 4
+num_layers = 1
 classes = [0, 1]
 epoch = 1
 batch_size = [8, 1000]
 num_trials = 10
-is_quantum = true
+is_quantum = false
 verbose = true
-
-[ansatz_options]
-pooling = true
 
 [optimizer_options]
 lr = 0.001
