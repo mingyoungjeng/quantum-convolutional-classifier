@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 import re
 from ast import literal_eval
+from fnmatch import fnmatch
 from pathlib import Path
 import logging
 import traceback
@@ -42,7 +43,7 @@ class DictType(click.ParamType):
 def create_results(ctx, param, value):
     results_dir = value / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
-    return value
+    return results_dir
 
 
 @click.group()
@@ -180,12 +181,12 @@ def run(**kwargs):
     ),
 )
 @click.option(
-    "-p",
-    "--pattern",
+    "-g",
+    "--glob",
     required=True,
     type=str,
     default=r"**/*.toml",
-    help="Config file RegEx pattern",
+    help="Config file glob pattern",
 )
 @click.option(
     "-o",
@@ -203,18 +204,16 @@ def run(**kwargs):
     callback=create_results,
     help="Output directory",
 )
-def load(ctx, paths: Iterable[Path], pattern: str):
-    # TODO: handle quantum, classical in TOML
-
+def load(ctx, paths: Iterable[Path], glob: str, output_dir: Path):
     toml_files = set()
     for path in paths:
         if path.is_dir():
-            toml_files.update(path.glob(pattern))
+            toml_files.update(path.glob(glob))
         else:
-            if path.suffix == ".toml":
+            if fnmatch(path, glob):
                 toml_files.add(path)
 
-    cmds = (CLIParameters.from_toml(toml) for toml in toml_files)
+    cmds = (CLIParameters.from_toml(toml, output_dir=output_dir) for toml in toml_files)
 
     errs = []
     for cmd in cmds:

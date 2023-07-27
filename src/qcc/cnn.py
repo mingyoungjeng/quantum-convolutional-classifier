@@ -56,7 +56,7 @@ class Layer:
 class CNN(Model):
     cnn: nn.Sequential = field(init=False)
     convolution: Layer = Layer()
-    pooling: Layer = Layer()
+    pooling: Layer = Layer(stride=2)
     num_classes: int = Factory(lambda self: len(self.data.classes), takes_self=True)
     num_features = 1
 
@@ -103,7 +103,7 @@ class CNN(Model):
 
             # Pooling
             lst += [self.pooling(nn.MaxPool2d)]
-            dims = self.convolution.update_dims(*dims)
+            dims = self.pooling.update_dims(*dims)
 
             # ReLU
             lst += [nn.ReLU()]
@@ -117,5 +117,5 @@ class CNN(Model):
         return model.cuda() if USE_CUDA else model
 
     def __call__(self, dims, num_layers=1, silent=False, **kwargs):
-        model = self.forward(dims, num_layers, **kwargs)
-        return super().__call__(model, silent=silent)
+        self.cnn = self.forward(dims, num_layers, **kwargs)
+        return super().__call__(self.cnn, silent=silent)

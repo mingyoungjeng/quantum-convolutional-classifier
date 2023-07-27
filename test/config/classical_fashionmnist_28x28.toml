@@ -8,7 +8,7 @@ classes = [0, 1]
 epoch = 1
 batch_size = [8, 1000]
 num_trials = 10
-is_quantum = false
+classical = true
 verbose = true
 
 [optimizer_options]

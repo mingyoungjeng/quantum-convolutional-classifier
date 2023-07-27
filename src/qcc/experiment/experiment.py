@@ -23,16 +23,16 @@ class Experiment:
     """Perform and aggregate multiple experimental trials"""
 
     cls: Any = field()
-    fn: Callable = field()
     num_trials: int = 1
+    fn: Callable = field(kw_only=True)
+
+    results_schema: Optional[SchemaDefinition] = None
+    dfs: list[Optional[pl.DataFrame]] = field(init=None, factory=lambda: [None, None])
+    metrics: list[str] = field(init=None, factory=list)
 
     @fn.default
     def _default_fn(self):
         return getattr(self.cls, "__call__", lambda: None)
-
-    results_schema: SchemaDefinition = None
-    dfs: list[Optional[pl.DataFrame]] = field(init=None, factory=lambda: [None, None])
-    metrics: list[str] = field(init=None, factory=list)
 
     @cls.validator
     def _check_if_logger(self, _, value):

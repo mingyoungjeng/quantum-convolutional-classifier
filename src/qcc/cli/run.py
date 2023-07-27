@@ -50,6 +50,12 @@ class CLIParameters:
     def from_toml(cls, filename: Path, **kwargs) -> CLIParameters:
         kwargs["name"] = filename.stem
         kwargs = load_toml(filename) | kwargs
+
+        if "quantum" in kwargs:
+            kwargs["is_quantum"] = kwargs.pop("quantum")
+        if "classical" in kwargs:
+            kwargs["is_quantum"] = not kwargs.pop("classical")
+
         return cls(**kwargs)
 
     def __call__(self) -> None:
@@ -93,7 +99,9 @@ class CLIParameters:
 
         # Run experiment
         results_schema = ["accuracy", "training_time", "testing_time"]
-        experiment = Experiment(model, self.num_trials, results_schema=results_schema)
+        experiment = Experiment(
+            model, num_trials=self.num_trials, results_schema=results_schema
+        )
         experiment.pass_args(
             *(self.ansatz,) if self.is_quantum else (),
             self.dimensions,
@@ -104,9 +112,12 @@ class CLIParameters:
         results = experiment(filename=path / self.name)
 
         # Print accuracy results
+        metrics = ("median", "mean", "max", "min", "std")
         for name in results.columns:
             col = results[name]
-            msg = f"{name}: median={col.median()}, mean={col.mean()}, max={col.max()}, min={col.min()}, std={col.std()}"
+            msg = (f"{metric}={getattr(col, metric)():.05}" for metric in metrics)
+            msg = ", ".join(msg)
+            msg = f"{name}: {msg}"
             model.logger.info(msg)
 
         # Save aggregated loss history figure
