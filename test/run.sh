@@ -1,4 +1,4 @@
-CWD="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+CWD=/home/m174j393/work/quantum-convolutional-classifier/test
 
 for file in $CWD/config/*.toml; do
     sbatch $CWD/sbatch.sh $file
