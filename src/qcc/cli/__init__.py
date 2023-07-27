@@ -5,13 +5,14 @@ import re
 from ast import literal_eval
 from pathlib import Path
 import logging
+import traceback
 
 import click
 
 from qcc.cli.run import CLIParameters
 
 if TYPE_CHECKING:
-    from typing import Iterable, Any
+    from typing import Iterable
 
 log = logging.getLogger(__name__)
 
@@ -214,12 +215,18 @@ def load(ctx, paths: Iterable[Path], pattern: str, output_dir: Path):
                 toml_files.add(path)
 
     cmds = (CLIParameters.from_toml(toml) for toml in toml_files)
+    
+    errs = []
     for cmd in cmds:
         try:
             cmd()
         except BaseException as e:  # TODO: this is lazy
+            errs.append(e)
+            traceback.format_exc()
             log.error(e)
 
+    if len(errs) > 0:
+        raise RuntimeError("One of the cmds encountered an error")
 
 def _setup_module(root: str, obj: str = None):
     if obj is None or "." in obj:
