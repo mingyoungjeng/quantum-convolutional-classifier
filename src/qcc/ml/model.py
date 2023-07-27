@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 if TYPE_CHECKING:
     from typing import Optional
     from pathlib import Path
-    from qcc.ml import MLFunction, CostFunction
+    from qcc.ml import CostFunction
 
 
 @define
@@ -30,9 +30,9 @@ class Model:
         return cost
 
     def __call__(self, params=None, silent=False):
-        if hasattr(self.module, 'reset_parameters'):
+        if hasattr(self.module, "reset_parameters"):
             self.module.reset_parameters()
-            
+
         # Load dataset
         training_dataloader, testing_dataloader = self.data.load()
 
@@ -40,7 +40,9 @@ class Model:
         self.logger.info(f"Number of Parameters: {opt.num_parameters}", silent=silent)
 
         training_time = time.perf_counter()
-        parameters = train(self.module, opt, training_dataloader, self._cost, self.epoch)
+        parameters = train(
+            self.module, opt, training_dataloader, self._cost, self.epoch
+        )
         training_time = time.perf_counter() - training_time
         self.logger.info(f"Training took {training_time:.05} sec", silent=silent)
 

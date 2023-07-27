@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from torch import Tensor
 
     LossFunction = CostFunction = Callable[[Iterable[Number], Iterable[Number]], Number]
-    MLFunction = Callable[[Iterable[Number], Iterable[Number]], Iterable[Number]]
 
 log = logging.getLogger(__name__)
 USE_CUDA = cuda.is_available()
@@ -35,8 +34,9 @@ def create_tensor(fn: type[Tensor] | Callable, /, *args, **kwargs):
 def init_params(size):
     return torch.nn.Parameter(torch.empty(size, requires_grad=True))
 
+
 def reset_params(tensor):
-    torch.nn.init.uniform_(tensor, 0, 2*torch.pi)
+    torch.nn.init.uniform_(tensor, 0, 2 * torch.pi)
 
 
 def cut(
