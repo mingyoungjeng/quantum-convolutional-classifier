@@ -144,7 +144,7 @@ def cli(ctx: click.Context):
 )
 @click.option(
     "-ao",
-    "--model_options",
+    "--module_options",
     type=DictType(),
     multiple=True,
     callback=lambda *x: dict(x[2]),
@@ -219,12 +219,12 @@ def load(ctx, paths: Iterable[Path], glob: str, output_dir: Path):
     for cmd in cmds:
         try:
             cmd()
-        except BaseException as e:  # TODO: this is lazy
-            errs.append(e)
-            traceback.format_exc()
-            log.error(e)
+        except BaseException:  # TODO: this is lazy
+            errs.append(traceback.format_exc())
 
     if len(errs) > 0:
+        for error_message in errs:
+            log.error(error_message)
         raise RuntimeError(f"{len(errs)} file(s) encountered an error")
 
 

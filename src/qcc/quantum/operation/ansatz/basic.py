@@ -137,7 +137,7 @@ class BasicAnsatz(Ansatz):
 
         return parity(result)
 
-    @Ansatz.parameter
+    @property
     def shape(self):
         """
         This formula was calculated pre-refactoring and I'm too lazy to recompute it

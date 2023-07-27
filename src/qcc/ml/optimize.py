@@ -10,11 +10,11 @@ from qcc.ml import USE_CUDA, init_params
 if TYPE_CHECKING:
     from typing import Callable, Optional
     from torch import Tensor
+    from torch.nn import Module
     from torch.utils.data import DataLoader
     from qcc.quantum.operation import Parameters
 
     LossFunction = CostFunction = Callable[[Parameters, Parameters], Number]
-    MLFunction = Callable[[Parameters, Parameters], Iterable[Number]]
 
 
 class Optimizer(TorchOptimizer):
@@ -100,13 +100,15 @@ def delete(*args):
 
 
 def train(
-    fn: MLFunction,
+    fn: Module,
     optimizer: TorchOptimizer,
     training_dataloader: DataLoader,
     cost_fn: CostFunction,
     epoch: int = 1,
     params: Optional[Iterable[Number]] = None,
 ):
+    if USE_CUDA:
+        fn = fn.cuda()
     for i in range(epoch):
         for j, (data, labels) in enumerate(training_dataloader):
             if USE_CUDA:
@@ -119,10 +121,12 @@ def train(
 
 @torch.no_grad()
 def test(
-    fn: MLFunction,
+    fn: Module,
     testing_dataloader: DataLoader,
     params: Optional[Iterable[Number]] = None,
 ):
+    if USE_CUDA:
+        fn = fn.cuda()
     correct = total = 0
     for data, labels in testing_dataloader:
         if USE_CUDA:

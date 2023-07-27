@@ -37,7 +37,7 @@ class NaiveAnsatz(Ansatz):
 
         return parity(result)
 
-    @Ansatz.parameter  # pylint: disable=no-member
+    @property
     def shape(self):
         n_params = (
             self.convolve.shape(len(self.qubits.shape) * min(self.qubits.shape))

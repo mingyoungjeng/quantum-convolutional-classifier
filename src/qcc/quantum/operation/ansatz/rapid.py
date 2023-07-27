@@ -42,7 +42,7 @@ class RapidAnsatz(SimpleAnsatz):
         # return np.sort(meas[: int(np.ceil(np.log2(num_classes)))])
         return np.sort(meas)
 
-    @SimpleAnsatz.parameter  # pylint: disable=no-member
+    @property
     def shape(self):
         n_params = 0
         n_dim = min(self.qubits.shape)  # Min number of qubits per dimension

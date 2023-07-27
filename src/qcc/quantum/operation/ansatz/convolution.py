@@ -83,7 +83,7 @@ class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
 
         return meas
 
-    # @Ansatz.parameter  # pylint: disable=no-member
+    # @property
     # def shape(self) -> int:
     #     n_params = self._n_params * (self.num_layers + self.pre_op + self.post_op)
     #     n_params += self.U_fully_connected.shape(self.qubits.flatten())

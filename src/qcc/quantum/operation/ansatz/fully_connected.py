@@ -53,7 +53,7 @@ class FullyConnectedAnsatz(Ansatz):
 
         return parity(result)
 
-    @Ansatz.parameter  # pylint: disable=no-member
+    @property
     def shape(self):
         # return np.prod(self._shape)
         return self.num_layers * self.layer.shape(self.qubits.total)

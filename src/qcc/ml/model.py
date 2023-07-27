@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 @define
 class Model:
+    module: Module
     data: Data
     optimizer: Optimizer
     cost_fn: CostFunction
@@ -28,20 +29,23 @@ class Model:
         self.logger.log(cost, silent=True)
         return cost
 
-    def __call__(self, model: Module, params=None, silent=False):
+    def __call__(self, params=None, silent=False):
+        if hasattr(self.module, 'reset_parameters'):
+            self.module.reset_parameters()
+            
         # Load dataset
         training_dataloader, testing_dataloader = self.data.load()
 
-        opt = self.optimizer(model.parameters() if params is None else params)
+        opt = self.optimizer(self.module.parameters() if params is None else params)
         self.logger.info(f"Number of Parameters: {opt.num_parameters}", silent=silent)
 
         training_time = time.perf_counter()
-        parameters = train(model, opt, training_dataloader, self._cost, self.epoch)
+        parameters = train(self.module, opt, training_dataloader, self._cost, self.epoch)
         training_time = time.perf_counter() - training_time
         self.logger.info(f"Training took {training_time:.05} sec", silent=silent)
 
         testing_time = time.perf_counter()
-        accuracy = test(model, testing_dataloader, parameters)
+        accuracy = test(self.module, testing_dataloader, parameters)
         testing_time = time.perf_counter() - testing_time
 
         self.logger.info(f"Testing took: {testing_time:.05} sec", silent=silent)

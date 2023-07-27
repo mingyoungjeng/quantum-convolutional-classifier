@@ -2,14 +2,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import logging
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 
+from torch.nn import Module
 import pennylane as qml
 from pennylane.templates import AmplitudeEmbedding
 
 from qcc.quantum import to_qubits, wires_to_qubits
 from qcc.quantum.operation import Qubits, QubitsProperty
-from qcc.ml import is_iterable, Module
+from qcc.ml import is_iterable, init_params, reset_params
 from qcc.file import draw
 
 if TYPE_CHECKING:
@@ -30,20 +31,24 @@ def is_multidimensional(wires: Qubits):
     return False
 
 
-class Ansatz(Module):
+class Ansatz(Module, metaclass=ABCMeta):
     __slots__ = "_qubits", "_num_layers", "_qnode"
 
     qubits: Qubits = QubitsProperty(slots=True)
     _num_layers: int
 
     def __init__(self, qubits: Qubits, num_layers: int = 0):
+        super().__init__()
         self.qubits = qubits
         self.num_layers = num_layers
+
+        self.register_parameter("weight", init_params(self.shape))
+        self.reset_parameters()
 
         wires = self.qubits.flatten()[::-1]  # Big-endian format
         device = qml.device("default.qubit", wires=wires)
         self._qnode = qml.QNode(self._circuit, device, interface="torch")
-        
+
     # Main properties
 
     @property
@@ -64,12 +69,17 @@ class Ansatz(Module):
     @property
     def qnode(self) -> qml.QNode:
         return self._qnode
-    
+
     @qnode.deleter
     def qnode(self) -> None:
         del self._qnode
 
     # Abstract methods
+
+    @property
+    @abstractmethod
+    def shape(self) -> int:
+        pass
 
     @abstractmethod
     def circuit(self, *params: Parameters) -> Wires:
@@ -114,6 +124,9 @@ class Ansatz(Module):
 
     # Miscellaneous
 
+    def reset_parameters(self):
+        reset_params(self.get_parameter("weight"))
+
     def draw(self, filename=None, include_axis: bool = False, decompose: bool = False):
         expansion_strategy = "device" if decompose else "gradient"
         fig, ax = qml.draw_mpl(self.qnode, expansion_strategy=expansion_strategy)()
@@ -127,11 +140,11 @@ class Ansatz(Module):
         dims_q = to_qubits(dims)
         qubits = wires_to_qubits(dims_q)
 
-        ansatz = cls(qubits, *args, **kwargs)
+        self = cls(qubits, *args, **kwargs)
 
-        info = qml.specs(ansatz.qnode)()["resources"]
+        info = qml.specs(self.qnode)()["resources"]
         log.info(f"Depth: {info.depth}")
         gate_count = sum(key * value for key, value in info.gate_sizes.items())
         log.info(f"Gate Count: {gate_count}")
 
-        return ansatz
+        return self

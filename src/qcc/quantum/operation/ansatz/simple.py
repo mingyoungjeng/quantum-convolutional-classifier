@@ -121,7 +121,7 @@ class SimpleAnsatz(Ansatz):
 
         return parity(result)
 
-    @Ansatz.parameter  # pylint: disable=no-member
+    @property
     def shape(self):
         n_conv_params = self.convolve.shape() * self.num_layers
         n_pool_params = self.pool.shape() * (self.num_layers - 1)

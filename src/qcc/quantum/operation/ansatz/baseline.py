@@ -122,7 +122,7 @@ class BaselineAnsatz(Ansatz):
 
         return wires
 
-    @Ansatz.parameter
+    @property
     def shape(self):
         return (self.convolve.shape(2) + self.pool.shape(2)) * self.num_layers
 

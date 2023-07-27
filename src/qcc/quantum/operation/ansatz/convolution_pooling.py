@@ -107,7 +107,7 @@ class ConvolutionPoolingAnsatz(Ansatz):
 
         return meas
 
-    @Ansatz.parameter  # pylint: disable=no-member
+    @property
     def shape(self) -> int:
         data_shape_q = self.data_qubits.shape
         fltr_shape_q = to_qubits(self.filter_shape)

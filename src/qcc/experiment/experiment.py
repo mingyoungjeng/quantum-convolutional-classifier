@@ -1,8 +1,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
+from functools import partial as _partial
 from pathlib import Path
 from itertools import product
+
 from attrs import define, field
 import polars as pl
 import matplotlib.pyplot as plt
@@ -133,5 +135,5 @@ class Experiment:
             for (fig, ax) in subplots
         )
 
-    def pass_args(self, *args, **kwargs):
-        self.fn = lambda: self.cls(*args, **kwargs)
+    def partial(self, *args, **kwargs):
+        self.fn = _partial(self.fn, *args, **kwargs)
