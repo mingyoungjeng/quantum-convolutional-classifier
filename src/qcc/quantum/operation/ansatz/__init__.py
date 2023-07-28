@@ -1,4 +1,4 @@
-from .ansatz import Ansatz, is_multidimensional
+from .ansatz import Ansatz
 from .baseline import BaselineAnsatz
 
 # v0
