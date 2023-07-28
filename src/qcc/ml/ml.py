@@ -28,14 +28,14 @@ def is_iterable(x: Any):
 
 def create_tensor(fn: type[Tensor] | Callable, /, *args, **kwargs):
     tensor = fn(*args, **kwargs)
-    return tensor.cuda() if USE_CUDA else tensor
+    return tensor.to("cuda") if USE_CUDA else tensor
 
 
 def init_params(size):
     return torch.nn.Parameter(torch.empty(size, requires_grad=True))
 
 
-def reset_params(tensor):
+def reset_parameter(tensor):
     torch.nn.init.uniform_(tensor, 0, 2 * torch.pi)
 
 

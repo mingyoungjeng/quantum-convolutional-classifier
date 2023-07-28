@@ -4,13 +4,13 @@ from typing import TYPE_CHECKING
 import logging
 from abc import abstractmethod, ABCMeta
 
-from torch.nn import Module
 import pennylane as qml
+from pennylane.qnn import TorchLayer
 from pennylane.templates import AmplitudeEmbedding
 
 from qcc.quantum import to_qubits, wires_to_qubits
 from qcc.quantum.operation import Qubits, QubitsProperty
-from qcc.ml import is_iterable, init_params, reset_params
+from qcc.ml import is_iterable, reset_parameter
 from qcc.file import draw
 
 if TYPE_CHECKING:
@@ -31,23 +31,21 @@ def is_multidimensional(wires: Qubits):
     return False
 
 
-class Ansatz(Module, metaclass=ABCMeta):
-    __slots__ = "_qubits", "_num_layers", "_qnode"
+class Ansatz(TorchLayer, metaclass=ABCMeta):
+    __slots__ = "_qubits", "_num_layers"
 
     qubits: Qubits = QubitsProperty(slots=True)
     _num_layers: int
 
     def __init__(self, qubits: Qubits, num_layers: int = 0):
-        super().__init__()
         self.qubits = qubits
         self.num_layers = num_layers
 
-        self.register_parameter("weight", init_params(self.shape))
-        self.reset_parameters()
-
         wires = self.qubits.flatten()[::-1]  # Big-endian format
         device = qml.device("default.qubit", wires=wires)
-        self._qnode = qml.QNode(self._circuit, device, interface="torch")
+        qnode = qml.QNode(self._circuit, device, interface="torch")
+
+        super().__init__(qnode, {"params": self.shape})
 
     # Main properties
 
@@ -63,16 +61,6 @@ class Ansatz(Module, metaclass=ABCMeta):
             raise ValueError(err)
 
         self._num_layers = value
-
-    # Derived properties
-
-    @property
-    def qnode(self) -> qml.QNode:
-        return self._qnode
-
-    @qnode.deleter
-    def qnode(self) -> None:
-        del self._qnode
 
     # Abstract methods
 
@@ -103,29 +91,30 @@ class Ansatz(Module, metaclass=ABCMeta):
     def q2c(self, wires: Wires):
         return qml.probs(wires)
 
-    def post_processing(self, result) -> Iterable[Iterable[Number]]:
-        # Makes sure batch is 2D array
-        return result.unsqueeze(0) if result.dim() == 1 else result
+    # def post_processing(self, result) -> Iterable[Iterable[Number]]:
+    #     # Makes sure batch is 2D array
+    #     return result.unsqueeze(0) if result.dim() == 1 else result
 
     def _circuit(
         self,
-        psi_in: Optional[Statevector] = None,
-        params: Optional[Parameters] = None,
+        params: Parameters,
+        inputs: Optional[Statevector] = None,
     ):
-        if psi_in is not None:  # this is done to facilitate drawing
-            self.c2q(psi_in)
-        meas = self.circuit(*self.parameters() if params is None else params)
+        if inputs is not None:  # this is done to facilitate drawing
+            self.c2q(inputs)
+        meas = self.circuit(params)
         return self.q2c(meas)
 
-    def forward(self, psi_in: Optional[Statevector] = None):
-        result = self.qnode(psi_in=psi_in)  # pylint: disable=not-callable
+    # def forward(self, psi_in: Optional[Statevector] = None):
+    #     result = super().forward(psi_in=psi_in)  # pylint: disable=not-callable
 
-        return self.post_processing(result)
+    #     return self.post_processing(result)
 
     # Miscellaneous
 
     def reset_parameters(self):
-        reset_params(self.get_parameter("weight"))
+        for parameter in self.parameters():
+            reset_parameter(parameter)
 
     def draw(self, filename=None, include_axis: bool = False, decompose: bool = False):
         expansion_strategy = "device" if decompose else "gradient"
@@ -142,7 +131,7 @@ class Ansatz(Module, metaclass=ABCMeta):
 
         self = cls(qubits, *args, **kwargs)
 
-        info = qml.specs(self.qnode)()["resources"]
+        info = qml.specs(self.qnode)(expansion_strategy="device")["resources"]
         log.info(f"Depth: {info.depth}")
         gate_count = sum(key * value for key, value in info.gate_sizes.items())
         log.info(f"Gate Count: {gate_count}")

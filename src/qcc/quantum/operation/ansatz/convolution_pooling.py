@@ -10,7 +10,6 @@ from qcc.quantum.operation.convolution import define_filter
 from qcc.quantum.operation.fully_connected import FullyConnected
 
 if TYPE_CHECKING:
-    from numbers import Number
     from typing import Iterable, Optional
     from pennylane.wires import Wires
     from qcc.quantum.operation import Parameters, Unitary
@@ -126,8 +125,8 @@ class ConvolutionPoolingAnsatz(Ansatz):
 
         return num_params
 
-    def post_processing(self, result) -> Iterable[Iterable[Number]]:
-        result = super().post_processing(result)
+    def forward(self, inputs):
+        result = super().forward(inputs)
         return parity(result) if self.U_fully_connected is None else result
 
     @property

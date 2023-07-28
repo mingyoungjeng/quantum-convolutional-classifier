@@ -108,11 +108,11 @@ def train(
     params: Optional[Iterable[Number]] = None,
 ):
     if USE_CUDA:
-        fn = fn.cuda()
+        fn = fn.to("cuda")
     for i in range(epoch):
         for j, (data, labels) in enumerate(training_dataloader):
             if USE_CUDA:
-                data, labels = data.cuda(), labels.cuda()
+                data, labels = data.to("cuda"), labels.to("cuda")
             predictions = fn(data) if params is None else fn(data, params)
             backpropagate(predictions, labels, optimizer, cost_fn)
 
@@ -126,11 +126,11 @@ def test(
     params: Optional[Iterable[Number]] = None,
 ):
     if USE_CUDA:
-        fn = fn.cuda()
+        fn = fn.to("cuda")
     correct = total = 0
     for data, labels in testing_dataloader:
         if USE_CUDA:
-            data, labels = data.cuda(), labels.cuda()
+            data, labels = data.to("cuda"), labels.to("cuda")
         predictions = fn(data) if params is None else fn(data, params)
         predictions = torch.argmax(predictions, 1)
         correct += torch.count_nonzero(predictions == labels)
