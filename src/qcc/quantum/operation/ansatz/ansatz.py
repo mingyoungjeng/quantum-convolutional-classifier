@@ -124,7 +124,7 @@ class Ansatz(TorchLayer, metaclass=ABCMeta):
 
         return draw((fig, ax), filename, overwrite=False, include_axis=include_axis)
 
-    # TODO: Pennylane why did you do this
+    # Pennylane why did you do this
 
     def __getattr__(self, item):
         return super(TorchLayer, self).__getattr__(item)
