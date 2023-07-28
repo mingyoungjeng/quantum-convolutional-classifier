@@ -61,7 +61,8 @@ class CLIParameters:
         path = new_dir(self.output_dir / self.name, overwrite=True)
         if self.is_quantum:
             self.module = self.module.from_dims
-        # Create model
+
+        # Create module
         module: Module = self.module(
             self.dimensions,
             num_layers=self.num_layers,
@@ -81,6 +82,7 @@ class CLIParameters:
 
         # Log important values
         model.logger.info(f"Circuit ID: {self.name}")
+        model.logger.info(f"{module=}")
         model.logger.info(f"{data=}")
         model.logger.info(f"{optimizer=}")
         model.logger.info(f"{loss=}")
