@@ -118,9 +118,19 @@ class Ansatz(TorchLayer, metaclass=ABCMeta):
 
     def draw(self, filename=None, include_axis: bool = False, decompose: bool = False):
         expansion_strategy = "device" if decompose else "gradient"
-        fig, ax = qml.draw_mpl(self.qnode, expansion_strategy=expansion_strategy)()
+        fig, ax = qml.draw_mpl(self.qnode, expansion_strategy=expansion_strategy)(
+            **self.qnode_weights
+        )
 
         return draw((fig, ax), filename, overwrite=False, include_axis=include_axis)
+
+    # TODO: Pennylane why did you do this
+
+    def __getattr__(self, item):
+        return super(TorchLayer, self).__getattr__(item)
+
+    def __setattr__(self, item, val):
+        super(TorchLayer, self).__setattr__(item, val)
 
     # Instance factories
 
@@ -131,7 +141,8 @@ class Ansatz(TorchLayer, metaclass=ABCMeta):
 
         self = cls(qubits, *args, **kwargs)
 
-        info = qml.specs(self.qnode)(expansion_strategy="device")["resources"]
+        info = qml.specs(self.qnode, expansion_strategy="device")
+        info = info(**self.qnode_weights)["resources"]
         log.info(f"Depth: {info.depth}")
         gate_count = sum(key * value for key, value in info.gate_sizes.items())
         log.info(f"Gate Count: {gate_count}")
