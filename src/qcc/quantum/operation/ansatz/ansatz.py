@@ -91,10 +91,6 @@ class Ansatz(TorchLayer, metaclass=ABCMeta):
     def q2c(self, wires: Wires):
         return qml.probs(wires)
 
-    # def post_processing(self, result) -> Iterable[Iterable[Number]]:
-    #     # Makes sure batch is 2D array
-    #     return result.unsqueeze(0) if result.dim() == 1 else result
-
     def _circuit(
         self,
         params: Parameters,
@@ -104,11 +100,6 @@ class Ansatz(TorchLayer, metaclass=ABCMeta):
             self.c2q(inputs)
         meas = self.circuit(params)
         return self.q2c(meas)
-
-    # def forward(self, psi_in: Optional[Statevector] = None):
-    #     result = super().forward(psi_in=psi_in)  # pylint: disable=not-callable
-
-    #     return self.post_processing(result)
 
     # Miscellaneous
 
