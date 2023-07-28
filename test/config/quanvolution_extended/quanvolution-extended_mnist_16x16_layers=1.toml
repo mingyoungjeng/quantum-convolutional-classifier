@@ -1,5 +1,5 @@
-module = "qcc.ml.cnn.ConvolutionalNeuralNetwork"
-dataset = "torchvision.datasets.FashionMNIST"
+module = "qcc.quantum.quanvolution.QuanvolutionExtended"
+dataset = "torchvision.datasets.MNIST"
 optimizer = "torch.optim.Adam"
 loss = "torch.nn.CrossEntropyLoss"
 transform = "qcc.ml.data.ClassicalImageTransform"

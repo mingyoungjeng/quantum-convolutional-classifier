@@ -110,10 +110,6 @@ class ImageTransform(transforms.Compose):
     @staticmethod
     def _norm():
         return transforms.Lambda(normalize)
-    
-    @classmethod
-    def is_quantum(cls, dims: Optional[Iterable[int]] = None, is_quantum: bool = True):
-        return cls(dims, fix_bands=is_quantum, flatten=is_quantum, norm=is_quantum, squeeze=is_quantum)
 
 
 class ImageTransform1D(ImageTransform):
@@ -123,3 +119,13 @@ class ImageTransform1D(ImageTransform):
     @staticmethod
     def _flatten():
         return transforms.Lambda(torch.flatten)
+
+
+class ClassicalImageTransform(ImageTransform):
+    def __repr__(self) -> str:
+        return "image_transform_classical"
+
+    def __init__(self, dims: Iterable[int] | None = None):
+        super().__init__(
+            dims, fix_bands=False, flatten=False, norm=False, squeeze=False
+        )

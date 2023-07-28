@@ -61,11 +61,6 @@ class CLIParameters:
         path = new_dir(self.output_dir / self.name, overwrite=True)
         if self.is_quantum:
             self.module = self.module.from_dims
-        if isinstance(self.transform, type):
-            transform = self.transform.is_quantum(self.dimensions, self.is_quantum)
-        else:
-            transform = self.transform
-
         # Create model
         module: Module = self.module(
             self.dimensions,
@@ -74,7 +69,9 @@ class CLIParameters:
         )
         data = Data(
             self.dataset,
-            transform,
+            self.transform(self.dimensions)
+            if isinstance(self.transform, type)
+            else self.transform,
             batch_size=self.batch_size,
             classes=self.classes,
         )

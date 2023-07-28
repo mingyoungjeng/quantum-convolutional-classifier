@@ -10,7 +10,7 @@ from pennylane.templates import AmplitudeEmbedding
 
 from qcc.quantum import to_qubits, wires_to_qubits
 from qcc.quantum.operation import Qubits, QubitsProperty
-from qcc.ml import is_iterable, reset_parameter
+from qcc.ml import reset_parameter
 from qcc.file import draw
 
 if TYPE_CHECKING:
@@ -23,12 +23,6 @@ if TYPE_CHECKING:
     Statevector = Iterable[Number]
 
 log = logging.getLogger(__name__)
-
-
-def is_multidimensional(wires: Qubits):
-    if is_iterable(wires):
-        return any(is_iterable(w) for w in wires)
-    return False
 
 
 class Ansatz(TorchLayer, metaclass=ABCMeta):

@@ -22,10 +22,6 @@ if USE_CUDA:
     log.info(f"Using CUDA on device {torch.device('cuda')}")
 
 
-def is_iterable(x: Any):
-    return hasattr(x, "__iter__")
-
-
 def create_tensor(fn: type[Tensor] | Callable, /, *args, **kwargs):
     tensor = fn(*args, **kwargs)
     return tensor.to("cuda") if USE_CUDA else tensor

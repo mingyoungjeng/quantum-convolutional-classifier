@@ -1,8 +1,8 @@
-module = "qcc.ml.cnn.CNN"
+module = "qcc.ml.cnn.ConvolutionalNeuralNetwork"
 dataset = "torchvision.datasets.MNIST"
 optimizer = "torch.optim.Adam"
 loss = "torch.nn.CrossEntropyLoss"
-transform = "qcc.ml.data.ImageTransform"
+transform = "qcc.ml.data.ClassicalImageTransform"
 dimensions = [16, 16]
 num_layers = 1
 classes = [0, 1]
