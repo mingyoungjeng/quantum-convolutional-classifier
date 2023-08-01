@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any
 
 from functools import partial as _partial
 from pathlib import Path
-from itertools import product
+from itertools import chain
 
 from attrs import define, field
 import polars as pl
@@ -84,22 +84,22 @@ class Experiment:
             )
 
             # Perform trial
-            results_row = pl.DataFrame([fn()], schema=self.results_schema)
+            rdf = pl.DataFrame([fn()], schema=self.results_schema)
 
             # Combine DataFrames
-            idfs = [
+            idfs = (
                 idf.select(pl.col(m).suffix(f"_{j}")) for j, m in zip(idx, self.metrics)
-            ]
+            )
 
-            for j, idf in enumerate((results_row, *idfs)):
+            for j, df in enumerate(chain((rdf,), idfs)):
                 if self.dfs[j] is None:
-                    self.dfs[j] = idf
+                    self.dfs[j] = df
                     continue
 
                 if j == 0:
-                    self.dfs[j].vstack(idf, in_place=True)
+                    self.dfs[j].vstack(df, in_place=True)
                 else:
-                    self.dfs[j].hstack(idf, in_place=True)
+                    self.dfs[j].hstack(df, in_place=True)
 
             if filename is not None:
                 for f, df in zip(filenames, self.dfs):
