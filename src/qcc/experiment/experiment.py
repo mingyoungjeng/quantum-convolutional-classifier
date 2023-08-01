@@ -71,7 +71,7 @@ class Experiment:
 
         offsets = tuple(0 if df is None else len(df.columns) for df in self.dfs)
         for i in range(self.num_trials):
-            idx = (i + offset for offset in offsets)
+            idx = (i + offset for offset in offsets[1:])
 
             # Setup DataFrame
             idf = pl.DataFrame(schema=logger.df.schema)
@@ -117,16 +117,15 @@ class Experiment:
         return expr.alias(f"{name}_{op}")
 
     def draw(self, filename=None, include_axis: bool = False):
-
         subplots = []
         for df, metric in zip(self.dfs[1:], self.metrics):
             fig, ax = plt.subplots()
-            
+
             # Aggregate columns
             exprs = ["mean", "std"]
             exprs = tuple(self.aggregate(metric, expr) for expr in exprs)
             df = df.with_columns(*exprs)  # df.select(*exprs)
-            
+
             mean = df.get_column(f"{metric}_mean").to_numpy()
             # std = self.df.get_column(f"{metric}_std").to_numpy()
             ax.plot(mean)
