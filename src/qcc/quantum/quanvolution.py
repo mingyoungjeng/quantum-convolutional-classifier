@@ -12,6 +12,9 @@ from pennylane.templates import AngleEmbedding, RandomLayers
 from qcc.ml import reset_parameter
 from qcc.ml.cnn import ConvolutionalNeuralNetwork, Layer
 
+if TYPE_CHECKING:
+    from typing import Optional
+
 
 class Quanvolution(Module):
     __slots__ = (
@@ -22,6 +25,7 @@ class Quanvolution(Module):
         "padding_mode",
         "num_layers",
         "qnode",
+        "seed",
     )
 
     kernel_size: tuple[int, int]
@@ -30,10 +34,11 @@ class Quanvolution(Module):
     dilation: tuple[int, int]
 
     # padding_mode: str
-    out_channels: int
+    out_channels: Optional[int]
 
     num_layers: int
     qnode: Module
+    seed: int
 
     def __init__(
         self,
@@ -41,7 +46,7 @@ class Quanvolution(Module):
         stride: int | Iterable[int] = 1,
         padding: int | Iterable[int] = 0,
         dilation: int | Iterable[int] = 1,
-        out_channels: int = 1,
+        out_channels: Optional[int] = None,
         # padding_mode: str = "constant",
         num_layers: int = 4,
         **_,
@@ -61,7 +66,10 @@ class Quanvolution(Module):
         self.out_channels = out_channels
         self.num_layers = num_layers
 
-        num_wires = self.kernel_size[0] * self.kernel_size[1]
+        rng = np.random.default_rng()
+        self.seed = rng.integers(1000000)
+
+        num_wires = np.prod(self.kernel_size)
 
         device = qml.device("default.qubit", wires=range(num_wires))
         qnode = qml.QNode(self.circuit, device, interface="torch")
@@ -93,11 +101,14 @@ class Quanvolution(Module):
         output: torch.Tensor = self.qnode(input)
 
         # Normalize back to 0-1
-        output = (output + 1) / 2
+        # output = (output + 1) / 2
 
-        # Deal with output channels and undo shape
         output = output.reshape(unfold_shape)
-        output = F.adaptive_max_pool1d(output, self.out_channels)
+
+        # Deal with output channels
+        if self.out_channels is not None:
+            output = F.adaptive_max_pool1d(output, self.out_channels)
+
         output = output.moveaxis(-2, -1)
 
         # Generate output shape
@@ -116,8 +127,7 @@ class Quanvolution(Module):
 
         return output
 
-    @staticmethod
-    def circuit(inputs: torch.Tensor, params: torch.Tensor):
+    def circuit(self, inputs: torch.Tensor, params: torch.Tensor):
         wires = range(params.shape[-1])
 
         # Normalize the input from [0, 1] to [0, π]
@@ -125,7 +135,7 @@ class Quanvolution(Module):
 
         # Circuit
         AngleEmbedding(inputs, wires, rotation="Y")
-        RandomLayers(params, wires)
+        RandomLayers(params, wires, seed=self.seed)
         return [qml.expval(qml.PauliZ(j)) for j in wires]
 
     def reset_parameters(self):
@@ -138,12 +148,16 @@ class QuanvolutionalNeuralNetwork(torch.nn.Sequential):
     Original QuanvolutionalNeuralNetwork as proposed
     a CNN with a pre-pended quanvolutional layer
     """
+
     quanvolution: Layer = Layer(Quanvolution, stride=2)
 
     def __init__(self, dims, num_layers=1, num_features=1, num_classes=2):
-        q = self.quanvolution(out_channels=num_features, padding_mode="circular")
+        num_channels = dims[2] if len(dims) > 2 else 1
+
+        q = self.quanvolution(padding_mode="circular")
         dims = self.quanvolution.update_dims(*dims)
-        dims = (*dims, num_features)
+        dims = *dims, 4 * num_channels
+        dims = dims[0] // 2, dims[1] // 2, 4
         num_layers += -1
 
         cnn = ConvolutionalNeuralNetwork(dims, num_layers, num_features, num_classes)
@@ -155,8 +169,10 @@ class QuanvolutionalNeuralNetwork(torch.nn.Sequential):
             if hasattr(layer, "reset_parameters"):
                 layer.reset_parameters()
 
+
 class QuanvolutionExtended(ConvolutionalNeuralNetwork):
     """
     All convolution layers in CNN are now quanvolution
     """
+
     convolution: Layer = Layer(Quanvolution, padding=1)
