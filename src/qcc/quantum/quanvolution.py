@@ -153,11 +153,11 @@ class QuanvolutionalNeuralNetwork(torch.nn.Sequential):
 
     def __init__(self, dims, num_layers=1, num_features=1, num_classes=2):
         num_channels = dims[2] if len(dims) > 2 else 1
+        print(dims, num_channels)
 
         q = self.quanvolution(padding_mode="circular")
         dims = self.quanvolution.update_dims(*dims)
-        dims = *dims, 4 * num_channels
-        dims = dims[0] // 2, dims[1] // 2, 4
+        dims = *dims[:2], 4 * num_channels
         num_layers += -1
 
         cnn = ConvolutionalNeuralNetwork(dims, num_layers, num_features, num_classes)
