@@ -29,7 +29,7 @@ class Experiment:
     fn: Callable = field(kw_only=True)
 
     results_schema: Optional[SchemaDefinition] = None
-    dfs: list[Optional[pl.DataFrame]] = field(init=None, factory=lambda: [None, None])
+    dfs: list[Optional[pl.DataFrame]] = field(init=None, factory=lambda: [None])
     metrics: list[str] = field(init=None, factory=list)
 
     @fn.default
@@ -58,19 +58,20 @@ class Experiment:
 
         logger = self.cls.logger
         self.metrics = logger.df.columns[1:]
+        self.dfs = [None for _ in range(len(self.metrics) + 1)]
 
         if filename is not None:  # ideal output filenames
-            filenames = filename, filename.with_stem(f"{filename.stem}_results")
+            filenames = "results", *self.metrics
+            filenames = [filename.with_stem(f"{filename.stem}_{f}") for f in filenames]
 
             if merge:
                 self.dfs = [load(f) for f in filenames]
-                offset = len(self.dfs[0].columns) if self.dfs[0] is not None else 0
             else:  # Reserve file names
                 filenames = [save(f, pl.DataFrame(), False) for f in filenames]
 
+        offsets = tuple(0 if df is None else len(df.columns) for df in self.dfs)
         for i in range(self.num_trials):
-            if filename and merge:
-                i += offset
+            idx = (i + offset for offset in offsets)
 
             # Setup DataFrame
             idf = pl.DataFrame(schema=logger.df.schema)
@@ -86,24 +87,26 @@ class Experiment:
             results_row = pl.DataFrame([fn()], schema=self.results_schema)
 
             # Combine DataFrames
-            idf = idf.select(pl.col(self.metrics).suffix(f"_{i}"))
+            idfs = [
+                idf.select(pl.col(m).suffix(f"_{j}")) for j, m in zip(idx, self.metrics)
+            ]
 
-            if self.dfs[0] is None:
-                self.dfs[0] = idf
-            else:
-                self.dfs[0].hstack(idf, in_place=True)
+            for j, idf in enumerate((results_row, *idfs)):
+                if self.dfs[j] is None:
+                    self.dfs[j] = idf
+                    continue
 
-            if self.dfs[1] is None:
-                self.dfs[1] = results_row
-            else:
-                self.dfs[1].vstack(results_row, in_place=True)
+                if j == 0:
+                    self.dfs[j].vstack(idf, in_place=True)
+                else:
+                    self.dfs[j].hstack(idf, in_place=True)
 
             if filename is not None:
                 for f, df in zip(filenames, self.dfs):
                     save(f, df, overwrite=True)
 
         self.cls.logger = logger
-        return self.dfs[1]
+        return self.dfs[0]
 
     @staticmethod
     def aggregate(name: str, op: str):
@@ -114,14 +117,16 @@ class Experiment:
         return expr.alias(f"{name}_{op}")
 
     def draw(self, filename=None, include_axis: bool = False):
-        # Aggregate columns
-        exprs = product(self.metrics, ["mean", "std"])
-        exprs = tuple(self.aggregate(*expr) for expr in exprs)
-        df = self.dfs[0].with_columns(*exprs)  # df.select(*exprs)
 
         subplots = []
-        for metric in self.metrics:
+        for df, metric in zip(self.dfs[1:], self.metrics):
             fig, ax = plt.subplots()
+            
+            # Aggregate columns
+            exprs = ["mean", "std"]
+            exprs = tuple(self.aggregate(metric, expr) for expr in exprs)
+            df = df.with_columns(*exprs)  # df.select(*exprs)
+            
             mean = df.get_column(f"{metric}_mean").to_numpy()
             # std = self.df.get_column(f"{metric}_std").to_numpy()
             ax.plot(mean)
