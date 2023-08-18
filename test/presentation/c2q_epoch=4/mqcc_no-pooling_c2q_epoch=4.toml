@@ -1,0 +1,20 @@
+module = "qcc.quantum.operation.ansatz.ConvolutionAnsatz"
+dataset = "torchvision.datasets.FashionMNIST"
+optimizer = "torch.optim.Adam"
+loss = "torch.nn.CrossEntropyLoss"
+transform = "qcc.ml.data.ImageTransform"
+dimensions = [16, 16]
+num_layers = 4
+classes = [0, 1]
+epoch = 4
+batch_size = [8, 1000]
+num_trials = 10
+quantum = true
+verbose = true
+
+[module_options]
+pooling = false
+U_filter = "qcc.quantum.operation.c2q.ConvolutionAngleFilter"
+
+[optimizer_options]
+lr = 0.001
