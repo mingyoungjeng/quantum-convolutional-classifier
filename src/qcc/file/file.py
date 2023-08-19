@@ -113,7 +113,7 @@ def draw(
 
 
 def lookup(arg: str, root: str = None):
-    root, module = module.rsplit(".", 1) if "." in arg else root, arg
+    root, module = arg.rsplit(".", 1) if "." in arg else root, arg
 
     if root is None:
         root = __name__
