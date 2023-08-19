@@ -112,9 +112,8 @@ def draw(
 #     return wrapper
 
 
-def lookup(module: str, root: str = None):
-    if "." in module:
-        root, module = module.rsplit(".", 1)
+def lookup(arg: str, root: str = None):
+    root, module = module.rsplit(".", 1) if "." in arg else root, arg
 
     if root is None:
         root = __name__
@@ -122,7 +121,7 @@ def lookup(module: str, root: str = None):
     if isinstance(root, str):
         root = importlib.import_module(root)
 
-    return getattr(root, module, f"{root}.{module}")
+    return getattr(root, module, arg)
 
 
 def load_toml(filename: Path) -> dict[str, Any]:
