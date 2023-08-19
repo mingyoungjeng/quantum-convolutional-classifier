@@ -122,7 +122,7 @@ def lookup(module: str, root: str = None):
     if isinstance(root, str):
         root = importlib.import_module(root)
 
-    return getattr(root, module)
+    return getattr(root, module, f"{root}.{module}")
 
 
 def load_toml(filename: Path) -> dict[str, Any]:

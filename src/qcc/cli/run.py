@@ -25,6 +25,13 @@ def str_to_mod(x):
     return lookup(x) if isinstance(x, str) else x
 
 
+def dict_converter(x: Mapping):
+    for key, value in x.items():
+        x[key] = str_to_mod(value)
+
+    return x
+
+
 @define(kw_only=True)
 class CLIParameters:
     name: str
@@ -39,8 +46,8 @@ class CLIParameters:
     classes: Optional[Iterable[int]] = (0, 1)
     epoch: int = 1
     batch_size: Optional[int | tuple[int, int]] = 1
-    module_options: Mapping = field(factory=dict)
-    optimizer_options: Mapping = field(factory=dict)
+    module_options: Mapping = field(factory=dict, converter=dict_converter)
+    optimizer_options: Mapping = field(factory=dict, converter=dict_converter)
     output_dir: Path = Path.cwd() / "results"
     is_quantum: bool = True
     verbose: bool = False
