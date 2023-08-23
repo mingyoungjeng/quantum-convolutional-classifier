@@ -1,0 +1,19 @@
+module = "qcc.quantum.quanvolution.QuanvolutionalNeuralNetwork"
+dataset = "torchvision.datasets.FashionMNIST"
+optimizer = "torch.optim.Adam"
+loss = "torch.nn.CrossEntropyLoss"
+transform = "qcc.ml.data.ClassicalImageTransform"
+dimensions = [16, 16]
+num_layers = 4
+classes = [0, 1]
+epoch = 8
+batch_size = [8, 1000]
+num_trials = 10
+classical = true
+verbose = true
+
+[module_options]
+num_features = 3
+
+[optimizer_options]
+lr = 0.001
