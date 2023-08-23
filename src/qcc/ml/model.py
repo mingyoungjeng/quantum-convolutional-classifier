@@ -42,16 +42,16 @@ class Model:
         training_time = 0
         testing_time = 0
         for i in range(self.epoch):
-            now = time.perf_counter()
+            now = time.process_time()
             parameters = train(self.module, opt, training_dataloader, self._cost)
-            training_time += time.perf_counter() - now
+            training_time += time.process_time() - now
             self.logger.info(
                 f"(Epoch {i+1}) Training took {training_time:.5f} sec", silent=silent
             )
 
-            now = time.perf_counter()
+            now = time.process_time()
             accuracy = test(self.module, testing_dataloader, parameters)
-            testing_time = time.perf_counter() - now
+            testing_time = time.process_time() - now
 
             self.logger.info(
                 f"(Epoch {i+1}) Testing took: {testing_time:.5f} sec", silent=silent
