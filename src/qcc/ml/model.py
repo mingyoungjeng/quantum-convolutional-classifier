@@ -39,17 +39,23 @@ class Model:
         opt = self.optimizer(self.module.parameters() if params is None else params)
         self.logger.info(f"Number of Parameters: {opt.num_parameters}", silent=silent)
 
+        training_time = 0
+        testing_time = 0
         for i in range(self.epoch):
-            training_time = time.perf_counter()
+            now = time.perf_counter()
             parameters = train(self.module, opt, training_dataloader, self._cost)
-            training_time = time.perf_counter() - training_time
-            self.logger.info(f"(Epoch {i+1}) Training took {training_time:.05} sec", silent=silent)
+            training_time += time.perf_counter() - now
+            self.logger.info(
+                f"(Epoch {i+1}) Training took {training_time:.05} sec", silent=silent
+            )
 
-            testing_time = time.perf_counter()
+            now = time.perf_counter()
             accuracy = test(self.module, testing_dataloader, parameters)
-            testing_time = time.perf_counter() - testing_time
+            testing_time = time.perf_counter() - now
 
-            self.logger.info(f"(Epoch {i+1}) Testing took: {testing_time:.05} sec", silent=silent)
+            self.logger.info(
+                f"(Epoch {i+1}) Testing took: {testing_time:.05} sec", silent=silent
+            )
             self.logger.info(f"(Epoch {i+1}) Accuracy: {accuracy:.05%}", silent=silent)
 
             self.logger.log(
