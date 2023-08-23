@@ -94,7 +94,7 @@ class Experiment:
         *,
         filename: Optional[Path] = None,
         parallel: bool = False,
-    ):
+    ) -> pl.DataFrame:
         if filename is not None:  # ideal output filenames
             metrics = self.cls.logger.dfs.keys()
             filenames = filename_labels(filename, metrics)
@@ -120,7 +120,7 @@ class Experiment:
                 dfs = self._run_trial(i + offset)
                 self._merge_dfs(dfs, filename)
 
-        return self.dfs.get("results", None)
+        return self.dfs.get("results")
 
     @staticmethod
     def aggregate(name: str, op: str):
