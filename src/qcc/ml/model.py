@@ -56,7 +56,7 @@ class Model:
             self.logger.info(
                 f"(Epoch {i+1}) Testing took: {testing_time:.05} sec", silent=silent
             )
-            self.logger.info(f"(Epoch {i+1}) Accuracy: {accuracy:.05%}", silent=silent)
+            self.logger.info(f"(Epoch {i+1}) Accuracy: {accuracy:.03%}", silent=silent)
 
             self.logger.log(
                 accuracy=accuracy,
