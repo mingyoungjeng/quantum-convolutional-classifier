@@ -26,7 +26,7 @@ class Model:
 
     def _cost(self, *args, **kwargs):
         cost = self.cost_fn(*args, **kwargs)
-        self.logger.log(cost, silent=True)
+        self.logger.log(cost=cost, silent=True)
         return cost
 
     def __call__(self, params=None, silent=False):
@@ -39,19 +39,25 @@ class Model:
         opt = self.optimizer(self.module.parameters() if params is None else params)
         self.logger.info(f"Number of Parameters: {opt.num_parameters}", silent=silent)
 
-        training_time = time.perf_counter()
-        parameters = train(
-            self.module, opt, training_dataloader, self._cost, self.epoch
-        )
-        training_time = time.perf_counter() - training_time
-        self.logger.info(f"Training took {training_time:.05} sec", silent=silent)
+        for i in range(self.epoch):
+            training_time = time.perf_counter()
+            parameters = train(self.module, opt, training_dataloader, self._cost)
+            training_time = time.perf_counter() - training_time
+            self.logger.info(f"(Epoch {i+1}) Training took {training_time:.05} sec", silent=silent)
 
-        testing_time = time.perf_counter()
-        accuracy = test(self.module, testing_dataloader, parameters)
-        testing_time = time.perf_counter() - testing_time
+            testing_time = time.perf_counter()
+            accuracy = test(self.module, testing_dataloader, parameters)
+            testing_time = time.perf_counter() - testing_time
 
-        self.logger.info(f"Testing took: {testing_time:.05} sec", silent=silent)
-        self.logger.info(f"Accuracy: {accuracy:.05%}", silent=silent)
+            self.logger.info(f"(Epoch {i+1}) Testing took: {testing_time:.05} sec", silent=silent)
+            self.logger.info(f"(Epoch {i+1}) Accuracy: {accuracy:.05%}", silent=silent)
+
+            self.logger.log(
+                accuracy=accuracy,
+                training_time=training_time,
+                testing_time=testing_time,
+                silent=True,
+            )
 
         return accuracy, training_time, testing_time
 
@@ -60,7 +66,12 @@ class Model:
         if name is None:
             name = type(args[0]).__name__.lower()
 
-        schema = [("cost", float)]
+        schema = [
+            ("cost", float),
+            ("accuracy", float),
+            ("training_time", float),
+            ("testing_time", float),
+        ]
         fmt = "%(asctime)s: (%(name)s) %(message)s"
         logger = Logger.from_schema(schema, name, fmt)
         return cls(*args, **kwargs, logger=logger)

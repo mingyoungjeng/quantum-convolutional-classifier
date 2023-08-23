@@ -9,23 +9,27 @@ import polars as pl
 from qcc.file import save_dataframe_as_csv
 
 if TYPE_CHECKING:
-    from typing import Optional
+    from typing import Optional, Mapping
 
     SchemaDefinition = list[tuple[str, pl.DataType]]
 
 
 @define(frozen=True)
 class Logger:
-    """Logs important values"""
-    
-    df: pl.DataFrame = field(repr=False)
+    """Logs important values in DataFrame(s)"""
+
+    dfs: Mapping[str, pl.DataFrame] = field(repr=False)
     name: str = field(default=__name__)
     format: str = None
 
-    @df.validator
     def _check_df(self, _, df: pl.DataFrame):
         if pl.Datetime not in df.dtypes:
             df.insert_at_idx(0, pl.Series("time", dtype=pl.Datetime))
+
+    @dfs.validator
+    def _check_dfs(self, _, dfs: Mapping[str, pl.DataFrame]):
+        for df in dfs.values():
+            self._check_df(_, df)
 
     @name.validator
     def _setup_logging(self, _, name):
@@ -48,14 +52,22 @@ class Logger:
     def logger(self):
         return logging.getLogger(self.name)
 
-    def log(self, *args, silent: bool = False):
+    def log(self, /, silent: bool = False, **kwargs):
         now = datetime.now()
-        row = pl.DataFrame([(now,) + args], schema=self.df.schema)
-        self.df.extend(row)
 
-        if not silent:
-            msg = row.select(row.columns[1:]).to_dicts()[0]
-            self.logger.info(msg)
+        for key, value in kwargs.items():
+            if key in self.dfs:
+                df = self.dfs.get(key)
+                row = pl.DataFrame([(now, value)], schema=df.schema)
+                df.extend(row)
+            else:
+                self.logger.warning(f"Key not found: {key}")
+
+                df = pl.DataFrame({"time": [now], key: [value]})
+                self.dfs[key] = df
+
+        # msg = row.select(row.columns[1:]).to_dicts()[0]
+        self.info(str(kwargs), silent=silent)
 
     def info(self, msg: str, silent: bool = False) -> None:
         if silent:
@@ -67,16 +79,34 @@ class Logger:
         if filename is None:
             filename = Path(f"{self.name}.csv")
 
-        save_dataframe_as_csv(filename, self.df, overwrite=overwrite)
+        for key, df in self.dfs.items():
+            key = filename.with_stem(f"{filename.stem}_{key}")
+            save_dataframe_as_csv(key, df, overwrite=overwrite)
 
     @classmethod
     def from_schema(cls, schema: SchemaDefinition, *args, **kwargs) -> Logger:
-        return cls(pl.DataFrame(schema=schema), *args, **kwargs)
+        dfs = dict((s[0], pl.DataFrame(schema=[s])) for s in schema)
+        return cls(dfs, *args, **kwargs)
 
     @classmethod
-    def copy(cls, logger: Logger):
-        df = pl.DataFrame(schema=logger.df.schema)
-        name = logger.name
-        fmt = logger.format
+    def copy(
+        cls,
+        logger: Logger,
+        /,
+        dfs: Mapping[str, pl.DataFrame] = None,
+        name: str = None,
+        fmt: str = None,
+    ):
+        if dfs is None:
+            dfs = dict(
+                (key, pl.DataFrame(schema=df.schema))
+                for (key, df) in logger.dfs.items()
+            )
 
-        return cls(df=df, name=name, format=fmt)
+        if name is None:
+            name = logger.name
+
+        if fmt is None:
+            fmt = logger.format
+
+        return cls(dfs=dfs, name=name, format=fmt)

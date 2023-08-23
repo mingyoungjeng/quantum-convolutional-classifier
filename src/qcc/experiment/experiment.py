@@ -56,8 +56,8 @@ class Experiment:
         if fn is None:
             fn = self.fn
 
-        logger = self.cls.logger
-        self.metrics = logger.df.columns[1:]
+        logger: Logger = self.cls.logger
+        self.metrics = logger.dfs.keys()
         self.dfs = [None for _ in range(len(self.metrics) + 1)]
 
         if filename is not None:  # ideal output filenames
@@ -70,17 +70,13 @@ class Experiment:
                 filenames = [save(f, pl.DataFrame(), False) for f in filenames]
 
         offsets = tuple(0 if df is None else len(df.columns) for df in self.dfs)
-        for i in range(self.num_trials):
+        for i in range(self.num_trials): # TODO: parallelize
             idx = (i + offset for offset in offsets[1:])
 
-            # Setup DataFrame
-            idf = pl.DataFrame(schema=logger.df.schema)
-
             # Setup logging
-            self.cls.logger = Logger(
-                df=idf,
+            self.cls.logger = Logger.copy(
+                logger,
                 name=f"{logger.name}_trial_{i}",
-                format=logger.format,
             )
 
             # Perform trial
@@ -88,7 +84,7 @@ class Experiment:
 
             # Combine DataFrames
             idfs = (
-                idf.select(pl.col(m).suffix(f"_{j}")) for j, m in zip(idx, self.metrics)
+                self.cls.logger.dfs[m].select(pl.col(m).suffix(f"_{j}")) for j, m in zip(idx, self.metrics)
             )
 
             for j, df in enumerate(chain((rdf,), idfs)):
