@@ -7,6 +7,7 @@ from fnmatch import fnmatch
 from pathlib import Path
 import logging
 import traceback
+from multiprocessing import Pool, set_start_method
 
 import click
 
@@ -189,6 +190,12 @@ def run(**kwargs):
     help="Config file glob pattern",
 )
 @click.option(
+    "-p",
+    "--parallel",
+    is_flag=True,
+    help="Execute all tests in parallel",
+)
+@click.option(
     "-o",
     "--output_dir",
     required=True,
@@ -204,7 +211,7 @@ def run(**kwargs):
     callback=create_results,
     help="Output directory",
 )
-def load(ctx, paths: Iterable[Path], glob: str, output_dir: Path):
+def load(ctx, paths: Iterable[Path], glob: str, parallel: bool, output_dir: Path):
     toml_files = set()
     for path in paths:
         if path.is_dir():
@@ -216,6 +223,21 @@ def load(ctx, paths: Iterable[Path], glob: str, output_dir: Path):
     cmds = (CLIParameters.from_toml(toml, output_dir=output_dir) for toml in toml_files)
 
     errs = []
+
+    if parallel:
+        try:  # For CUDA compatibility in PyTorch
+            set_start_method("spawn")
+        except RuntimeError:
+            pass
+
+        with Pool() as pool:
+            for cmd in cmds:
+                pool.apply_async(cmd)
+            
+            pool.close()
+            pool.join()
+        return
+
     for cmd in cmds:
         try:
             cmd()
