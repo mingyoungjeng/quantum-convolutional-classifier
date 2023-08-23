@@ -46,7 +46,7 @@ class Model:
             parameters = train(self.module, opt, training_dataloader, self._cost)
             training_time += time.perf_counter() - now
             self.logger.info(
-                f"(Epoch {i+1}) Training took {training_time:.05} sec", silent=silent
+                f"(Epoch {i+1}) Training took {training_time:.5f} sec", silent=silent
             )
 
             now = time.perf_counter()
@@ -54,9 +54,9 @@ class Model:
             testing_time = time.perf_counter() - now
 
             self.logger.info(
-                f"(Epoch {i+1}) Testing took: {testing_time:.05} sec", silent=silent
+                f"(Epoch {i+1}) Testing took: {testing_time:.5f} sec", silent=silent
             )
-            self.logger.info(f"(Epoch {i+1}) Accuracy: {accuracy:.03%}", silent=silent)
+            self.logger.info(f"(Epoch {i+1}) Accuracy: {accuracy:.3%}", silent=silent)
 
             self.logger.log(
                 accuracy=accuracy,

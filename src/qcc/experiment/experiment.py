@@ -71,12 +71,12 @@ class Experiment:
 
         offsets = tuple(0 if df is None else len(df.columns) for df in self.dfs)
         for i in range(self.num_trials): # TODO: parallelize
-            idx = (i + offset for offset in offsets[1:])
+            idx = tuple(i + offset for offset in offsets[1:])
 
             # Setup logging
             self.cls.logger = Logger.copy(
                 logger,
-                name=f"{logger.name}_trial_{i}",
+                name=f"{logger.name}_trial_{max(idx)}",
             )
 
             # Perform trial
