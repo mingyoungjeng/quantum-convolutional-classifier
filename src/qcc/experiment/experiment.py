@@ -1,23 +1,26 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Iterable
 
-from functools import partial as _partial
 from pathlib import Path
-from itertools import chain
+from copy import copy, deepcopy
+from multiprocessing import Pool, set_start_method
 
 from attrs import define, field
 import polars as pl
 import matplotlib.pyplot as plt
 from qcc.file import (
     draw,
+    filename_labels,
     save_dataframe_as_csv as save,
     load_dataframe_from_csv as load,
 )
 from qcc.experiment.logger import Logger
 
 if TYPE_CHECKING:
-    from typing import Optional, Callable
+    from typing import Optional, Mapping, Any
     from qcc.experiment.logger import SchemaDefinition
+
+    # TODO: Add type for class that has a Logger
 
 
 @define
@@ -26,15 +29,8 @@ class Experiment:
 
     cls: Any = field()
     num_trials: int = 1
-    fn: Callable = field(kw_only=True)
-
     results_schema: Optional[SchemaDefinition] = None
-    dfs: list[Optional[pl.DataFrame]] = field(init=None, factory=lambda: [None])
-    metrics: list[str] = field(init=None, factory=list)
-
-    @fn.default
-    def _default_fn(self):
-        return getattr(self.cls, "__call__", lambda: None)
+    dfs: Mapping[str, pl.DataFrame] = field(repr=False, factory=dict)
 
     @cls.validator
     def _check_if_logger(self, _, value):
@@ -46,63 +42,85 @@ class Experiment:
         else:
             raise AttributeError("No Logger")
 
-    def __call__(
+    @property
+    def metrics(self):
+        return self.dfs.keys()
+
+    def _run_trial(
         self,
-        fn: Optional[Callable] = None,
-        *,
-        filename: Optional[Path] = None,
-        merge: bool = True,
-    ):
-        if fn is None:
-            fn = self.fn
+        idx: int | Iterable[int],
+        cls: Optional[Any] = None,
+    ) -> Mapping[str, pl.DataFrame]:
+        if cls is None:
+            cls = copy(self.cls)
 
-        logger: Logger = self.cls.logger
-        self.metrics = logger.dfs.keys()
-        self.dfs = [None for _ in range(len(self.metrics) + 1)]
+        # Setup logging
+        i = max(idx) if isinstance(idx, Iterable) else idx
+        cls.logger = Logger.copy(cls.logger, name=f"{cls.logger.name}_trial_{i}")
 
-        if filename is not None:  # ideal output filenames
-            filenames = "results", *self.metrics
-            filenames = [filename.with_stem(f"{filename.stem}_{f}") for f in filenames]
+        # Perform trial and get results
+        results_df = pl.DataFrame([cls()], schema=self.results_schema)
 
-            if merge:
-                self.dfs = [load(f) for f in filenames]
-            else:  # Reserve file names
-                filenames = [save(f, pl.DataFrame(), False) for f in filenames]
+        # Combine DataFrames
+        for i, key in enumerate(cls.logger.dfs.keys()):
+            i = idx[i] if isinstance(idx, Iterable) else idx
+            col = pl.col(key).suffix(f"_{i}")
+            cls.logger.dfs[key] = cls.logger.dfs.get(key).select(col)
+        cls.logger.dfs["results"] = results_df
 
-        offsets = tuple(0 if df is None else len(df.columns) for df in self.dfs)
-        for i in range(self.num_trials): # TODO: parallelize
-            idx = tuple(i + offset for offset in offsets[1:])
+        return cls.logger.dfs
 
-            # Setup logging
-            self.cls.logger = Logger.copy(
-                logger,
-                name=f"{logger.name}_trial_{max(idx)}",
-            )
+    def _merge_dfs(
+        self, dfs: Mapping[str, pl.DataFrame], filename: Optional[Path] = None
+    ) -> None:
+        for metric, df in dfs.items():
+            if metric not in self.dfs:
+                self.dfs[metric] = df
+                continue
 
-            # Perform trial
-            rdf = pl.DataFrame([fn()], schema=self.results_schema)
+            if metric == "results":  # results DataFrame
+                self.dfs[metric].vstack(df, in_place=True)
+            else:
+                self.dfs[metric].hstack(df, in_place=True)
 
-            # Combine DataFrames
-            idfs = (
-                self.cls.logger.dfs[m].select(pl.col(m).suffix(f"_{j}")) for j, m in zip(idx, self.metrics)
-            )
-
-            for j, df in enumerate(chain((rdf,), idfs)):
-                if self.dfs[j] is None:
-                    self.dfs[j] = df
-                    continue
-
-                if j == 0:
-                    self.dfs[j].vstack(df, in_place=True)
-                else:
-                    self.dfs[j].hstack(df, in_place=True)
-
+            # Save DataFrames
             if filename is not None:
-                for f, df in zip(filenames, self.dfs):
+                filenames = filename_labels(filename, self.metrics)
+                for f, df in zip(filenames, self.dfs.values()):
                     save(f, df, overwrite=True)
 
-        self.cls.logger = logger
-        return self.dfs[0]
+    def __call__(
+        self,
+        *,
+        filename: Optional[Path] = None,
+        parallel: bool = False,
+    ):
+        if filename is not None:  # ideal output filenames
+            metrics = self.cls.logger.dfs.keys()
+            filenames = filename_labels(filename, metrics)
+            dfs = [load(f) for f in filenames]
+            dfs = dict((m, df) for m, df in zip(metrics, dfs) if df is not None)
+            self.dfs.update(dfs)
+
+        offset = {len(df.columns) for df in self.dfs.values()}
+        offset = max(offset) if len(offset) > 0 else 0
+        if parallel:  # TODO: doesn't work
+            try:  # For CUDA compatibility in PyTorch
+                set_start_method("spawn")
+            except RuntimeError:
+                pass
+
+            with Pool() as pool:
+                args = (i + offset for i in range(self.num_trials))
+                results = pool.imap(self._run_trial, args)
+                for dfs in results:
+                    self._merge_dfs(dfs, filename)
+        else:
+            for i in range(self.num_trials):
+                dfs = self._run_trial(i + offset)
+                self._merge_dfs(dfs, filename)
+
+        return self.dfs.get("results", None)
 
     @staticmethod
     def aggregate(name: str, op: str):
@@ -112,9 +130,12 @@ class Experiment:
 
         return expr.alias(f"{name}_{op}")
 
-    def draw(self, filename=None, include_axis: bool = False):
+    def draw(self, filename: Path = None, include_axis: bool = False):
         subplots = []
-        for df, metric in zip(self.dfs[1:], self.metrics):
+        for metric, df in self.dfs.items():
+            if metric == "results":
+                continue
+
             fig, ax = plt.subplots()
 
             # Aggregate columns
@@ -130,10 +151,12 @@ class Experiment:
             ax.set_ylabel(metric.capitalize())
             subplots += [(fig, ax)]
 
-        return tuple(
-            draw((fig, ax), filename, overwrite=False, include_axis=include_axis)
-            for (fig, ax) in subplots
-        )
+        if filename is None:
+            filenames = (None for _ in self.metrics)
+        else:
+            filenames = filename_labels(filename, self.metrics)
 
-    def partial(self, *args, **kwargs):
-        self.fn = _partial(self.fn, *args, **kwargs)
+        return tuple(
+            draw((fig, ax), f, overwrite=False, include_axis=include_axis)
+            for (fig, ax), f in zip(subplots, filenames)
+        )

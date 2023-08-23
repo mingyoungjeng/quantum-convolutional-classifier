@@ -42,21 +42,25 @@ class Model:
         training_time = 0
         testing_time = 0
         for i in range(self.epoch):
-            now = time.process_time()
+            now = time.thread_time()
             parameters = train(self.module, opt, training_dataloader, self._cost)
-            training_time += time.process_time() - now
-            self.logger.info(
-                f"(Epoch {i+1}) Training took {training_time:.5f} sec", silent=silent
-            )
+            training_time += time.thread_time() - now
 
-            now = time.process_time()
+            msg = f"Training took {training_time:.5f} sec"
+            msg = f"(Epoch {i+1}) {msg}" if self.epoch > 1 else msg
+            self.logger.info(msg, silent=silent)
+
+            now = time.thread_time()
             accuracy = test(self.module, testing_dataloader, parameters)
-            testing_time = time.process_time() - now
+            testing_time = time.thread_time() - now
 
-            self.logger.info(
-                f"(Epoch {i+1}) Testing took: {testing_time:.5f} sec", silent=silent
-            )
-            self.logger.info(f"(Epoch {i+1}) Accuracy: {accuracy:.3%}", silent=silent)
+            msg = f"Testing took: {testing_time:.5f} sec"
+            msg = f"(Epoch {i+1}) {msg}" if self.epoch > 1 else msg
+            self.logger.info(msg, silent=silent)
+
+            msg = f"Accuracy: {accuracy:.3%}"
+            msg = f"(Epoch {i+1}) {msg}" if self.epoch > 1 else msg
+            self.logger.info(msg, silent=silent)
 
             self.logger.log(
                 accuracy=accuracy,

@@ -6,7 +6,7 @@ from pathlib import Path
 from datetime import datetime
 from attrs import define, field
 import polars as pl
-from qcc.file import save_dataframe_as_csv
+from qcc.file import save_dataframe_as_csv, filename_labels
 
 if TYPE_CHECKING:
     from typing import Optional, Mapping
@@ -79,9 +79,9 @@ class Logger:
         if filename is None:
             filename = Path(f"{self.name}.csv")
 
-        for key, df in self.dfs.items():
-            key = filename.with_stem(f"{filename.stem}_{key}")
-            save_dataframe_as_csv(key, df, overwrite=overwrite)
+        filenames = filename_labels(filename, self.dfs.keys())
+        for filename, df in zip(filenames, self.dfs.values()):
+            save_dataframe_as_csv(filename, df, overwrite=overwrite)
 
     @classmethod
     def from_schema(cls, schema: SchemaDefinition, *args, **kwargs) -> Logger:

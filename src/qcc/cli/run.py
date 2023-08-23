@@ -108,7 +108,7 @@ class CLIParameters:
         # Run experiment
         results_schema = ["accuracy", "training_time", "testing_time"]
         experiment = Experiment(model, self.num_trials, results_schema)
-        experiment.partial(silent=not self.verbose)
+        # experiment.partial(silent=not self.verbose)
         results = experiment(filename=path / self.name)
 
         # Print accuracy results

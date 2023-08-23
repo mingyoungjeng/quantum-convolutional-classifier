@@ -11,7 +11,7 @@ from matplotlib.figure import Figure
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
-    from typing import Callable, Optional, Any
+    from typing import Iterable, Callable, Optional, Any
 
 
 def create_parent(path: Path):
@@ -33,6 +33,18 @@ def new_dir(dir: Path, overwrite=True) -> None:
 
     # Return path in case stem change needed
     return dir
+
+
+def filename_labels(
+    filename: Path, labels: str | Iterable[str]
+) -> Path | Iterable[Path]:
+    if isinstance(labels, str):
+        stem = f"{filename.stem}_{labels}"
+        return filename.with_stem(stem)
+
+    stems = (f"{filename.stem}_{label}" for label in labels)
+    filenames = [filename.with_stem(stem) for stem in stems]
+    return filenames
 
 
 def save(filename: Path, fn: Callable[[Path], None], overwrite=True) -> None:
