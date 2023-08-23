@@ -6,7 +6,7 @@ transform = "qcc.ml.data.ImageTransform"
 dimensions = [16, 16]
 num_layers = 3
 classes = [0, 1]
-epoch = 4
+epoch = 8
 batch_size = [8, 1000]
 num_trials = 10
 quantum = true
@@ -14,7 +14,7 @@ verbose = true
 
 [module_options]
 pre_op = true
-U_filter = "qcc.quantum.operation.c2q.ConvolutionAngleFilter"
+U_filter = "qcc.quantum.operation.c2q.ConvolutionComplexAngleFilter"
 
 [optimizer_options]
 lr = 0.001
