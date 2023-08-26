@@ -2,16 +2,16 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
 from qcc.quantum import to_qubits
-from qcc.quantum.operation import Convolution, Qubits, Unitary
-from qcc.quantum.operation.ansatz import Ansatz
+from qcc.quantum.pennylane import Convolution, Qubits, Unitary
+from qcc.quantum.pennylane.ansatz import Ansatz
 
-from qcc.quantum.operation.ansatz.convolution_pooling import ConvolutionPoolingAnsatz
-from qcc.quantum.operation.c2q import ConvolutionAngleFilter
-from qcc.quantum.operation.fully_connected import FullyConnected
+from qcc.quantum.pennylane.ansatz.convolution_pooling import ConvolutionPoolingAnsatz
+from qcc.quantum.pennylane.c2q import ConvolutionAngleFilter
+from qcc.quantum.pennylane.fully_connected import FullyConnected
 
 if TYPE_CHECKING:
     from pennylane.wires import Wires
-    from qcc.quantum.operation import Parameters
+    from qcc.quantum.pennylane import Parameters
 
 
 class ConvolutionAnsatz(ConvolutionPoolingAnsatz):

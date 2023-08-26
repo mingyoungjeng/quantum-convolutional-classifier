@@ -6,8 +6,8 @@ from itertools import zip_longest, tee
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
-from qcc.quantum.operation import Unitary
-from qcc.quantum.operation.ansatz import Ansatz
+from qcc.quantum.pennylane import Unitary
+from qcc.quantum.pennylane.ansatz import Ansatz
 
 
 class BaselineFiltering(Unitary):

@@ -1,4 +1,4 @@
-module = "qcc.quantum.operation.ansatz.ConvolutionPoolingAnsatz"
+module = "qcc.quantum.pennylane.ansatz.ConvolutionPoolingAnsatz"
 dataset = "torchvision.datasets.FashionMNIST"
 optimizer = "torch.optim.Adam"
 loss = "torch.nn.CrossEntropyLoss"
@@ -14,7 +14,7 @@ verbose = true
 
 [module_options]
 pre_op = true
-U_filter = "qcc.quantum.operation.c2q.ConvolutionComplexAngleFilter"
+U_filter = "qcc.quantum.pennylane.c2q.ConvolutionComplexAngleFilter"
 
 [optimizer_options]
 lr = 0.001

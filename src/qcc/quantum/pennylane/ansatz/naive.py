@@ -1,8 +1,8 @@
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
-from qcc.quantum.operation.ansatz import Ansatz
-from qcc.quantum.operation.ansatz.fully_connected import FullyConnectedLayer
+from qcc.quantum.pennylane.ansatz import Ansatz
+from qcc.quantum.pennylane.ansatz.fully_connected import FullyConnectedLayer
 from qcc.quantum import parity
 
 

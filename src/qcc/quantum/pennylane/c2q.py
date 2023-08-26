@@ -6,7 +6,7 @@ import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
 from qcc.quantum import flatten_array, normalize
-from qcc.quantum.operation import Multiplex, Unitary
+from qcc.quantum.pennylane import Multiplex, Unitary
 
 if TYPE_CHECKING:
     from typing import Iterable
@@ -114,7 +114,7 @@ class ConvolutionAngleFilter(Unitary):
 
     @staticmethod
     def _shape(num_wires: Wires, **_) -> int:
-        return 2 ** num_wires - 1
+        return 2**num_wires - 1
 
 
 # TODO: format the phi and t terms propertly

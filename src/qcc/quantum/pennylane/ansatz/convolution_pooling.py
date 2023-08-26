@@ -4,15 +4,15 @@ from typing import TYPE_CHECKING
 from itertools import chain, zip_longest
 
 from qcc.quantum import to_qubits, parity
-from qcc.quantum.operation import Convolution, Multiplex, Qubits, QubitsProperty
-from qcc.quantum.operation.ansatz import Ansatz
-from qcc.quantum.operation.convolution import define_filter
-from qcc.quantum.operation.fully_connected import FullyConnected
+from qcc.quantum.pennylane import Convolution, Multiplex, Qubits, QubitsProperty
+from qcc.quantum.pennylane.ansatz import Ansatz
+from qcc.quantum.pennylane.convolution import define_filter
+from qcc.quantum.pennylane.fully_connected import FullyConnected
 
 if TYPE_CHECKING:
     from typing import Iterable, Optional
     from pennylane.wires import Wires
-    from qcc.quantum.operation import Parameters, Unitary
+    from qcc.quantum.pennylane import Parameters, Unitary
 
 
 class ConvolutionPoolingAnsatz(Ansatz):

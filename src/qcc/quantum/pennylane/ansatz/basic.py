@@ -5,8 +5,8 @@ from itertools import tee
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
-from qcc.quantum.operation.ansatz import Ansatz
-from qcc.quantum.operation import Unitary
+from qcc.quantum.pennylane.ansatz import Ansatz
+from qcc.quantum.pennylane import Unitary
 from qcc.quantum import parity
 
 if TYPE_CHECKING:
@@ -84,7 +84,7 @@ class BasicPooling(Unitary):
 
     @staticmethod
     def _shape(num_wires: Wires, **_) -> int:
-        return 6 * (lnum_wires - 1)
+        return 6 * (num_wires - 1)
 
 
 class BasicAnsatz(Ansatz):

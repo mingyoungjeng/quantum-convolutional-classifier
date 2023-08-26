@@ -9,7 +9,7 @@ import pennylane as qml
 from pennylane.templates import AmplitudeEmbedding
 
 from qcc.quantum import to_qubits, wires_to_qubits
-from qcc.quantum.operation import Qubits, QubitsProperty
+from qcc.quantum.pennylane import Qubits, QubitsProperty
 from qcc.ml import init_params, reset_parameter
 from qcc.file import draw
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from numbers import Number
     from pennylane.wires import Wires
     from pennylane.operation import Operation
-    from qcc.quantum.operation import Parameters
+    from qcc.quantum.pennylane import Parameters
 
     Statevector = Iterable[Number]
 

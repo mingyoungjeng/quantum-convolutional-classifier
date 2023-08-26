@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from torch import Tensor
     from torch.nn import Module
     from torch.utils.data import DataLoader
-    from qcc.quantum.operation import Parameters
+    from qcc.quantum.pennylane import Parameters
 
     LossFunction = CostFunction = Callable[[Parameters, Parameters], Number]
 

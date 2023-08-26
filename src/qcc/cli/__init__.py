@@ -233,7 +233,7 @@ def load(ctx, paths: Iterable[Path], glob: str, parallel: bool, output_dir: Path
         with Pool() as pool:
             for cmd in cmds:
                 pool.apply_async(cmd)
-            
+
             pool.close()
             pool.join()
         return
@@ -267,7 +267,7 @@ def _run(
     quantum: bool,
     **kwargs,
 ):
-    kwargs["ansatz"] = _setup_module("qcc.quantum.operation.ansatz", ansatz)
+    kwargs["ansatz"] = _setup_module("qcc.quantum.pennylane.ansatz", ansatz)
     kwargs["dataset"] = _setup_module("torchvision.datasets", dataset)
     kwargs["optimizer"] = _setup_module("torch.optim", optimizer)
     kwargs["loss"] = _setup_module("torch.nn", loss)

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 import pennylane as qml
 
 from qcc.quantum import to_qubits
-from qcc.quantum.operation import Unitary, Multiplex
+from qcc.quantum.pennylane import Unitary, Multiplex
 
 if TYPE_CHECKING:
     from pennylane.wires import Wires

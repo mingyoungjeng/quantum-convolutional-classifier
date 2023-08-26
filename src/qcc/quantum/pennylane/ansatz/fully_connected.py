@@ -3,8 +3,8 @@ from itertools import tee
 import pennylane as qml
 
 # from pennylane.templates import BasicEntanglerLayers
-from qcc.quantum.operation.ansatz import Ansatz
-from qcc.quantum.operation import Unitary
+from qcc.quantum.pennylane.ansatz import Ansatz
+from qcc.quantum.pennylane import Unitary
 from qcc.quantum import parity
 
 

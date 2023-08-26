@@ -10,7 +10,7 @@ from pennylane.ops import Controlled
 from pennylane.wires import Wires
 
 from qcc.quantum import to_qubits, wires_to_qubits
-from qcc.quantum.operation import Shift, C2Q, Qubits, Unitary
+from qcc.quantum.pennylane import Shift, C2Q, Qubits, Unitary
 
 if TYPE_CHECKING:
     from typing import Iterable
