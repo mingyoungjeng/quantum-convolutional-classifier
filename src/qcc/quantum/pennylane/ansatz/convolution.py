@@ -78,26 +78,36 @@ class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
                 params = self._filter(params, ancilla)
 
         # Fully connected layer
-        meas = (data_qubits + ancilla_qubits).flatten()
+        meas = data_qubits
         if self.U_fully_connected is not None:
-            self.U_fully_connected(params, data_qubits.flatten()[::-1])
-            return meas[-1]
+            self.U_fully_connected(params, meas.flatten()[::-1])
+            meas = Qubits([meas.flatten()[-1]])
 
-        return meas
+        return (meas + self.ancilla_qubits).flatten()
 
-    # @property
-    # def shape(self) -> int:
-    #     n_params = self._n_params * (self.num_layers + self.pre_op + self.post_op)
-    #     n_params += self.U_fully_connected.shape(self.qubits.flatten())
+    @property
+    def shape(self) -> int:
+        data_shape_q = self.data_qubits.shape
+        fltr_shape_q = to_qubits(self.filter_shape)
 
-    #     return n_params
+        num_params = self.pre_op + self.post_op
+        num_params *= self.U_filter.shape(sum(fltr_shape_q))
+
+        for i in range(self.num_layers):
+            fsq = (1 for (d, f) in zip(data_shape_q, fltr_shape_q) if d - (i * f))
+            num_params += self.U_filter.shape(sum(fsq))
+
+        num_params *= self.num_features
+
+        if self.U_fully_connected:
+            num_params += self.U_fully_connected.shape(self.data_qubits.flatten())
+
+        return num_params
 
     @property
     def _data_wires(self) -> Wires:
         return self.data_qubits.flatten()
-    
+
     def forward(self, psi_in: Optional[Statevector] = None):
         result = super().forward(psi_in)
-        return result[:][
-            : 2 ** (self.data_qubits.total + self.feature_qubits.total)
-        ]
+        return result[:][: 2 ** (self.data_qubits.total + self.feature_qubits.total)]
