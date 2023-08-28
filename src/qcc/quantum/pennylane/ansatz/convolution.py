@@ -10,8 +10,10 @@ from qcc.quantum.pennylane.c2q import ConvolutionAngleFilter
 from qcc.quantum.pennylane.fully_connected import FullyConnected
 
 if TYPE_CHECKING:
+    from typing import Optional
     from pennylane.wires import Wires
-    from qcc.quantum.pennylane import Parameters
+    from qcc.quantum.operation import Parameters
+    from qcc.quantum.operation.ansatz.ansatz import Statevector
 
 
 class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
@@ -78,7 +80,7 @@ class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
         # Fully connected layer
         meas = (data_qubits + ancilla_qubits).flatten()
         if self.U_fully_connected is not None:
-            self.U_fully_connected(params, meas[::-1])
+            self.U_fully_connected(params, data_qubits.flatten()[::-1])
             return meas[-1]
 
         return meas
@@ -93,8 +95,9 @@ class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
     @property
     def _data_wires(self) -> Wires:
         return self.data_qubits.flatten()
-
-    # def post_processing(self, result):
-    #     return super().post_processing(result)[:][
-    #         : 2 ** (self.main_qubits.total + self.feature_qubits.total)
-    #     ]
+    
+    def forward(self, psi_in: Optional[Statevector] = None):
+        result = super().forward(psi_in)
+        return result[:][
+            : 2 ** (self.data_qubits.total + self.feature_qubits.total)
+        ]
