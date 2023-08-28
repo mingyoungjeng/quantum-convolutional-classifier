@@ -131,6 +131,7 @@ def construct_img(img_data, size, mode: str = None) -> Image.Image:
 
 
 def parity(result, num_classes: int = 2):
+    # return "{:b}".format(x).count("1") % 2
     predictions = create_tensor(torch.empty, (len(result), num_classes))
 
     for i, probs in enumerate(result):

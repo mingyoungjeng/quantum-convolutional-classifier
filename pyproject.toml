@@ -10,6 +10,7 @@ dependencies = [
     "attrs",
     "PennyLane",
     "qiskit",
+    "qiskit_machine_learning",
     "torch",
     "torchvision",
     "Pillow",
