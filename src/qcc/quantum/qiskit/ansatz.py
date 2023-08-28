@@ -6,7 +6,7 @@ from abc import abstractmethod, ABCMeta
 from functools import partial
 
 from torch.nn import Module
-from qiskit_machine_learning.neural_networks import SamplerQNN
+from qiskit_machine_learning.neural_networks import EstimatorQNN, SamplerQNN
 from qiskit_machine_learning.connectors import TorchConnector
 
 from qcc.quantum import to_qubits, wires_to_qubits
@@ -14,7 +14,8 @@ from qcc.quantum.pennylane import Qubits, QubitsProperty
 from qcc.ml import init_params, reset_parameter
 from qcc.file import draw
 from qcc.quantum.qiskit.c2q import C2QAnsatz
-from qiskit.circuit import QuantumCircuit, ClassicalRegister
+from qiskit.circuit import QuantumCircuit
+from qiskit.quantum_info import SparsePauliOp
 
 if TYPE_CHECKING:
     from typing import Iterable, Optional
@@ -55,16 +56,24 @@ class Ansatz(Module, metaclass=ABCMeta):
         qc.compose(c2q, qubits=self.qubits.flatten(), front=True, inplace=True)
 
         # Q2C
+        # observables = "".join(
+        #     "Z" if i in meas else "I" for i in range(len(self.qubits.flatten()))
+        # )[::-1]
+        # observables = SparsePauliOp([observables])
         if meas is None:
             interpret = partial(parity, num_classes=self.num_classes)
         else:
-            cbits = ClassicalRegister(len(meas))
-            qc.add_register(cbits)
-            qc.measure(meas, cbits)
             interpret = partial(q2c, meas=meas, num_classes=self.num_classes)
 
         # Construct module
 
+        # qnn = EstimatorQNN(
+        #     circuit=qc,
+        #     input_params=c2q.params,
+        #     weight_params=weight_params,
+        #     observables=observables,
+        #     input_gradients=True,
+        # )
         qnn = SamplerQNN(
             circuit=qc,
             input_params=c2q.params,
