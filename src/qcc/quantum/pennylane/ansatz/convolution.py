@@ -71,6 +71,7 @@ class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
             ### PERMUTE
             Convolution.permute(fltr_shape_q, qubits)
 
+            # TODO: work with assymmetric dims
             if self.pooling and i != self.max_layers - 1:
                 for j, fsq in enumerate(fltr_shape_q):
                     data_qubits[j] = data_qubits[j][fsq:]
@@ -99,8 +100,14 @@ class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
 
         num_params *= self.num_features
 
-        if self.U_fully_connected:  # TODO account for pooling
-            num_params += self.U_fully_connected.shape(self.data_qubits.flatten())
+        # TODO: work with assymmetric dims
+        if self.U_fully_connected:
+            num_qubits = len(self.data_qubits.flatten())
+            if self.pooling:
+                num_pooling = min(self.max_layers - 1, self.num_layers)
+                num_qubits += -sum(fltr_shape_q) * num_pooling
+
+            num_params += self.U_fully_connected.shape(num_qubits)
 
         return num_params
 
