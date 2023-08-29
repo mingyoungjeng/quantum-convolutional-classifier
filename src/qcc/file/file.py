@@ -18,7 +18,7 @@ def create_parent(path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
 
 
-def new_dir(dir: Path, overwrite=True) -> None:
+def new_dir(dir: Path, overwrite=True) -> Path:
     if not isinstance(dir, Path):
         dir = Path(dir)
 
@@ -36,8 +36,13 @@ def new_dir(dir: Path, overwrite=True) -> None:
 
 
 def filename_labels(
-    filename: Path, labels: str | Iterable[str]
+    filename: Path, labels: str | Iterable[str] | None = None
 ) -> Path | Iterable[Path]:
+    if labels is None:
+        return tuple(
+            filename.parent.absolute().glob(f"{filename.stem}_*{filename.suffix}")
+        )
+
     if isinstance(labels, str):
         stem = f"{filename.stem}_{labels}"
         return filename.with_stem(stem)
@@ -59,6 +64,7 @@ def save(filename: Path, fn: Callable[[Path], None], overwrite=True) -> None:
         while filename.is_file():
             filename = filename.with_name(f"{stem}_{i}{filename.suffix}")
             i += 1
+
     fn(filename)
 
     # Return filename in case stem change needed

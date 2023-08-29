@@ -12,9 +12,11 @@ from multiprocessing import Pool, set_start_method
 import click
 
 from qcc.cli.run import CLIParameters
+from qcc.experiment import Experiment
 
 if TYPE_CHECKING:
     from typing import Iterable
+    from multiprocessing.pool import AsyncResult
 
 log = logging.getLogger(__name__)
 
@@ -225,18 +227,7 @@ def load(ctx, paths: Iterable[Path], glob: str, parallel: bool, output_dir: Path
     errs = []
 
     if parallel:
-        try:  # For CUDA compatibility in PyTorch
-            set_start_method("spawn")
-        except RuntimeError:
-            pass
-
-        with Pool() as pool:
-            for cmd in cmds:
-                pool.apply_async(cmd)
-
-            pool.close()
-            pool.join()
-        return
+        return _run_pool(cmds)
 
     for cmd in cmds:
         try:
@@ -248,6 +239,45 @@ def load(ctx, paths: Iterable[Path], glob: str, parallel: bool, output_dir: Path
         for error_message in errs:
             log.error(error_message)
         raise RuntimeError(f"{len(errs)} file(s) encountered an error")
+
+
+def _run_pool(cmds: Iterable[CLIParameters]):
+    try:  # For CUDA compatibility in PyTorch
+        set_start_method("spawn")
+    except RuntimeError:
+        pass
+
+    with Pool() as pool:
+        results: dict[Path, Iterable[AsyncResult]] = dict()
+        for cmd in cmds:
+            num_trials = cmd.num_trials
+            filename = cmd.output_dir / cmd.name / cmd.name
+
+            cmd.num_trials = 1
+            cmd.output_dir = None
+
+            futures = tuple(pool.apply_async(cmd) for _ in range(num_trials))
+            results[filename] = futures
+
+        pool.close()
+        pool.join()
+
+        # Combine and save results
+        for filename, futures in results.items():
+            experiment = Experiment()
+            experiment.read(filename)
+
+            offset = {len(df.columns) for df in experiment.dfs.values()}
+            offset = max(offset) if len(offset) > 0 else 0
+            for i, future in enumerate(futures):
+                # Get dfs from future
+                dfs: dict = future.get()
+
+                experiment._make_unique_columns(dfs, i + offset)
+                experiment._merge_dfs(dfs)
+
+            experiment.save(filename, overwrite=True)
+            experiment.draw(filename)
 
 
 def _setup_module(root: str, obj: str = None):

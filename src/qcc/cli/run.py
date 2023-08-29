@@ -48,7 +48,7 @@ class CLIParameters:
     batch_size: Optional[int | tuple[int, int]] = 1
     module_options: Mapping = field(factory=dict, converter=dict_converter)
     optimizer_options: Mapping = field(factory=dict, converter=dict_converter)
-    output_dir: Path = Path.cwd() / "results"
+    output_dir: Optional[Path] = None
     is_quantum: bool = True
     verbose: bool = False
 
@@ -65,7 +65,12 @@ class CLIParameters:
         return cls(**kwargs)
 
     def __call__(self) -> None:
-        path = new_dir(self.output_dir / self.name, overwrite=True)
+        if self.output_dir is None:
+            filename = None
+        else:
+            filename = new_dir(self.output_dir / self.name, overwrite=True)
+            filename = filename / self.name
+
         if self.is_quantum:
             self.module = self.module.from_dims
 
@@ -101,15 +106,15 @@ class CLIParameters:
         model.logger.info(f"{self.module_options=}")
 
         # Save circuit drawing
-        if self.is_quantum:
-            filename = path / f"{self.name}_circuit.png"
+        if self.is_quantum and filename is not None:
+            filename = filename.with_stem(f"{self.name}_circuit")
             module.draw(filename=filename, decompose=True)
 
         # Run experiment
         results_schema = ["accuracy", "training_time", "testing_time"]
         experiment = Experiment(model, self.num_trials, results_schema)
         # experiment.partial(silent=not self.verbose)
-        results = experiment(filename=path / self.name)
+        results = experiment(filename=filename)
 
         # Print accuracy results
         metrics = ("median", "mean", "max", "min", "std")
@@ -121,4 +126,6 @@ class CLIParameters:
             model.logger.info(msg)
 
         # Save aggregated loss history figure
-        experiment.draw(path / f"{self.name}.png")
+        experiment.draw(filename=filename)
+
+        return experiment.dfs

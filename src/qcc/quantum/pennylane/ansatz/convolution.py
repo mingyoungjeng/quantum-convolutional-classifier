@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
+from math import sqrt
+
 from qcc.quantum import to_qubits
 from qcc.quantum.pennylane import Convolution, Qubits, Unitary
 from qcc.quantum.pennylane.ansatz import Ansatz
@@ -12,8 +14,8 @@ from qcc.quantum.pennylane.fully_connected import FullyConnected
 if TYPE_CHECKING:
     from typing import Optional
     from pennylane.wires import Wires
-    from qcc.quantum.operation import Parameters
-    from qcc.quantum.operation.ansatz.ansatz import Statevector
+    from qcc.quantum.pennylane import Parameters
+    from qcc.quantum.pennylane.ansatz.ansatz import Statevector
 
 
 class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
@@ -52,9 +54,9 @@ class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
             for i in range(self.num_layers)
         ]
 
-        if self.pre_op:  # Pre-op on ancillas
-            for ancilla in ancilla_qubits:
-                params = self._filter(params, ancilla)
+        # if self.pre_op:  # Pre-op on ancillas
+        #     for ancilla in ancilla_qubits:
+        #         params = self._filter(params, ancilla)
 
         # Convolution layers
         for i in range(self.num_layers):
@@ -69,13 +71,13 @@ class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
             ### PERMUTE
             Convolution.permute(fltr_shape_q, qubits)
 
-            if self.pooling:
-                for i, fsq in enumerate(fltr_shape_q):
-                    data_qubits[i] = data_qubits[i][fsq:]
+            if self.pooling and i != self.max_layers - 1:
+                for j, fsq in enumerate(fltr_shape_q):
+                    data_qubits[j] = data_qubits[j][fsq:]
 
-        if self.post_op:  # Post-op on ancillas
-            for ancilla in ancilla_qubits:
-                params = self._filter(params, ancilla)
+        # if self.post_op:  # Post-op on ancillas
+        #     for ancilla in ancilla_qubits:
+        #         params = self._filter(params, ancilla)
 
         # Fully connected layer
         meas = data_qubits
@@ -90,16 +92,14 @@ class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
         data_shape_q = self.data_qubits.shape
         fltr_shape_q = to_qubits(self.filter_shape)
 
-        num_params = self.pre_op + self.post_op
-        num_params *= self.U_filter.shape(sum(fltr_shape_q))
-
+        num_params = 0
         for i in range(self.num_layers):
             fsq = (1 for (d, f) in zip(data_shape_q, fltr_shape_q) if d - (i * f))
             num_params += self.U_filter.shape(sum(fsq))
 
         num_params *= self.num_features
 
-        if self.U_fully_connected:
+        if self.U_fully_connected:  # TODO account for pooling
             num_params += self.U_fully_connected.shape(self.data_qubits.flatten())
 
         return num_params
@@ -110,4 +110,8 @@ class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
 
     def forward(self, psi_in: Optional[Statevector] = None):
         result = super().forward(psi_in)
-        return result[:][: 2 ** (self.data_qubits.total + self.feature_qubits.total)]
+
+        # Get subset of output
+        norm = sqrt(2**self.ancilla_qubits.total)
+        n = 2 ** (1 + self.feature_qubits.total)
+        return norm * result[:, :n]

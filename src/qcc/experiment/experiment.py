@@ -27,13 +27,17 @@ if TYPE_CHECKING:
 class Experiment:
     """Perform and aggregate multiple experimental trials"""
 
-    cls: Any = field()
+    cls: Optional[Any] = field(default=None)
     num_trials: int = 1
     results_schema: Optional[SchemaDefinition] = None
-    dfs: Mapping[str, pl.DataFrame] = field(repr=False, factory=dict)
+    dfs: dict[str, pl.DataFrame] = field(repr=False, factory=dict)
 
     @cls.validator
     def _check_if_logger(self, _, value):
+        # Do nothing if cls is not set
+        if value is None:
+            return
+
         # Check if has attribute logger
         if hasattr(value, "logger"):
             # Check if logger is correct instance
@@ -50,25 +54,38 @@ class Experiment:
         self,
         idx: int | Iterable[int],
         cls: Optional[Any] = None,
+        rename: bool = False,
     ) -> Mapping[str, pl.DataFrame]:
         if cls is None:
             cls = copy(self.cls)
 
         # Setup logging
-        i = max(idx) if isinstance(idx, Iterable) else idx
-        cls.logger = Logger.copy(cls.logger, name=f"{cls.logger.name}_trial_{i}")
+        if rename:
+            i = max(idx) if isinstance(idx, Iterable) else idx
+            cls.logger = Logger.copy(cls.logger, name=f"{cls.logger.name}_trial_{i}")
 
         # Perform trial and get results
         results_df = pl.DataFrame([cls()], schema=self.results_schema)
 
         # Combine DataFrames
-        for i, key in enumerate(cls.logger.dfs.keys()):
-            i = idx[i] if isinstance(idx, Iterable) else idx
-            col = pl.col(key).suffix(f"_{i}")
-            cls.logger.dfs[key] = cls.logger.dfs.get(key).select(col)
+        if rename:
+            self._make_unique_columns(cls.logger.dfs, idx)
         cls.logger.dfs["results"] = results_df
 
         return cls.logger.dfs
+
+    @staticmethod
+    def _make_unique_columns(
+        dfs: Mapping[str, pl.DataFrame],
+        idx: int | Iterable[int],
+    ) -> None:
+        for i, key in enumerate(dfs):
+            if key == "results":
+                continue
+
+            i = idx[i] if isinstance(idx, Iterable) else idx
+            col = pl.col(key).suffix(f"_{i}")
+            dfs[key] = dfs.get(key).select(col)
 
     def _merge_dfs(
         self, dfs: Mapping[str, pl.DataFrame], filename: Optional[Path] = None
@@ -84,10 +101,31 @@ class Experiment:
                 self.dfs[metric].hstack(df, in_place=True)
 
             # Save DataFrames
-            if filename is not None:
-                filenames = filename_labels(filename, self.metrics)
-                for f, df in zip(filenames, self.dfs.values()):
-                    save(f, df, overwrite=True)
+            self.save(filename, overwrite=True)
+
+    def read(self, filename: Optional[Path] = None) -> None:
+        if filename is None:
+            return
+        else:
+            filename = filename.with_suffix(".csv")
+
+        # TODO: refactor this section
+        metrics = None if self.cls is None else self.cls.logger.dfs.keys()
+        filenames: Iterable[Path] = filename_labels(filename, metrics)
+        if metrics is None:
+            metrics = (f.stem.removeprefix(f"{filename.stem}_") for f in filenames)
+
+        dfs = [load(f) for f in filenames]
+        dfs = dict((m, df) for m, df in zip(metrics, dfs) if df is not None)
+        self._merge_dfs(dfs)
+
+    def save(self, filename: Optional[Path] = None, overwrite: bool = False) -> None:
+        if filename is None:
+            return
+
+        filenames = filename_labels(filename, self.metrics)
+        for f, df in zip(filenames, self.dfs.values()):
+            save(f, df, overwrite=overwrite)
 
     def __call__(
         self,
@@ -95,12 +133,8 @@ class Experiment:
         filename: Optional[Path] = None,
         parallel: bool = False,
     ) -> pl.DataFrame:
-        if filename is not None:  # ideal output filenames
-            metrics = self.cls.logger.dfs.keys()
-            filenames = filename_labels(filename, metrics)
-            dfs = [load(f) for f in filenames]
-            dfs = dict((m, df) for m, df in zip(metrics, dfs) if df is not None)
-            self.dfs.update(dfs)
+        # Import from path
+        self.read(filename)
 
         offset = {len(df.columns) for df in self.dfs.values()}
         offset = max(offset) if len(offset) > 0 else 0
@@ -112,19 +146,19 @@ class Experiment:
 
             with Pool() as pool:
                 args = (i + offset for i in range(self.num_trials))
-                results = pool.imap(self._run_trial, args)
+                results = pool.imap(self._run_trial, args, rename=self.num_trials > 1)
                 for dfs in results:
                     self._merge_dfs(dfs, filename)
         else:
             for i in range(self.num_trials):
-                dfs = self._run_trial(i + offset)
+                dfs = self._run_trial(i + offset, rename=self.num_trials > 1)
                 self._merge_dfs(dfs, filename)
 
         return self.dfs.get("results")
 
     @staticmethod
     def aggregate(name: str, op: str):
-        regex = f"^{name}_[0-9]+$"
+        regex = f"^{name}(_[0-9]+)?$"
         fn = getattr(pl.element(), op)
         expr = pl.concat_list(pl.col(regex)).list.eval(fn()).list.first()
 
@@ -154,7 +188,7 @@ class Experiment:
         if filename is None:
             filenames = (None for _ in self.metrics)
         else:
-            filenames = filename_labels(filename, self.metrics)
+            filenames = filename_labels(filename.with_suffix(".png"), self.metrics)
 
         return tuple(
             draw((fig, ax), f, overwrite=False, include_axis=include_axis)
