@@ -261,7 +261,7 @@ def _run_pool(cmds: Iterable[CLIParameters]):
             experiments[cmd.name] = Experiment()
             experiments[cmd.name].read(filename)
 
-            args += tuple(cmd for _ in range(num_trials))
+            args += (cmd for _ in range(num_trials))
 
         results = pool.imap_unordered(CLIParameters.__call__, args)
 
