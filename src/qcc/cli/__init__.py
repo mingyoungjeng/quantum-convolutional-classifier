@@ -16,7 +16,7 @@ from qcc.experiment import Experiment
 
 if TYPE_CHECKING:
     from typing import Iterable
-    from multiprocessing.pool import AsyncResult
+    from polars import DataFrame
 
 log = logging.getLogger(__name__)
 
@@ -242,13 +242,15 @@ def load(ctx, paths: Iterable[Path], glob: str, parallel: bool, output_dir: Path
 
 
 def _run_pool(cmds: Iterable[CLIParameters]):
+    experiments: dict[Path, Experiment] = dict()
+
     try:  # For CUDA compatibility in PyTorch
         set_start_method("spawn")
     except RuntimeError:
         pass
 
     with Pool() as pool:
-        results: dict[Path, Iterable[AsyncResult]] = dict()
+        args = []
         for cmd in cmds:
             num_trials = cmd.num_trials
             filename = cmd.output_dir / cmd.name / cmd.name
@@ -256,28 +258,28 @@ def _run_pool(cmds: Iterable[CLIParameters]):
             cmd.num_trials = 1
             cmd.output_dir = None
 
-            futures = tuple(pool.apply_async(cmd) for _ in range(num_trials))
-            results[filename] = futures
+            experiments[cmd.name] = Experiment()
+            experiments[cmd.name].read(filename)
 
-        pool.close()
-        pool.join()
+            args += tuple(cmd for _ in range(num_trials))
 
-        # Combine and save results
-        for filename, futures in results.items():
-            experiment = Experiment()
-            experiment.read(filename)
+        results = pool.imap_unordered(CLIParameters.__call__, args)
 
-            offset = {len(df.columns) for df in experiment.dfs.values()}
+        for name, dfs in results:
+            experiment = experiments[name]
+
+            offset = {
+                len(df.columns)
+                for key, df in experiment.dfs.items()
+                if key != "results"
+            }
             offset = max(offset) if len(offset) > 0 else 0
-            for i, future in enumerate(futures):
-                # Get dfs from future
-                dfs: dict = future.get()
 
-                experiment._make_unique_columns(dfs, i + offset)
-                experiment._merge_dfs(dfs)
+            experiment._make_unique_columns(dfs, offset)
+            experiment._merge_dfs(dfs)
 
             experiment.save(filename, overwrite=True)
-            experiment.draw(filename)
+            experiment.draw(filename, overwrite=True)
 
 
 def _setup_module(root: str, obj: str = None):

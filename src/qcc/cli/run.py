@@ -128,4 +128,4 @@ class CLIParameters:
         # Save aggregated loss history figure
         experiment.draw(filename=filename)
 
-        return experiment.dfs
+        return self.name, experiment.dfs

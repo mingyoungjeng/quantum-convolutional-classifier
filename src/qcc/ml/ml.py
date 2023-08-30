@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 import logging
 from itertools import chain, pairwise
@@ -8,7 +8,7 @@ import torch
 from torch import cuda
 
 if TYPE_CHECKING:
-    from typing import Callable, Iterable, Any
+    from typing import Callable
     from numbers import Number
     from torch import Tensor
 
@@ -48,7 +48,7 @@ def cut(
     Returns:
         Tuple[Iterable[Number], Iterable[Number]]: split sub-sequences
     """
-    if not is_iterable(i):
+    if not isinstance(i, Iterable):
         i = (i,)
 
     index = chain((None,), i, (None,))
