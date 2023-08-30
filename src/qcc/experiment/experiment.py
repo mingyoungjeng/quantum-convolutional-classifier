@@ -164,7 +164,13 @@ class Experiment:
 
         return expr.alias(f"{name}_{op}")
 
-    def draw(self, filename: Path = None, overwrite: bool = False, include_axis: bool = False):
+    def draw(
+        self,
+        filename: Path = None,
+        overwrite: bool = False,
+        include_axis: bool = False,
+        close: bool = False,
+    ):
         subplots = []
         for metric, df in self.dfs.items():
             if metric == "results":
@@ -190,7 +196,12 @@ class Experiment:
         else:
             filenames = filename_labels(filename.with_suffix(".png"), self.metrics)
 
-        return tuple(
+        figs = tuple(
             draw((fig, ax), f, overwrite=overwrite, include_axis=include_axis)
             for (fig, ax), f in zip(subplots, filenames)
         )
+
+        if close:
+            plt.close("all")
+
+        return figs

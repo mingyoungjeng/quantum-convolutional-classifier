@@ -16,7 +16,6 @@ from qcc.experiment import Experiment
 
 if TYPE_CHECKING:
     from typing import Iterable
-    from polars import DataFrame
 
 log = logging.getLogger(__name__)
 
@@ -242,7 +241,8 @@ def load(ctx, paths: Iterable[Path], glob: str, parallel: bool, output_dir: Path
 
 
 def _run_pool(cmds: Iterable[CLIParameters]):
-    experiments: dict[Path, Experiment] = dict()
+    experiments: dict[str, Experiment] = dict()
+    output_dir: Path = None
 
     try:  # For CUDA compatibility in PyTorch
         set_start_method("spawn")
@@ -253,7 +253,9 @@ def _run_pool(cmds: Iterable[CLIParameters]):
         args = []
         for cmd in cmds:
             num_trials = cmd.num_trials
-            filename = cmd.output_dir / cmd.name / cmd.name
+            if output_dir is None:
+                output_dir = cmd.output_dir
+            filename = output_dir / cmd.name / cmd.name
 
             cmd.num_trials = 1
             cmd.output_dir = None
@@ -278,8 +280,9 @@ def _run_pool(cmds: Iterable[CLIParameters]):
             experiment._make_unique_columns(dfs, offset)
             experiment._merge_dfs(dfs)
 
+            filename = output_dir / name / name
             experiment.save(filename, overwrite=True)
-            experiment.draw(filename, overwrite=True)
+            experiment.draw(filename, overwrite=True, close=True)
 
 
 def _setup_module(root: str, obj: str = None):
