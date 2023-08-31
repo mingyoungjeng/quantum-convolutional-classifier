@@ -14,6 +14,7 @@ verbose = true
 
 [module_options]
 pre_op = true
+filter_shape = [2, 2, 2]
 
 [optimizer_options]
 lr = 0.001
