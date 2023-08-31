@@ -1,6 +1,6 @@
 CWD=/home/m174j393/work/quantum-convolutional-classifier/test
 
-for file in $CWD/config/**/*mnist*.toml; do
+for file in $CWD/presentation/**/*.toml; do
     sbatch $CWD/sbatch.sh $file
 done
 
