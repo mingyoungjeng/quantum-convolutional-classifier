@@ -1,4 +1,4 @@
-module = "qcc.quantum.pennylane.ansatz.ConvolutionPoolingAnsatz"
+module = "qcc.quantum.pennylane.ansatz.MQCCOptimized"
 dataset = "torchvision.datasets.MNIST"
 optimizer = "torch.optim.Adam"
 loss = "torch.nn.CrossEntropyLoss"

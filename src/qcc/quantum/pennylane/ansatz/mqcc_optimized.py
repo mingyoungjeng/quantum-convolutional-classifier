@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from qcc.quantum.pennylane import Parameters, Unitary
 
 
-class ConvolutionPoolingAnsatz(Ansatz):
+class MQCCOptimized(Ansatz):
     __slots__ = (
         "_data_qubits",
         "_ancilla_qubits",

@@ -1,4 +1,4 @@
-module = "qcc.quantum.pennylane.ansatz.ConvolutionAnsatz"
+module = "qcc.quantum.pennylane.ansatz.MQCC"
 dataset = "torchvision.datasets.FashionMNIST"
 optimizer = "torch.optim.Adam"
 loss = "torch.nn.CrossEntropyLoss"

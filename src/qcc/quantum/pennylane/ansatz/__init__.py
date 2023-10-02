@@ -15,5 +15,5 @@ from .naive import NaiveAnsatz
 from .rapid import RapidAnsatz
 
 # v4
-from .convolution import ConvolutionAnsatz
-from .convolution_pooling import ConvolutionPoolingAnsatz
+from .mqcc import MQCC
+from .mqcc_optimized import MQCCOptimized

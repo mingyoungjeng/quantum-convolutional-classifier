@@ -7,7 +7,7 @@ from qcc.quantum import to_qubits
 from qcc.quantum.pennylane import Convolution, Qubits, Unitary
 from qcc.quantum.pennylane.ansatz import Ansatz
 
-from qcc.quantum.pennylane.ansatz.convolution_pooling import ConvolutionPoolingAnsatz
+from qcc.quantum.pennylane.ansatz.mqcc_optimized import MQCCOptimized
 from qcc.quantum.pennylane.c2q import ConvolutionAngleFilter
 from qcc.quantum.pennylane.fully_connected import FullyConnected
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from qcc.quantum.pennylane.ansatz.ansatz import Statevector
 
 
-class ConvolutionAnsatz(ConvolutionPoolingAnsatz):
+class MQCC(MQCCOptimized):
     def __init__(self, *args, pooling: bool = False, **kwargs):
         self.pooling = pooling
         super().__init__(*args, **kwargs)
