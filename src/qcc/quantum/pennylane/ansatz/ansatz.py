@@ -77,7 +77,12 @@ class Ansatz(Module, metaclass=ABCMeta):
 
     @abstractmethod
     def circuit(self, *params: Parameters) -> Wires:
-        pass
+        """
+        Quantum circuit definition of ansatz
+
+        Returns:
+            Wires: Qubits to measure in little endian order (like in Qiskit)
+        """
 
     @property
     @abstractmethod
@@ -95,7 +100,8 @@ class Ansatz(Module, metaclass=ABCMeta):
         return AmplitudeEmbedding(psi_in, wires, pad_with=0, normalize=True)
 
     def q2c(self, wires: Wires):
-        return qml.probs(wires)
+        # Converts wires from little-endian to big-endian
+        return qml.probs(wires[::-1])
 
     def _circuit(
         self,
