@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING
 from itertools import chain, zip_longest
 
 from qcc.quantum import to_qubits, parity
-from qcc.quantum.pennylane import Convolution, Multiplex, Qubits, QubitsProperty
-from qcc.quantum.pennylane.ansatz import Ansatz
+from qcc.quantum.pennylane import Convolution, Qubits
+from qcc.quantum.pennylane.ansatz.mqcc import MQCC
 from qcc.quantum.pennylane.convolution import define_filter
 from qcc.quantum.pennylane.fully_connected import FullyConnected
 
@@ -15,32 +15,7 @@ if TYPE_CHECKING:
     from qcc.quantum.pennylane import Parameters, Unitary
 
 
-class MQCCOptimized(Ansatz):
-    __slots__ = (
-        "_data_qubits",
-        "_ancilla_qubits",
-        "_feature_qubits",
-        "U_filter",
-        "U_fully_connected",
-        "filter_shape",
-        "num_features",
-        "pre_op",
-        "post_op",
-    )
-
-    data_qubits: Qubits = QubitsProperty(slots=True)
-    ancilla_qubits: Qubits = QubitsProperty(slots=True)
-    feature_qubits: Qubits = QubitsProperty(slots=True)
-
-    filter_shape: Iterable[int]
-    num_features: int
-
-    U_filter: type[Unitary]
-    U_fully_connected: Optional[type[Unitary]]
-
-    pre_op: bool
-    post_op: bool
-
+class MQCCOptimized(MQCC):
     def __init__(
         self,
         qubits: Qubits,
@@ -52,19 +27,17 @@ class MQCCOptimized(Ansatz):
         pre_op: bool = False,
         post_op: bool = False,
     ):
-        self._num_layers = num_layers
-        self.num_features = num_features
-        self.filter_shape = filter_shape
-
-        self.U_filter = U_filter  # pylint: disable=invalid-name
-        self.U_fully_connected = U_fully_connected  # pylint: disable=invalid-name
-        self.pre_op = pre_op
-        self.post_op = post_op
-
-        # Setup feature and ancilla qubits
-        qubits = self._setup_qubits(Qubits(qubits))
-
-        super().__init__(qubits, num_layers)
+        super().__init__(
+            qubits=qubits,
+            num_layers=num_layers,
+            num_features=num_features,
+            filter_shape=filter_shape,
+            U_filter=U_filter,
+            U_fully_connected=U_fully_connected,
+            pre_op=pre_op,
+            post_op=post_op,
+            pooling=True,
+        )
 
     def circuit(self, *params: Parameters) -> Wires:
         (params,) = params
@@ -74,11 +47,11 @@ class MQCCOptimized(Ansatz):
         data_qubits += [[] for _ in range(len(self.filter_shape))]
 
         if self.pre_op:  # Pre-op on ancillas
-            params = self._filter(params, self.ancilla_qubits)
+            params = self._filter(params, self.filter_qubits)
 
         # Convolution layers
         for i in range(self.num_layers):  # pylint: disable=unused-variable
-            qubits = data_qubits + self.ancilla_qubits
+            qubits = data_qubits + self.filter_qubits
 
             ### SHIFT
             Convolution.shift(fltr_shape_q, qubits, H=False)
@@ -92,10 +65,10 @@ class MQCCOptimized(Ansatz):
                 data_qubits[j] = data_qubits[j][fsq:]
 
         if self.post_op:  # Post-op on ancillas
-            params = self._filter(params, self.ancilla_qubits)
+            params = self._filter(params, self.filter_qubits)
 
         # Fully connected layer
-        meas = zip_longest(self.ancilla_qubits, data_qubits[:n_dim], fillvalue=[])
+        meas = zip_longest(self.filter_qubits, data_qubits[:n_dim], fillvalue=[])
         meas = Qubits(chain(*meas))
         meas += data_qubits[n_dim:] + self.feature_qubits
         meas = meas.flatten()
@@ -129,11 +102,6 @@ class MQCCOptimized(Ansatz):
         result = super().forward(inputs)
         return parity(result) if self.U_fully_connected is None else result
 
-    @property
-    def max_layers(self) -> int:
-        dims_qubits = zip(self.data_qubits, to_qubits(self.filter_shape))
-        return max((len(q) // max(f, 1) for q, f in dims_qubits))
-
     ### PRIVATE
 
     def _setup_qubits(self, qubits: Qubits) -> Qubits:
@@ -144,35 +112,17 @@ class MQCCOptimized(Ansatz):
         # Data and ancilla qubits
         fltr_shape_q = to_qubits(self.filter_shape)
         pairs = (([q[fsq:]], [q[:fsq]]) for q, fsq in zip(qubits, fltr_shape_q))
-        self.data_qubits, self.ancilla_qubits = zip(*pairs)
+        self.data_qubits, self.filter_qubits = zip(*pairs)
 
         # Catches scenarios where user defines filter
         # with smaller dimensionality than data
         self.data_qubits += qubits[len(fltr_shape_q) :]
 
+        print(self.data_qubits, self.filter_qubits)
+
         return qubits + self.feature_qubits
-
-    def _filter(self, params, qubits: Qubits):
-        """Wrapper around self.U_filter that replaces Convolution.filter"""
-
-        # Setup params
-        qubits = Qubits(q[:fsq] for q, fsq in zip(qubits, to_qubits(self.filter_shape)))
-        num_params = self.num_features * self.U_filter.shape(qubits.total)
-        filter_params, params = params[:num_params], params[num_params:]
-        shape = (self.num_features, len(filter_params) // self.num_features)
-        filter_params = filter_params.reshape(shape)
-
-        # Setup wires
-        Multiplex(
-            filter_params,
-            qubits.flatten(),
-            self.feature_qubits.flatten(),
-            self.U_filter,
-        )
-
-        return params  # Leftover parameters
 
     @property
     def _data_wires(self) -> Wires:
-        data_qubits = zip_longest(self.ancilla_qubits, self.data_qubits, fillvalue=[])
+        data_qubits = zip_longest(self.filter_qubits, self.data_qubits, fillvalue=[])
         return Qubits(chain(*data_qubits)).flatten()
