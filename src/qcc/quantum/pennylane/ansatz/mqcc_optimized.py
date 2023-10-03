@@ -68,12 +68,16 @@ class MQCCOptimized(MQCC):
             params = self._filter(params, self.filter_qubits)
 
         # Fully connected layer
-        meas = zip_longest(self.filter_qubits, data_qubits[:n_dim], fillvalue=[])
-        meas = Qubits(chain(*meas))
-        meas += data_qubits[n_dim:] + self.feature_qubits
+        controls = zip_longest(data_qubits[n_dim:], self.filter_qubits, fillvalue=[])
+        controls = Qubits(sum(*ctrls) for ctrls in controls)
+        # print(controls)
+
+        meas = Qubits(data_qubits[:n_dim] + self.feature_qubits)
+        # print("meas", meas)
         meas = meas.flatten()
 
         if self.U_fully_connected is not None:
+            meas = controls.flatten() + meas
             self.U_fully_connected(params, meas[::-1])
             return meas[-1]
 
@@ -117,8 +121,6 @@ class MQCCOptimized(MQCC):
         # Catches scenarios where user defines filter
         # with smaller dimensionality than data
         self.data_qubits += qubits[len(fltr_shape_q) :]
-
-        print(self.data_qubits, self.filter_qubits)
 
         return qubits + self.feature_qubits
 

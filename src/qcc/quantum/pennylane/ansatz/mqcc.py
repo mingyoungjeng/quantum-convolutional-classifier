@@ -77,7 +77,6 @@ class MQCC(Ansatz):
 
         # Setup feature and ancilla qubits
         qubits = self._setup_qubits(Qubits(qubits))
-        print(qubits)
 
         super().__init__(qubits, num_layers)
 
