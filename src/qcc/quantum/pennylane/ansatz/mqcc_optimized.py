@@ -74,10 +74,9 @@ class MQCCOptimized(MQCC):
 
         meas = Qubits(data_qubits[:n_dim] + self.feature_qubits)
         # print("meas", meas)
-        meas = meas.flatten()
 
         if self.U_fully_connected is not None:
-            meas = controls.flatten() + meas
+            meas = Qubits(controls + meas).flatten()
             self.U_fully_connected(params, meas[::-1])
             return meas[-1]
 
