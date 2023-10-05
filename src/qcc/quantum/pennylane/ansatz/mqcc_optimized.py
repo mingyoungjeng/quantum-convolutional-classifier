@@ -7,7 +7,7 @@ from pennylane.ops import Hadamard
 
 from qcc.quantum import to_qubits, parity
 from qcc.quantum.pennylane import Convolution, Qubits
-from qcc.quantum.pennylane.ansatz.mqcc import MQCC
+from qcc.quantum.pennylane.ansatz import Ansatz, MQCC
 from qcc.quantum.pennylane.convolution import define_filter
 from qcc.quantum.pennylane.fully_connected import FullyConnected
 
@@ -113,7 +113,7 @@ class MQCCOptimized(MQCC):
         return num_params
 
     def forward(self, inputs):
-        result = super().forward(inputs)
+        result = Ansatz.forward(self, inputs)
         return parity(result) if self.U_fully_connected is None else result
 
     ### PRIVATE

@@ -120,7 +120,7 @@ class CLIParameters:
         metrics = ("median", "mean", "max", "min", "std")
         for name in results.columns:
             col = results[name]
-            msg = (f"{metric}={getattr(col, metric)():.05}" for metric in metrics)
+            msg = (f"{metric}={getattr(col, metric)()}" for metric in metrics)
             msg = ", ".join(msg)
             msg = f"{name}: {msg}"
             model.logger.info(msg)
