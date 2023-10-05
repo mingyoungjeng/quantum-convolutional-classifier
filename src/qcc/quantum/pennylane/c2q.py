@@ -6,7 +6,7 @@ import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
 from qcc.quantum import flatten_array, normalize
-from qcc.quantum.pennylane import Multiplex, Unitary
+from qcc.quantum.pennylane import Unitary
 
 if TYPE_CHECKING:
     from typing import Iterable
@@ -97,12 +97,15 @@ class C2Q(Operation):
                 phi, t = -t, -phi
 
             if j == 0 and t.any():
-                op_list += [Multiplex(-t, wires[j], wires[j + 1 :], qml.RZ)]
+                ops = tuple(qml.RZ(-angle, wires=wires[j]) for angle in t)
+                op_list += [qml.Select(ops, wires[j + 1 :])]
 
-            op_list += [Multiplex(theta, wires[j], wires[j + 1 :], qml.RY)]
+            ops = tuple(qml.RY(angle, wires=wires[j]) for angle in theta)
+            op_list += [qml.Select(ops, wires[j + 1 :])]
 
             if j == 0 and phi.any():
-                op_list += [Multiplex(phi, wires[j], wires[j + 1 :], qml.RZ)]
+                ops = tuple(qml.RZ(angle, wires=wires[j]) for angle in phi)
+                op_list += [qml.Select(ops, wires[j + 1 :])]
 
         return op_list
 

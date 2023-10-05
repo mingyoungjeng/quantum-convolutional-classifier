@@ -3,12 +3,11 @@ from typing import TYPE_CHECKING, Iterable
 
 from math import sqrt
 
-from pennylane.ops import Hadamard
+from pennylane import Hadamard, Select
 
 from qcc.quantum import to_qubits
 from qcc.quantum.pennylane import (
     Convolution,
-    Multiplex,
     Qubits,
     Unitary,
     QubitsProperty,
@@ -197,11 +196,8 @@ class MQCC(Ansatz):
         filter_params = filter_params.reshape(shape)
 
         # Setup wires
-        Multiplex(
-            filter_params,
-            qubits.flatten(),
-            self.feature_qubits.flatten(),
-            self.U_filter,
-        )
+        wires = qubits.flatten()
+        filters = tuple(self.U_filter(fp, wires=wires) for fp in filter_params)
+        Select(filters, self.feature_qubits.flatten())
 
         return params  # Leftover parameters

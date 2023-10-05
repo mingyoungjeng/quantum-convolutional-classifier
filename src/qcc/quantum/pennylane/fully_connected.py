@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 import pennylane as qml
 
 from qcc.quantum import to_qubits
-from qcc.quantum.pennylane import Unitary, Multiplex
+from qcc.quantum.pennylane import Unitary
 
 if TYPE_CHECKING:
     from pennylane.wires import Wires
@@ -22,10 +22,10 @@ class FullyConnected(Unitary):
             wires, controls = wires[0::2], wires[1::2]
             params_i, params = params[: 2 * len(controls)], params[2 * len(controls) :]
 
-            op_list += [
-                Multiplex(params_i[2 * j : 2 * (j + 1)], wire, ctrl, qml.RY)
-                for j, (ctrl, wire) in enumerate(zip(controls, wires))
-            ]
+            for j, (ctrl, wire) in enumerate(zip(controls, wires)):
+                params_j = params_i[2 * j : 2 * (j + 1)]
+                ops = tuple(qml.RY(theta, wires=wire) for theta in params_j)
+                op_list += [qml.Select(ops, ctrl)]
 
         return op_list
 
@@ -51,10 +51,10 @@ class FullyConnectedSimple(Unitary):
         for i in range(num_layers):
             wires, controls = wires[0::2], wires[1::2]
 
-            op_list += [
-                Multiplex(params[2 * i : 2 * (i + 1)], wire, ctrl, qml.RY)
-                for ctrl, wire in zip(controls, wires)
-            ]
+            params_i = params[2 * i : 2 * (i + 1)]
+            for ctrl, wire in zip(controls, wires):
+                ops = tuple(qml.RY(theta, wires=wire) for theta in params_i)
+                op_list += [qml.Select(ops, ctrl)]
 
         return op_list
 

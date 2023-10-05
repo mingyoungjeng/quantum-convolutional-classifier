@@ -8,7 +8,6 @@ from .qubits import Qubits, QubitsProperty
 from .unitary import Unitary
 
 from .shift import Shift
-from .multiplex import Multiplex
 from .c2q import C2Q
 from .convolution import Convolution
 
