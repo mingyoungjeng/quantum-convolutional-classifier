@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING
 
 from itertools import chain, zip_longest
 
+from pennylane.ops import Hadamard
+
 from qcc.quantum import to_qubits, parity
 from qcc.quantum.pennylane import Convolution, Qubits
 from qcc.quantum.pennylane.ansatz.mqcc import MQCC
@@ -16,6 +18,11 @@ if TYPE_CHECKING:
 
 
 class MQCCOptimized(MQCC):
+    __slots__ = "pre_op", "post_op"
+
+    pre_op: bool
+    post_op: bool
+
     def __init__(
         self,
         qubits: Qubits,
@@ -27,6 +34,9 @@ class MQCCOptimized(MQCC):
         pre_op: bool = False,
         post_op: bool = False,
     ):
+        self.pre_op = pre_op
+        self.post_op = post_op
+
         super().__init__(
             qubits=qubits,
             num_layers=num_layers,
@@ -34,8 +44,6 @@ class MQCCOptimized(MQCC):
             filter_shape=filter_shape,
             U_filter=U_filter,
             U_fully_connected=U_fully_connected,
-            pre_op=pre_op,
-            post_op=post_op,
             pooling=True,
         )
 
@@ -45,6 +53,9 @@ class MQCCOptimized(MQCC):
         fltr_shape_q = to_qubits(self.filter_shape)
         data_qubits = self.data_qubits
         data_qubits += [[] for _ in range(len(self.filter_shape))]
+
+        for qubit in self.feature_qubits.flatten():
+            Hadamard(wires=qubit)
 
         if self.pre_op:  # Pre-op on ancillas
             params = self._filter(params, self.filter_qubits)

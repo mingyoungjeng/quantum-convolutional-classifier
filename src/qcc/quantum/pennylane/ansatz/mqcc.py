@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING, Iterable
 
 from math import sqrt
 
+from pennylane.ops import Hadamard
+
 from qcc.quantum import to_qubits
 from qcc.quantum.pennylane import (
     Convolution,
@@ -12,7 +14,6 @@ from qcc.quantum.pennylane import (
     QubitsProperty,
 )
 from qcc.quantum.pennylane.ansatz import Ansatz
-
 from qcc.quantum.pennylane.c2q import ConvolutionAngleFilter
 from qcc.quantum.pennylane.fully_connected import FullyConnected
 from qcc.quantum.pennylane.convolution import define_filter
@@ -25,7 +26,7 @@ if TYPE_CHECKING:
 
 
 class MQCC(Ansatz):
-    __slots__ = (
+    (
         "_data_qubits",
         "_filter_qubits",
         "_feature_qubits",
@@ -33,8 +34,6 @@ class MQCC(Ansatz):
         "U_fully_connected",
         "filter_shape",
         "num_features",
-        "pre_op",
-        "post_op",
         "pooling",
     )
 
@@ -48,9 +47,6 @@ class MQCC(Ansatz):
     U_filter: type[Unitary]
     U_fully_connected: Optional[type[Unitary]]
 
-    pre_op: bool
-    post_op: bool
-
     pooling: bool
 
     def __init__(
@@ -61,8 +57,6 @@ class MQCC(Ansatz):
         filter_shape: Iterable[int] = (2, 2),
         U_filter: type[Unitary] = define_filter(num_layers=4),
         U_fully_connected: Optional[type[Unitary]] = FullyConnected,
-        pre_op: bool = False,
-        post_op: bool = False,
         pooling: bool = False,
     ):
         self._num_layers = num_layers
@@ -71,9 +65,11 @@ class MQCC(Ansatz):
 
         self.U_filter = U_filter  # pylint: disable=invalid-name
         self.U_fully_connected = U_fully_connected  # pylint: disable=invalid-name
-        self.pre_op = pre_op
-        self.post_op = post_op
         self.pooling = pooling
+
+        if len(filter_shape) > len(qubits):
+            msg = f"Filter dimensionality ({len(filter_shape)}) is greater than data dimensionality ({len(qubits)})"
+            raise ValueError(msg)
 
         # Setup feature and ancilla qubits
         qubits = self._setup_qubits(Qubits(qubits))
@@ -89,6 +85,9 @@ class MQCC(Ansatz):
             self.filter_qubits[fltr_dim * i : fltr_dim * (i + 1)]
             for i in range(self.num_layers)
         ]
+
+        for qubit in self.feature_qubits.flatten():
+            Hadamard(wires=qubit)
 
         # if self.pre_op:  # Pre-op on ancillas
         #     for ancilla in filter_qubits:

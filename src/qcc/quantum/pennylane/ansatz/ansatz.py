@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 import logging
+from enum import StrEnum
 from abc import abstractmethod, ABCMeta
 
 from torch.nn import Module
@@ -14,7 +15,7 @@ from qcc.ml import init_params, reset_parameter
 from qcc.file import draw
 
 if TYPE_CHECKING:
-    from typing import Iterable, Optional
+    from typing import Optional
     from numbers import Number
     from pennylane.wires import Wires
     from pennylane.operation import Operation
@@ -25,16 +26,31 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+class Q2CMethod(StrEnum):
+    Probabilities = "probs"
+    ExpectationValue = "expval"
+
+
 class Ansatz(Module, metaclass=ABCMeta):
-    __slots__ = "_qubits", "_num_layers", "_qnode"
+    __slots__ = "_qubits", "_num_layers", "_qnode", "num_classes", "q2c_method"
 
     qubits: Qubits = QubitsProperty(slots=True)
     _num_layers: int
+    num_classes: int
+    q2c_method: Q2CMethod
 
-    def __init__(self, qubits: Qubits, num_layers: int = 0):
+    def __init__(
+        self,
+        qubits: Qubits,
+        num_layers: int = 0,
+        num_classes: int = 2,
+        q2c_method: Q2CMethod | str = Q2CMethod.Probabilities,
+    ):
         super().__init__()
         self.qubits = qubits
         self.num_layers = num_layers
+        self.num_classes = num_classes
+        self.q2c_method = Q2CMethod(q2c_method)
 
         self.register_parameter("weight", init_params(self.shape))
         self.reset_parameters()
@@ -101,7 +117,15 @@ class Ansatz(Module, metaclass=ABCMeta):
 
     def q2c(self, wires: Wires):
         # Converts wires from little-endian to big-endian
-        return qml.probs(wires[::-1])
+        wires = wires[::-1] if isinstance(wires, Iterable) else wires
+
+        match self.q2c_method:
+            case Q2CMethod.Probabilities:
+                return qml.probs(wires)
+            case Q2CMethod.ExpectationValue:
+                return tuple(qml.expval(qml.PauliZ(w)) for w in wires)
+            case _:
+                return
 
     def _circuit(
         self,
@@ -117,7 +141,10 @@ class Ansatz(Module, metaclass=ABCMeta):
         result = self.qnode(psi_in=psi_in)  # pylint: disable=not-callable
 
         # Makes sure batch is 2D array
-        return result.unsqueeze(0) if result.dim() == 1 else result
+        if result.dim() == 1:
+            result = result.unsqueeze(0)
+            
+        return result[:, : self.num_classes]
 
     # Miscellaneous
 
