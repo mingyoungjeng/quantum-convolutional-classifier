@@ -27,6 +27,8 @@ class MQCCOptimized(MQCC):
         self,
         qubits: Qubits,
         num_layers: int = None,
+        num_classes: int = 2,
+        q2c_method: Ansatz.Q2CMethod | str = Ansatz.Q2CMethod.Probabilities,
         num_features: int = 1,
         filter_shape: Iterable[int] = (2, 2),
         U_filter: type[Unitary] = define_filter(num_layers=4),
@@ -40,6 +42,8 @@ class MQCCOptimized(MQCC):
         super().__init__(
             qubits=qubits,
             num_layers=num_layers,
+            num_classes=num_classes,
+            q2c_method=q2c_method,
             num_features=num_features,
             filter_shape=filter_shape,
             U_filter=U_filter,
@@ -86,12 +90,16 @@ class MQCCOptimized(MQCC):
         meas = Qubits(data_qubits[:n_dim] + self.feature_qubits)
         # print("meas", meas)
 
-        if self.U_fully_connected is not None:
-            meas = Qubits(controls + meas).flatten()
-            self.U_fully_connected(params, meas[::-1])
-            return meas[-1]
+        if self.U_fully_connected is None:
+            return meas.flatten()
 
-        return meas
+        meas = Qubits(controls + meas).flatten()
+        self.U_fully_connected(params, wires=meas[::-1])
+        # , num_out=self._num_meas
+        return meas[-1]
+
+        self.U_fully_connected(params, wires=meas.flatten()[::-1]),
+        return meas.flatten()[-1] + controls.flatten()
 
     @property
     def shape(self) -> int:
@@ -102,18 +110,19 @@ class MQCCOptimized(MQCC):
         num_params *= self.U_filter.shape(sum(fltr_shape_q))
 
         for i in range(self.num_layers):
-            fsq = (1 for (d, f) in zip(data_shape_q, fltr_shape_q) if d - (i * f))
+            fsq = (1 for (d, f) in zip(data_shape_q, fltr_shape_q) if d - (i * f) > 0)
             num_params += self.U_filter.shape(sum(fsq))
 
         num_params *= self.num_features
 
         if self.U_fully_connected:
+            # num_params += self.U_fully_connected.shape(self._num_meas)
             num_params += self.U_fully_connected.shape(self.qubits.flatten())
+            # , num_out=self._num_meas
 
         return num_params
 
-    def forward(self, inputs):
-        result = Ansatz.forward(self, inputs)
+    def _forward(self, result):
         return parity(result) if self.U_fully_connected is None else result
 
     ### PRIVATE
@@ -138,3 +147,13 @@ class MQCCOptimized(MQCC):
     def _data_wires(self) -> Wires:
         data_qubits = zip_longest(self.filter_qubits, self.data_qubits, fillvalue=[])
         return Qubits(chain(*data_qubits)).flatten()
+
+    # @property
+    # def _num_meas(self) -> int:
+    #     data_shape_q = self.data_qubits.shape
+    #     fltr_shape_q = to_qubits(self.filter_shape)
+
+    #     fsq = (d - (self.num_layers * f) for d, f in zip(data_shape_q, fltr_shape_q))
+    #     fsq = (max(0, q) for q in fsq)
+
+    #     return sum(fsq) + self.feature_qubits.total

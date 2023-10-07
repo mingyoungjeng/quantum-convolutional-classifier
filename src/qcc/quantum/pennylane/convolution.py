@@ -6,7 +6,7 @@ from itertools import tee
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
-from pennylane.ops import Controlled
+from pennylane.ops import Controlled, QubitUnitary
 from pennylane.wires import Wires
 
 from qcc.quantum import to_qubits, wires_to_qubits
@@ -151,6 +151,7 @@ class Convolution(Operation):
     @staticmethod
     def filter(fltr: np.ndarray, qubits):
         qubits = Qubits(q[:fsq] for q, fsq in zip(qubits, to_qubits(fltr.shape)))
+
         return [C2Q(fltr, wires=qubits.flatten(), transpose=True)]
 
     @staticmethod

@@ -52,6 +52,8 @@ class MQCC(Ansatz):
         self,
         qubits: Qubits,
         num_layers: int = None,
+        num_classes: int = 2,
+        q2c_method: Ansatz.Q2CMethod | str = Ansatz.Q2CMethod.Probabilities,
         num_features: int = 1,
         filter_shape: Iterable[int] = (2, 2),
         U_filter: type[Unitary] = define_filter(num_layers=4),
@@ -73,7 +75,7 @@ class MQCC(Ansatz):
         # Setup feature and ancilla qubits
         qubits = self._setup_qubits(Qubits(qubits))
 
-        super().__init__(qubits, num_layers)
+        super().__init__(qubits, num_layers, num_classes, q2c_method)
 
     def circuit(self, *params: Parameters) -> Wires:
         (params,) = params
@@ -145,9 +147,7 @@ class MQCC(Ansatz):
 
         return num_params
 
-    def forward(self, psi_in: Optional[Statevector] = None):
-        result = super().forward(psi_in)
-
+    def _forward(self, result):
         # Get subset of output
         norm = sqrt(2**self.filter_qubits.total)
         n = 2 ** (1 + self.feature_qubits.total)
@@ -195,7 +195,7 @@ class MQCC(Ansatz):
         shape = (self.num_features, len(filter_params) // self.num_features)
         filter_params = filter_params.reshape(shape)
 
-        # Setup wires
+        # Apply filter
         wires = qubits.flatten()
         filters = tuple(self.U_filter(fp, wires=wires) for fp in filter_params)
         Select(filters, self.feature_qubits.flatten())

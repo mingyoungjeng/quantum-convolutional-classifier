@@ -11,13 +11,25 @@ if TYPE_CHECKING:
 
 
 class FullyConnected(Unitary):
+    def __init__(
+        self,
+        *params,
+        wires: Wires,
+        num_out: int = 1,
+        id=None,
+    ):
+        self._hyperparameters = {"num_out": num_out}
+
+        super().__init__(*params, wires=wires, id=id)
+
     @staticmethod
-    def compute_decomposition(*params, wires, **_):
+    def compute_decomposition(*params, wires, **hyperparameters):
         # Keep the type-checker happy
         (params,) = params
+        num_out = hyperparameters.get("num_out", 1)
 
         op_list = []
-        num_layers = to_qubits(len(wires))
+        num_layers = to_qubits(len(wires) / num_out)
         for i in range(num_layers):
             wires, controls = wires[0::2], wires[1::2]
             params_i, params = params[: 2 * len(controls)], params[2 * len(controls) :]
@@ -30,9 +42,12 @@ class FullyConnected(Unitary):
         return op_list
 
     @staticmethod
-    def _shape(num_wires: Wires, **_) -> int:
+    def _shape(num_wires: Wires, **hyperparameters) -> int:
+        num_out = hyperparameters.get("num_out", 1)
+
         total = 0
-        for _ in range(to_qubits(num_wires)):
+        num_layers = to_qubits(num_wires / num_out)
+        for _ in range(num_layers):
             total += num_wires // 2
             num_wires = (num_wires + 1) // 2
         return 2 * total

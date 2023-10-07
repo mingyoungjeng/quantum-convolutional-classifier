@@ -1,7 +1,9 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import torch
 import numpy as np
+import scipy.linalg as la
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
@@ -13,6 +15,7 @@ if TYPE_CHECKING:
     from pennylane.wires import Wires
 
 
+# TODO: use qubit unitary
 class C2Q(Operation):
     num_wires = AnyWires
 
@@ -108,6 +111,23 @@ class C2Q(Operation):
                 op_list += [qml.Select(ops, wires[j + 1 :])]
 
         return op_list
+
+
+class ConvolutionFilter(Unitary):
+    @staticmethod
+    def compute_decomposition(params: torch.Tensor, wires, **_):
+        # TODO: generalize
+        tmp = params.cpu().detach().unsqueeze(0)
+        nullspace = torch.tensor(la.null_space(tmp))
+
+        U = torch.hstack((params.unsqueeze(1).cuda(), nullspace.cuda()))
+        U = U.T
+
+        return [qml.QubitUnitary(U, wires=wires)]
+
+    @staticmethod
+    def _shape(num_wires: Wires, **_) -> int:
+        return 2**num_wires
 
 
 class ConvolutionAngleFilter(Unitary):

@@ -5,6 +5,7 @@ import logging
 from enum import StrEnum
 from abc import abstractmethod, ABCMeta
 
+import torch
 from torch.nn import Module
 import pennylane as qml
 from pennylane.templates import AmplitudeEmbedding
@@ -26,11 +27,6 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class Q2CMethod(StrEnum):
-    Probabilities = "probs"
-    ExpectationValue = "expval"
-
-
 class Ansatz(Module, metaclass=ABCMeta):
     __slots__ = "_qubits", "_num_layers", "_qnode", "num_classes", "q2c_method"
 
@@ -38,6 +34,10 @@ class Ansatz(Module, metaclass=ABCMeta):
     _num_layers: int
     num_classes: int
     q2c_method: Q2CMethod
+
+    class Q2CMethod(StrEnum):
+        Probabilities = "probs"
+        ExpectationValue = "expval"
 
     def __init__(
         self,
@@ -50,7 +50,7 @@ class Ansatz(Module, metaclass=ABCMeta):
         self.qubits = qubits
         self.num_layers = num_layers
         self.num_classes = num_classes
-        self.q2c_method = Q2CMethod(q2c_method)
+        self.q2c_method = self.Q2CMethod(q2c_method)
 
         self.register_parameter("weight", init_params(self.shape))
         self.reset_parameters()
@@ -120,9 +120,9 @@ class Ansatz(Module, metaclass=ABCMeta):
         wires = wires[::-1] if isinstance(wires, Iterable) else wires
 
         match self.q2c_method:
-            case Q2CMethod.Probabilities:
+            case self.Q2CMethod.Probabilities:
                 return qml.probs(wires)
-            case Q2CMethod.ExpectationValue:
+            case self.Q2CMethod.ExpectationValue:
                 return tuple(qml.expval(qml.PauliZ(w)) for w in wires)
             case _:
                 return
@@ -140,13 +140,32 @@ class Ansatz(Module, metaclass=ABCMeta):
     def forward(self, psi_in: Optional[Statevector] = None):
         result = self.qnode(psi_in=psi_in)  # pylint: disable=not-callable
 
+        if self.q2c_method == self.Q2CMethod.ExpectationValue:
+            result = torch.vstack(result).T
+            result = (result + 1) / 2
+
         # Makes sure batch is 2D array
         if result.dim() == 1:
             result = result.unsqueeze(0)
-            
+        
+        result = self._forward(result)
+        
         return result[:, : self.num_classes]
+    
+    def _forward(self, result):
+        return result
 
     # Miscellaneous
+
+    @property
+    def _num_meas(self) -> int:
+        match self.q2c_method:
+            case self.Q2CMethod.Probabilities:
+                return to_qubits(self.num_classes)
+            case self.Q2CMethod.ExpectationValue:
+                return self.num_classes
+            case _:
+                return 0
 
     def reset_parameters(self):
         reset_parameter(self.get_parameter("weight"))
