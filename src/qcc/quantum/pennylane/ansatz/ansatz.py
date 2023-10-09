@@ -140,18 +140,23 @@ class Ansatz(Module, metaclass=ABCMeta):
     def forward(self, psi_in: Optional[Statevector] = None):
         result = self.qnode(psi_in=psi_in)  # pylint: disable=not-callable
 
-        if self.q2c_method == self.Q2CMethod.ExpectationValue:
-            result = torch.vstack(result).T
-            result = (result + 1) / 2
+        match self.q2c_method:
+            case self.Q2CMethod.ExpectationValue:
+                result = torch.vstack(result).T
+                result = (result + 1) / 2
+            # case self.Q2CMethod.Probabilities:
+            #     result = torch.sqrt(result)
+            case _:
+                pass
 
         # Makes sure batch is 2D array
         if result.dim() == 1:
             result = result.unsqueeze(0)
-        
+
         result = self._forward(result)
-        
+
         return result[:, : self.num_classes]
-    
+
     def _forward(self, result):
         return result
 
