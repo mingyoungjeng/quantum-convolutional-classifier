@@ -32,7 +32,7 @@ class MQCCOptimized(MQCC):
         num_features: int = 1,
         filter_shape: Iterable[int] = (2, 2),
         U_filter: type[Unitary] = define_filter(num_layers=4),
-        U_fully_connected: Optional[type[Unitary]] = FullyConnected,
+        U_fully_connected: Optional[type[Unitary]] = define_filter(num_layers=2),
         pre_op: bool = False,
         post_op: bool = False,
     ):

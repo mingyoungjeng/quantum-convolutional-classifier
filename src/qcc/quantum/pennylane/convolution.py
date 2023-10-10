@@ -40,6 +40,7 @@ class FilterQML(Unitary):
         op: type[Operation] = qml.RY,
         num_layers: int = 1,
         id=None,
+        **_,
     ):
         self._hyperparameters = {"op": op, "num_layers": num_layers}
 
