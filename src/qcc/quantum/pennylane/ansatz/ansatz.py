@@ -8,6 +8,7 @@ from abc import abstractmethod, ABCMeta
 import torch
 from torch.nn import Module
 import pennylane as qml
+from pennylane.operation import Tensor
 from pennylane.templates import AmplitudeEmbedding
 
 from qcc.quantum import to_qubits, wires_to_qubits
@@ -38,6 +39,7 @@ class Ansatz(Module, metaclass=ABCMeta):
     class Q2CMethod(StrEnum):
         Probabilities = "probs"
         ExpectationValue = "expval"
+        Parity = "parity"
 
     def __init__(
         self,
@@ -124,6 +126,8 @@ class Ansatz(Module, metaclass=ABCMeta):
                 return qml.probs(wires)
             case self.Q2CMethod.ExpectationValue:
                 return tuple(qml.expval(qml.PauliZ(w)) for w in wires)
+            case self.Q2CMethod.Parity:
+                return qml.expval(Tensor(*(qml.PauliZ(w) for w in wires)))
             case _:
                 return
 
@@ -146,6 +150,9 @@ class Ansatz(Module, metaclass=ABCMeta):
                 result = (result + 1) / 2
             # case self.Q2CMethod.Probabilities:
             #     result = torch.sqrt(result)
+            case self.Q2CMethod.Parity:
+                result = (result + 1) / 2
+                result = torch.vstack((result, 1 - result)).T
             case _:
                 pass
 
