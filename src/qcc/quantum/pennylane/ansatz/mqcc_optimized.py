@@ -94,9 +94,18 @@ class MQCCOptimized(MQCC):
             return meas.flatten()
 
         meas = Qubits(controls + meas).flatten()
-        self.U_fully_connected(params, wires=meas[::-1])
+        self.U_fully_connected(params, wires=meas[::-1], num_out=self._num_meas)
         # , num_out=self._num_meas
-        return meas[-1]
+
+        match self.q2c_method:
+            case self.Q2CMethod.Probabilities:
+                return meas[-1]
+            case self.Q2CMethod.ExpectationValue:
+                return meas[3], meas[-1]
+            case self.Q2CMethod.Parity:
+                return meas
+            case _:
+                return
 
         self.U_fully_connected(params, wires=meas.flatten()[::-1]),
         return meas.flatten()[-1] + controls.flatten()
@@ -117,7 +126,9 @@ class MQCCOptimized(MQCC):
 
         if self.U_fully_connected:
             # num_params += self.U_fully_connected.shape(self._num_meas)
-            num_params += self.U_fully_connected.shape(self.qubits.flatten())
+            num_params += self.U_fully_connected.shape(
+                self.qubits.flatten(), num_out=self._num_meas
+            )
             # , num_out=self._num_meas
 
         return num_params

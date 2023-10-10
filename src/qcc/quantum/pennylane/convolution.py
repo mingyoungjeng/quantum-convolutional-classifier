@@ -20,11 +20,11 @@ if TYPE_CHECKING:
 
 def define_filter(op: type[Operation] = qml.RY, num_layers: int = 1):
     class Wrapper(FilterQML):
-        def __init__(self, *params, wires: Wires, id=None):
+        def __init__(self, *params, wires: Wires, id=None, **_):
             super().__init__(*params, wires=wires, op=op, num_layers=num_layers, id=id)
 
         @staticmethod
-        def _shape(num_wires: int):
+        def _shape(num_wires: int, **_):
             return FilterQML._shape(num_wires, op=op, num_layers=num_layers)
 
     return Wrapper

@@ -176,6 +176,8 @@ class Ansatz(Module, metaclass=ABCMeta):
                 return to_qubits(self.num_classes)
             case self.Q2CMethod.ExpectationValue:
                 return self.num_classes
+            case self.Q2CMethod.Parity:
+                return self.qubits.total
             case _:
                 return 0
 
