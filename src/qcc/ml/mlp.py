@@ -21,8 +21,8 @@ class MultiLayerPerceptron(nn.Sequential):
 
             lst += [
                 nn.Linear(
-                    in_channels=np.prod(dims) if i == 0 else num_features,
-                    out_channels=num_classes if i == num_layers - 1 else num_features,
+                    in_features=np.prod(dims) if i == 0 else num_features,
+                    out_features=num_classes if i == num_layers - 1 else num_features,
                 )
             ]
 
