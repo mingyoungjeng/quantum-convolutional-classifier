@@ -35,6 +35,10 @@ class Layer:
 
     def __call__(self, *args, **kwargs) -> Module:
         kwargs.update(self.params())
+
+        if issubclass(self.module, nn.modules.pooling._AvgPoolNd):
+            del kwargs["dilation"]
+
         return self.module(*args, **kwargs)
 
     def update_dims(self, *dims):
@@ -55,9 +59,9 @@ class Layer:
 
 class ConvolutionalNeuralNetwork(nn.Sequential):
     convolution: Layer = Layer(nn.Conv2d, padding=1)
-    pooling: Layer = Layer(nn.MaxPool2d, stride=2)
+    pooling: Layer = Layer(nn.AvgPool2d, stride=2)
 
-    def __init__(self, dims, num_layers=1, num_features=1, num_classes=2):
+    def __init__(self, dims, num_layers=1, num_features=1, num_classes=2,):
         if len(dims) > 2:
             width, height, channels, *_ = dims
             dims = width, height
@@ -81,7 +85,7 @@ class ConvolutionalNeuralNetwork(nn.Sequential):
             dims = self.pooling.update_dims(*dims)
 
             # ReLU
-            lst += [nn.ReLU()]
+            # lst += [nn.ReLU()]
 
         lst += [
             nn.Flatten(),
