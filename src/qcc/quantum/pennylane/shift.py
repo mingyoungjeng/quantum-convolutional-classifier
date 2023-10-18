@@ -20,17 +20,19 @@ class Shift(Operation):
     def ndim_params(self) -> tuple[int]:
         return (0,)
 
+    # TODO: optimize
     @staticmethod
     def compute_decomposition(*k: int, wires: Wires, **_) -> Iterable[Operation]:
         (k,) = k  # Keep the type-checker happy
 
+        # k = list(f"{k:0{len(wires)}b}")
+
         op_list = []
-        for _ in range(abs(k)):
-            for i, w in enumerate(wires) if k < 0 else reversed(list(enumerate(wires))):
-                if i == 0:
-                    op_list += [qml.PauliX(w)]
-                else:
-                    op_list += [qml.MultiControlledX(wires=list(wires[:i]) + [w])]
+        for i, w in enumerate(wires) if k < 0 else reversed(list(enumerate(wires))):
+            if i == 0:
+                op_list += [qml.PauliX(w)]
+            else:
+                op_list += [qml.MultiControlledX(wires=list(wires[:i]) + [w])]
 
         return op_list
 

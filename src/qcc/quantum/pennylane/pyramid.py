@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from pennylane.wires import Wires
 
 
-class FullyConnected(Unitary):
+class Pyramid(Unitary):
     def __init__(
         self,
         *params,
@@ -55,7 +55,7 @@ class FullyConnected(Unitary):
         # return 2 * to_qubits(len(wires))
 
 
-class FullyConnectedSimple(Unitary):
+class PyramidSimple(Unitary):
     @staticmethod
     def compute_decomposition(*params, wires, **_):
         # Keep the type-checker happy

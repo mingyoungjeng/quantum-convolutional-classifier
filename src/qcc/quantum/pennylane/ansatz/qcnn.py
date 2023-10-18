@@ -10,7 +10,7 @@ from qcc.quantum.pennylane import Unitary
 from qcc.quantum.pennylane.ansatz import Ansatz
 
 
-class BaselineFiltering(Unitary):
+class QCNNConvolution(Unitary):
     @staticmethod
     def compute_decomposition(params, wires, **_):
         return [
@@ -31,7 +31,7 @@ class BaselineFiltering(Unitary):
         return 15
 
 
-class BaselinePooling1(Unitary):
+class QCNNPooling1(Unitary):
     @staticmethod
     def compute_decomposition(params, wires, **_):
         return [
@@ -45,7 +45,7 @@ class BaselinePooling1(Unitary):
         return 2
 
 
-class BaselinePooling2(Unitary):
+class QCNNPooling2(Unitary):
     @staticmethod
     def compute_decomposition(params, wires, **_):
         return [
@@ -60,7 +60,7 @@ class BaselinePooling2(Unitary):
         return 2
 
 
-class BaselinePooling3(Unitary):
+class QCNNPooling3(Unitary):
     @staticmethod
     def compute_decomposition(params, wires, **_):
         m_0 = qml.measure(wires[0])
@@ -73,7 +73,7 @@ class BaselinePooling3(Unitary):
 
 
 # TODO: work with num_classes > 2
-class BaselineAnsatz(Ansatz):
+class QCNN(Ansatz):
     __slots__ = "convolve", "pool"
     convolve: type[Operation]
     pool: type[Operation]
@@ -82,8 +82,8 @@ class BaselineAnsatz(Ansatz):
         self,
         qubits,
         num_layers: int = 1,
-        convolve=BaselineFiltering,
-        pool=BaselinePooling1,
+        convolve=QCNNConvolution,
+        pool=QCNNPooling1,
     ):
         self.convolve = convolve
         self.pool = pool

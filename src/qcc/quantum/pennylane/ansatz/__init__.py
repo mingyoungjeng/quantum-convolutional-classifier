@@ -1,5 +1,5 @@
 from .ansatz import Ansatz
-from .baseline import BaselineAnsatz
+from .qcnn import QCNN
 
 # v0
 from .fully_connected import FullyConnectedAnsatz

@@ -18,7 +18,7 @@ filter_shape = [2, 2, 2]
 # U_filter = "qcc.quantum.pennylane.c2q.ConvolutionAngleFilter"
 num_features = 2
 q2c_method = "probs"
-U_fully_connected = "qcc.quantum.pennylane.fully_connected.FullyConnected"
+U_fully_connected = "qcc.quantum.pennylane.pyramid.Pyramid"
 
 [optimizer_options]
 lr = 0.001

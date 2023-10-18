@@ -14,8 +14,8 @@ from qcc.quantum.pennylane import (
 )
 from qcc.quantum.pennylane.ansatz import Ansatz
 from qcc.quantum.pennylane.c2q import ConvolutionAngleFilter
-from qcc.quantum.pennylane.fully_connected import FullyConnected
-from qcc.quantum.pennylane.convolution import define_filter
+from qcc.quantum.pennylane.pyramid import Pyramid
+from qcc.quantum.pennylane.local import define_filter
 
 if TYPE_CHECKING:
     from typing import Optional

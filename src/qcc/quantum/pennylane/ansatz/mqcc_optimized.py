@@ -8,8 +8,8 @@ from pennylane.ops import Hadamard
 from qcc.quantum import to_qubits, parity
 from qcc.quantum.pennylane import Convolution, Qubits
 from qcc.quantum.pennylane.ansatz import Ansatz, MQCC
-from qcc.quantum.pennylane.convolution import define_filter
-from qcc.quantum.pennylane.fully_connected import FullyConnected
+from qcc.quantum.pennylane.local import define_filter
+from qcc.quantum.pennylane.pyramid import Pyramid
 
 if TYPE_CHECKING:
     from typing import Iterable, Optional
