@@ -179,14 +179,14 @@ class Experiment:
             fig, ax = plt.subplots()
 
             # Aggregate columns
-            exprs = ["mean", "std"]
+            exprs = ["median", "std"]
             exprs = tuple(self.aggregate(metric, expr) for expr in exprs)
             df = df.with_columns(*exprs)  # df.select(*exprs)
 
-            mean = df.get_column(f"{metric}_mean").to_numpy()
+            plot = df.get_column(f"{metric}_{exprs[0]}").to_numpy()
             # std = self.df.get_column(f"{metric}_std").to_numpy()
-            ax.plot(mean)
-            # ax.errorbar(x=range(len(mean)), y=mean, yerr=std)
+            ax.plot(plot)
+            # ax.errorbar(x=range(len(plot)), y=plot, yerr=std)
             ax.set_xlabel("Iteration")
             ax.set_ylabel(metric.capitalize())
             subplots += [(fig, ax)]

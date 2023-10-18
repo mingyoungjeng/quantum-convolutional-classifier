@@ -1,4 +1,4 @@
-module = "qcc.ml.cnn.ConvolutionalNeuralNetwork"
+module = "qcc.ml.mlp.MultiLayerPerceptron"
 dataset = "torchvision.datasets.CIFAR10"
 optimizer = "torch.optim.Adam"
 loss = "torch.nn.CrossEntropyLoss"
