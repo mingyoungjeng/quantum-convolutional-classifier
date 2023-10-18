@@ -183,7 +183,7 @@ class Experiment:
             exprs = tuple(self.aggregate(metric, expr) for expr in exprs)
             df = df.with_columns(*exprs)  # df.select(*exprs)
 
-            plot = df.get_column(f"{metric}_{exprs[0]}").to_numpy()
+            plot = df.get_column(f"{metric}_median").to_numpy()
             # std = self.df.get_column(f"{metric}_std").to_numpy()
             ax.plot(plot)
             # ax.errorbar(x=range(len(plot)), y=plot, yerr=std)
