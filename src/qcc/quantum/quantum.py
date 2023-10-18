@@ -117,17 +117,16 @@ def get_fidelity(x_in, x_out) -> float:
     return fidelity
 
 
-def construct_img(img_data, size, mode: str = None) -> Image.Image:
+def reconstruct(img_data: np.ndarray, size, size_out=None) -> np.ndarray:
+    if size_out is None:
+        size_out = size
+
     new_dims = [2 ** to_qubits(x) for x in size]
     image = np.abs(img_data).astype(np.uint8)  # Image package needs uint8
     image = image.reshape(new_dims, order="F")
-    image = image[tuple([slice(s) for s in size])]  # Remove padded zeroes
+    image = image[tuple([slice(s) for s in size_out])]  # Remove padded zeroes
 
-    if mode == "fits":
-        hdu = fits.PrimaryHDU(image)
-        return fits.HDUList([hdu])
-
-    return Image.fromarray(image, mode)
+    return image
 
 
 def parity(result, num_classes: int = 2):

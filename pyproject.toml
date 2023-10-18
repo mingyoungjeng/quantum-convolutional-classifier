@@ -11,6 +11,7 @@ dependencies = [
     "PennyLane",
     "qiskit",
     "qiskit_machine_learning",
+    "qiskit-aer",
     "torch",
     "torchvision",
     "Pillow",
@@ -21,7 +22,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-development = ["black", "pylint", "ipykernel", "pylatexenc"]
+dev = ["black", "pylint", "ipykernel", "pylatexenc"]
 
 [project.scripts]
 qcc = "qcc.cli:cli"

@@ -5,6 +5,8 @@ from attrs import define, asdict, filters
 from torch import nn
 import numpy as np
 
+from qcc.filters import update_size
+
 if TYPE_CHECKING:
     from torch.nn import Module
 
@@ -16,22 +18,6 @@ class Layer:
     stride: int | Iterable[int] = 1
     padding: int | Iterable[int] = 0
     dilation: int | Iterable[int] = 1
-
-    @staticmethod
-    def _size(
-        size: int,
-        padding: int,
-        dilation: int,
-        kernel_size: int,
-        stride: int,
-    ) -> int:
-        size += 2 * padding
-        size += -dilation * (kernel_size - 1)
-        size += -1
-        size = size // stride
-        size += 1
-
-        return size
 
     def __call__(self, *args, **kwargs) -> Module:
         kwargs.update(self.params())
@@ -49,7 +35,7 @@ class Layer:
         params["size"] = dims
 
         new_dims = tuple(
-            self._size(**dict(zip(params, t))) for t in zip(*params.values())
+            update_size(**dict(zip(params, t))) for t in zip(*params.values())
         )
         # new_dims = tuple(dim for dim in new_dims if dim > 1)  # Squeeze
         return new_dims

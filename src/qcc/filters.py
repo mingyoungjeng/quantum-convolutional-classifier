@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 from itertools import zip_longest
+
 import numpy as np
 
 if TYPE_CHECKING:
@@ -11,18 +12,23 @@ if TYPE_CHECKING:
 
 # TODO: padding, dilation
 def convolution(
-    img_data,
-    fltr,
-    stride=1,
+    img_data: np.ndarray,
+    fltr: np.ndarray,
+    stride: int | Sequence[int] = 1,
+    padding: int | Sequence[int] = 0,
+    dilation: int | Sequence[int] = 1,
     bounds: Optional[tuple[Number, Number]] = None,
 ):
-    img = np.zeros_like(img_data)
-    for idx, _ in np.ndenumerate(img):
-        # idx = stride*np.array(idx)
-        # idy = np.sum(np.divmod(idx, image_data.shape), axis=0)
-        # if any(idy >= image_data.shape):
-        #     continue
+    shape_out = update_dims(
+        img_data.shape,
+        kernel_size=fltr.shape,
+        stride=stride,
+        padding=padding,
+        dilation=dilation,
+    )
+    img = np.zeros(shape_out)
 
+    for idx, _ in np.ndenumerate(img):
         # Create the window
         window = img_data
         for i, (id, f) in enumerate(zip_longest(idx, fltr.shape, fillvalue=1)):
@@ -41,6 +47,67 @@ def convolution(
         img = np.minimum(img, high * np.ones_like(img))
 
     return np.abs(img)
+
+
+def update_dims(
+    dims,
+    kernel_size: int | Sequence[int] = 2,
+    stride: int | Sequence[int] = 1,
+    padding: int | Sequence[int] = 0,
+    dilation: int | Sequence[int] = 1,
+):
+    params = {
+        "size": dims,
+        "kernel_size": kernel_size
+        if isinstance(kernel_size, Sequence)
+        else [kernel_size] * len(dims),
+        "stride": stride,
+        "padding": padding,
+        "dilation": dilation,
+    }
+
+    # Type checking
+    params = dict(
+        (key, value)
+        if isinstance(value, Sequence)
+        else (key, [value] * len(kernel_size))
+        for key, value in params.items()
+    )
+
+    # zip_longest with diferent fill values
+    longest = max(len(value) for value in params.values())
+    for key, value in params.items():
+        if len(value) == longest:
+            continue
+
+        match key:
+            case "padding":
+                fill_value = 0
+            case _:
+                fill_value = 1
+
+        value_new = (value[i] if i < len(value) else fill_value for i in range(longest))
+        params[key] = tuple(value_new)
+
+    new_dims = tuple(update_size(**dict(zip(params, t))) for t in zip(*params.values()))
+    # new_dims = tuple(dim for dim in new_dims if dim > 1)  # Squeeze
+    return new_dims
+
+
+def update_size(
+    size: int,
+    padding: int = 0,
+    dilation: int = 1,
+    kernel_size: int = 2,
+    stride: int = 1,
+) -> int:
+    size += 2 * padding
+    size += -dilation * (kernel_size - 1)
+    size += -1
+    size = size // stride
+    size += 1
+
+    return size
 
 
 def avg_filter(N: int, dim: int = 1):

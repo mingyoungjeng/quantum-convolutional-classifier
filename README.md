@@ -17,7 +17,7 @@
 
 ```bash
 pip install --upgrade build # for setuptools
-pip install -e .[development] # --editable installation
+pip install -e .[dev] # --editable installation
 ```
 
 ## Execution
