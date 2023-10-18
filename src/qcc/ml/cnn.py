@@ -51,6 +51,7 @@ class Layer:
         new_dims = tuple(
             self._size(**dict(zip(params, t))) for t in zip(*params.values())
         )
+        # new_dims = tuple(dim for dim in new_dims if dim > 1)  # Squeeze
         return new_dims
 
     def params(self):
@@ -58,38 +59,65 @@ class Layer:
 
 
 class ConvolutionalNeuralNetwork(nn.Sequential):
-    convolution: Layer = Layer(nn.Conv2d, padding=1)
-    pooling: Layer = Layer(nn.AvgPool2d, stride=2)
+    def __init__(
+        self,
+        dims,
+        num_layers: int = 1,
+        num_features: int = 1,
+        num_classes: int = 2,
+        relu: bool = True,
+        convolution: nn.Module = None,
+        pooling: nn.Module = None,
+    ):
+        *dims, channels = dims
 
-    def __init__(self, dims, num_layers=1, num_features=1, num_classes=2,):
-        if len(dims) > 2:
-            width, height, channels, *_ = dims
-            dims = width, height
-        else:
-            channels = 1
+        # Setup convolution layer
+        if convolution is not None:
+            conv_layer = Layer(convolution, padding=1)
+
+        # Setup pooling layer
+        if pooling is not None:
+            pool_layer = Layer(pooling, stride=2)
 
         lst = []
         for i in range(num_layers):
             # Convolution
+            if convolution is None:
+                match len(dims):
+                    case 3:
+                        conv_layer = Layer(nn.Conv3d, padding=1)
+                    case 2:
+                        conv_layer = Layer(nn.Conv2d, padding=1)
+                    case _:
+                        conv_layer = Layer(nn.Conv1d, padding=1)
             lst += [
-                self.convolution(
+                conv_layer(
                     in_channels=channels if i == 0 else num_features,
                     out_channels=num_features,
                     padding_mode="circular",
                 )
             ]
-            dims = self.convolution.update_dims(*dims)
+            dims = conv_layer.update_dims(*dims)
 
             # Pooling
-            lst += [self.pooling()]
-            dims = self.pooling.update_dims(*dims)
+            if pooling is None:
+                match len(dims):
+                    case 3:
+                        pool_layer = Layer(nn.MaxPool3d, stride=2)
+                    case 2:
+                        pool_layer = Layer(nn.MaxPool2d, stride=2)
+                    case _:
+                        pool_layer = Layer(nn.MaxPool1d, stride=2)
+            lst += [pool_layer()]
+            dims = pool_layer.update_dims(*dims)
 
             # ReLU
-            # lst += [nn.ReLU()]
+            if relu:
+                lst += [nn.ReLU()]
 
         lst += [
             nn.Flatten(),
-            nn.Linear(num_features * np.prod(dims), num_classes),
+            nn.Linear(num_features * np.prod(dims, dtype=int), num_classes),
         ]
 
         super().__init__(*lst)

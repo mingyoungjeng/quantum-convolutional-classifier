@@ -80,7 +80,11 @@ class ImageTransform(transforms.Compose):
         ops = [transforms.ToTensor()]
 
         if dims is not None:
-            ops = [transforms.Resize(dims[:2]), *ops]
+            ops = [
+                transforms.Resize(dims[:2]),
+                *ops,
+                transforms.Lambda(lambda x: x.view(*dims[::-1])),
+            ]
 
         if squeeze:
             ops += [transforms.Lambda(torch.squeeze)]
@@ -127,5 +131,9 @@ class ClassicalImageTransform(ImageTransform):
 
     def __init__(self, dims: Iterable[int] | None = None):
         super().__init__(
-            dims, fix_bands=False, flatten=False, norm=False, squeeze=False
+            dims,
+            fix_bands=False,
+            flatten=False,
+            norm=False,
+            squeeze=False,
         )
