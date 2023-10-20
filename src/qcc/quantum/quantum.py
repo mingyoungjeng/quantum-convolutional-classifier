@@ -117,16 +117,16 @@ def get_fidelity(x_in, x_out) -> float:
     return fidelity
 
 
-def reconstruct(img_data: np.ndarray, size, size_out=None) -> np.ndarray:
+def reconstruct(data: np.ndarray, size, size_out=None) -> np.ndarray:
     if size_out is None:
         size_out = size
 
     new_dims = [2 ** to_qubits(x) for x in size]
-    image = np.abs(img_data).astype(np.uint8)  # Image package needs uint8
-    image = image.reshape(new_dims, order="F")
-    image = image[tuple([slice(s) for s in size_out])]  # Remove padded zeroes
+    data = np.abs(data).astype(np.uint8)  # Image package needs uint8
+    data = data.reshape(new_dims[::-1]).T
+    data = data[tuple([slice(s) for s in size_out])]  # Remove padded zeroes
 
-    return image
+    return data
 
 
 def parity(result, num_classes: int = 2):
