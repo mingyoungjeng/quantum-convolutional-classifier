@@ -148,6 +148,9 @@ class MQCC(Ansatz):
         num_states = result.shape[1] // norm
         norm *= 2**self.feature_qubits.total
 
+        if self.pooling:
+            norm = norm // 2 ** (self.num_layers * sum(to_qubits(self.filter_shape)))
+
         result = norm * result[:, :num_states]
         result = sqrt(result)
 
