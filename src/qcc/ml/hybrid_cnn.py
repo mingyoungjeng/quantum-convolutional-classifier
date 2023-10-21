@@ -21,10 +21,6 @@ from qcc.quantum.pennylane.c2q import (
 if TYPE_CHECKING:
     pass
 
-import torch
-
-torch.autograd.set_detect_anomaly(True)
-
 
 class MQCCLayer(Module):
     __slots__ = (
