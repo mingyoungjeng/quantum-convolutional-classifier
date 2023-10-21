@@ -5,7 +5,7 @@ from attrs import define, asdict, filters
 from torch import nn
 import numpy as np
 
-from qcc.filters import update_size
+from qcc.filters import update_dims
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -28,20 +28,11 @@ class Layer:
         return self.module(*args, **kwargs)
 
     def update_dims(self, *dims):
-        params = self.params()
-        for key, value in params.items():
-            if not isinstance(value, Iterable):
-                params[key] = [value] * len(dims)
-        params["size"] = dims
-
-        new_dims = tuple(
-            update_size(**dict(zip(params, t))) for t in zip(*params.values())
-        )
-        # new_dims = tuple(dim for dim in new_dims if dim > 1)  # Squeeze
-        return new_dims
+        return update_dims(dims, **self.params())
 
     def params(self):
-        return asdict(self, filter=filters.exclude("module"))
+        attributes = ["kernel_size", "stride", "padding", "dilation"]
+        return asdict(self, filter=filters.include(*attributes))
 
 
 class ConvolutionalNeuralNetwork(nn.Sequential):

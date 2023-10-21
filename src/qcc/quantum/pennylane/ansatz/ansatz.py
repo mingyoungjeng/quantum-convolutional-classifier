@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from pennylane.wires import Wires
     from pennylane.operation import Operation
     from qcc.quantum.pennylane import Parameters
+    from torch import Tensor
 
     Statevector = Iterable[Number]
 
@@ -141,7 +142,7 @@ class Ansatz(Module, metaclass=ABCMeta):
         meas = self.circuit(*self.parameters() if params is None else params)
         return self.q2c(meas)
 
-    def forward(self, psi_in: Optional[Statevector] = None):
+    def forward(self, psi_in: Optional[Statevector] = None) -> Tensor:
         result = self.qnode(psi_in=psi_in)  # pylint: disable=not-callable
 
         match self.q2c_method:

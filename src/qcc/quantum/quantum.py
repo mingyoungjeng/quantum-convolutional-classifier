@@ -122,7 +122,12 @@ def reconstruct(data: np.ndarray, size, size_out=None) -> np.ndarray:
         size_out = size
 
     new_dims = [2 ** to_qubits(x) for x in size]
-    data = data.reshape(new_dims[::-1]).T
+
+    try:  # PyTorch complains about the use of .T
+        data = data.reshape(new_dims[::-1]).T
+    except RuntimeWarning:
+        pass
+
     data = data[tuple([slice(s) for s in size_out])]  # Remove padded zeroes
 
     return data

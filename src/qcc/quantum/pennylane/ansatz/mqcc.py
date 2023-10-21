@@ -1,14 +1,11 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
-import math
-from torch import sqrt
-from torch.nn.functional import pad
+from torch import sqrt, float32
 
 from pennylane import Hadamard, Select
 
-from qcc.filters import update_dims
-from qcc.quantum import to_qubits, reconstruct
+from qcc.quantum import to_qubits
 from qcc.quantum.pennylane import (
     Convolution,
     Qubits,
@@ -16,7 +13,6 @@ from qcc.quantum.pennylane import (
     QubitsProperty,
 )
 from qcc.quantum.pennylane.ansatz import Ansatz
-from qcc.quantum.pennylane.c2q import ConvolutionAngleFilter
 from qcc.quantum.pennylane.pyramid import Pyramid
 from qcc.quantum.pennylane.local import define_filter
 
@@ -24,7 +20,6 @@ if TYPE_CHECKING:
     from typing import Optional
     from pennylane.wires import Wires
     from qcc.quantum.pennylane import Parameters
-    from qcc.quantum.pennylane.ansatz.ansatz import Statevector
 
 
 class MQCC(Ansatz):
@@ -49,7 +44,7 @@ class MQCC(Ansatz):
     U_filter: type[Unitary]
     U_fully_connected: Optional[type[Unitary]]
 
-    pooling: bool
+    pooling: Iterable[int]
 
     def __init__(
         self,
@@ -61,7 +56,7 @@ class MQCC(Ansatz):
         filter_shape: Iterable[int] = (2, 2),
         U_filter: type[Unitary] = define_filter(num_layers=4),
         U_fully_connected: Optional[type[Unitary]] = Pyramid,
-        pooling: bool = False,
+        pooling: Iterable[int] | bool = False,
     ):
         self._num_layers = num_layers
         self.num_features = num_features
@@ -69,6 +64,9 @@ class MQCC(Ansatz):
 
         self.U_filter = U_filter  # pylint: disable=invalid-name
         self.U_fully_connected = U_fully_connected  # pylint: disable=invalid-name
+
+        if isinstance(pooling, bool):
+            pooling = [1 + int(pooling)] * len(filter_shape)
         self.pooling = pooling
 
         if len(filter_shape) > len(qubits):
@@ -106,10 +104,10 @@ class MQCC(Ansatz):
             ### PERMUTE
             Convolution.permute(fltr_shape_q, qubits)
 
-            # TODO: work with assymmetric dims
-            if self.pooling and i != self.max_layers - 1:
-                for j, fsq in enumerate(fltr_shape_q):
-                    data_qubits[j] = data_qubits[j][fsq:]
+            ### POOLING
+            pooling_q = to_qubits(self.pooling)
+            for j, pq in enumerate(pooling_q):
+                data_qubits[j] = data_qubits[j][pq:]
 
         # Fully connected layer
         meas = Qubits(data_qubits + self.feature_qubits)
@@ -134,9 +132,9 @@ class MQCC(Ansatz):
         # TODO: work with assymmetric dims
         if self.U_fully_connected:
             num_qubits = len(self.data_qubits.flatten())
-            if self.pooling:
-                num_pooling = min(self.max_layers - 1, self.num_layers)
-                num_qubits += -sum(fltr_shape_q) * num_pooling
+
+            pooling_q = to_qubits(self.pooling)
+            num_qubits += -sum(pooling_q) * self.num_layers
 
             num_params += self.U_fully_connected.shape(num_qubits)
 
@@ -148,11 +146,12 @@ class MQCC(Ansatz):
         num_states = result.shape[1] // norm
         norm *= 2**self.feature_qubits.total
 
-        if self.pooling:
-            norm = norm // 2 ** (self.num_layers * sum(to_qubits(self.filter_shape)))
+        # Adjust norm based on pooling
+        pooling_q = to_qubits(self.pooling)
+        norm = norm // 2 ** (self.num_layers * sum(pooling_q))
 
         result = norm * result[:, :num_states]
-        result = sqrt(result)
+        result = sqrt(result + 1e-8)
 
         return result
 
