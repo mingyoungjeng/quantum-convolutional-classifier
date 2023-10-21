@@ -6,7 +6,7 @@ from itertools import chain, zip_longest
 from pennylane.ops import Hadamard
 
 from qcc.quantum import to_qubits, parity
-from qcc.quantum.pennylane import Convolution, Qubits
+from qcc.quantum.pennylane import Convolution, Qubits, QubitsProperty
 from qcc.quantum.pennylane.ansatz import Ansatz, MQCC
 from qcc.quantum.pennylane.local import define_filter
 from qcc.quantum.pennylane.pyramid import Pyramid
@@ -17,11 +17,35 @@ if TYPE_CHECKING:
     from qcc.quantum.pennylane import Parameters, Unitary
 
 
-class MQCCOptimized(MQCC):
-    __slots__ = "pre_op", "post_op"
+class MQCCOptimized(Ansatz):
+    __slots__ = (
+        "_data_qubits",
+        "_filter_qubits",
+        "_feature_qubits",
+        "U_filter",
+        "U_fully_connected",
+        "filter_shape",
+        "num_features",
+        "pooling",
+        "pre_op",
+        "post_op",
+    )
+
+    data_qubits: Qubits = QubitsProperty(slots=True)
+    filter_qubits: Qubits = QubitsProperty(slots=True)
+    feature_qubits: Qubits = QubitsProperty(slots=True)
+
+    filter_shape: Iterable[int]
+    num_features: int
+
+    U_filter: type[Unitary]
+    U_fully_connected: Optional[type[Unitary]]
 
     pre_op: bool
     post_op: bool
+
+    # COMMENT ME
+    _filter = MQCC._filter
 
     def __init__(
         self,
@@ -36,20 +60,23 @@ class MQCCOptimized(MQCC):
         pre_op: bool = False,
         post_op: bool = False,
     ):
+        self._num_layers = num_layers
+        self.num_features = num_features
+        self.filter_shape = filter_shape
+
+        self.U_filter = U_filter  # pylint: disable=invalid-name
+        self.U_fully_connected = U_fully_connected  # pylint: disable=invalid-name
         self.pre_op = pre_op
         self.post_op = post_op
 
-        super().__init__(
-            qubits=qubits,
-            num_layers=num_layers,
-            num_classes=num_classes,
-            q2c_method=q2c_method,
-            num_features=num_features,
-            filter_shape=filter_shape,
-            U_filter=U_filter,
-            U_fully_connected=U_fully_connected,
-            pooling=True,
-        )
+        if len(filter_shape) > len(qubits):
+            msg = f"Filter dimensionality ({len(filter_shape)}) is greater than data dimensionality ({len(qubits)})"
+            raise ValueError(msg)
+
+        # Setup feature and ancilla qubits
+        qubits = self._setup_qubits(Qubits(qubits))
+
+        super().__init__(qubits, num_layers, num_classes, q2c_method)
 
     def circuit(self, *params: Parameters) -> Wires:
         (params,) = params
@@ -62,6 +89,7 @@ class MQCCOptimized(MQCC):
             Hadamard(wires=qubit)
 
         if self.pre_op:  # Pre-op on ancillas
+            # TODO: fix
             params = self._filter(params, self.filter_qubits)
 
         # Convolution layers
@@ -135,6 +163,11 @@ class MQCCOptimized(MQCC):
 
     def _forward(self, result):
         return parity(result) if self.U_fully_connected is None else result
+
+    @property
+    def max_layers(self) -> int:
+        dims_qubits = zip(self.data_qubits, to_qubits(self.filter_shape))
+        return max((len(q) // max(f, 1) for q, f in dims_qubits))
 
     ### PRIVATE
 
