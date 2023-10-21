@@ -1,0 +1,24 @@
+module = "qcc.quantum.pennylane.ansatz.MQCCOptimized"
+dataset = "torchvision.datasets.CIFAR10"
+optimizer = "torch.optim.Adam"
+loss = "torch.nn.CrossEntropyLoss"
+transform = "qcc.ml.data.ImageTransform"
+dimensions = [16, 16, 3]
+num_layers = 3
+classes = [0, 1]
+epoch = 8
+batch_size = [8, 1000]
+num_trials = 10
+quantum = true
+verbose = true
+
+[module_options]
+pre_op = true
+filter_shape = [2, 2, 2]
+U_filter = "qcc.quantum.pennylane.c2q.ConvolutionComplexAngleFilter"
+num_features = 1
+q2c_method = "expval"
+# U_fully_connected = "qcc.quantum.pennylane.pyramid.Pyramid"
+
+[optimizer_options]
+lr = 0.001

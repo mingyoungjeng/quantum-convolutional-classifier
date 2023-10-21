@@ -19,7 +19,7 @@ from qcc.quantum.pennylane.c2q import (
 )
 
 if TYPE_CHECKING:
-    pass
+    from qcc.quantum.pennylane import Unitary
 
 
 class MQCCLayer(Module):
@@ -43,6 +43,7 @@ class MQCCLayer(Module):
         padding: int | Iterable[int],
         dilation: int | Iterable[int],
         pooling: bool = False,
+        U_filter: type[Unitary] = ConvolutionAngleFilter,
     ):
         super().__init__()
 
@@ -62,7 +63,7 @@ class MQCCLayer(Module):
         num_features = int(np.ceil(out_channels / in_channels))
 
         module_options = {
-            "U_filter": ConvolutionAngleFilter,
+            "U_filter": U_filter,
             "num_features": num_features,
             "U_fully_connected": None,
             "pooling": pooling,
@@ -153,6 +154,7 @@ class MQCCHybrid(nn.Sequential):
         num_features: int = 1,
         num_classes: int = 2,
         relu: bool = True,
+        U_filter: type[Unitary] = ConvolutionAngleFilter,
     ):
         *dims, channels = dims
 
@@ -166,6 +168,7 @@ class MQCCHybrid(nn.Sequential):
                 in_channels=channels if i == 0 else num_features,
                 out_channels=num_features,
                 pooling=True,
+                U_filter=U_filter,
             )
 
             lst += [mqcc]
