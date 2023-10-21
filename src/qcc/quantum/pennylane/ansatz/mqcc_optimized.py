@@ -119,7 +119,7 @@ class MQCCOptimized(MQCC):
         num_params *= self.U_filter.shape(sum(fltr_shape_q))
 
         for i in range(self.num_layers):
-            fsq = (1 for (d, f) in zip(data_shape_q, fltr_shape_q) if d - (i * f) > 0)
+            fsq = (f for (d, f) in zip(data_shape_q, fltr_shape_q) if d - (i * f) > 0)
             num_params += self.U_filter.shape(sum(fsq))
 
         num_params *= self.num_features

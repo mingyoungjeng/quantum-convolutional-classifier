@@ -1,11 +1,14 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
-from math import sqrt
+import math
+from torch import sqrt
+from torch.nn.functional import pad
 
 from pennylane import Hadamard, Select
 
-from qcc.quantum import to_qubits
+from qcc.filters import update_dims
+from qcc.quantum import to_qubits, reconstruct
 from qcc.quantum.pennylane import (
     Convolution,
     Qubits,
@@ -57,7 +60,7 @@ class MQCC(Ansatz):
         num_features: int = 1,
         filter_shape: Iterable[int] = (2, 2),
         U_filter: type[Unitary] = define_filter(num_layers=4),
-        U_fully_connected: Optional[type[Unitary]] = FullyConnected,
+        U_fully_connected: Optional[type[Unitary]] = Pyramid,
         pooling: bool = False,
     ):
         self._num_layers = num_layers
@@ -90,10 +93,6 @@ class MQCC(Ansatz):
         for qubit in self.feature_qubits.flatten():
             Hadamard(wires=qubit)
 
-        # if self.pre_op:  # Pre-op on ancillas
-        #     for ancilla in filter_qubits:
-        #         params = self._filter(params, ancilla)
-
         # Convolution layers
         for i in range(self.num_layers):
             qubits = data_qubits + filter_qubits[i]
@@ -112,12 +111,8 @@ class MQCC(Ansatz):
                 for j, fsq in enumerate(fltr_shape_q):
                     data_qubits[j] = data_qubits[j][fsq:]
 
-        # if self.post_op:  # Post-op on ancillas
-        #     for ancilla in filter_qubits:
-        #         params = self._filter(params, ancilla)
-
         # Fully connected layer
-        meas = data_qubits
+        meas = Qubits(data_qubits + self.feature_qubits)
         if self.U_fully_connected is not None:
             self.U_fully_connected(params, meas.flatten()[::-1])
             meas = Qubits([meas.flatten()[-1]])
@@ -131,7 +126,7 @@ class MQCC(Ansatz):
 
         num_params = 0
         for i in range(self.num_layers):
-            fsq = (1 for (d, f) in zip(data_shape_q, fltr_shape_q) if d - (i * f))
+            fsq = (f for (d, f) in zip(data_shape_q, fltr_shape_q) if d - (i * f))
             num_params += self.U_filter.shape(sum(fsq))
 
         num_params *= self.num_features
@@ -149,9 +144,14 @@ class MQCC(Ansatz):
 
     def _forward(self, result):
         # Get subset of output
-        norm = sqrt(2**self.filter_qubits.total)
-        n = 2 ** (1 + self.feature_qubits.total)
-        return norm * result[:, :n]
+        norm = 2**self.filter_qubits.total
+        num_states = result.shape[1] // norm
+        norm *= 2**self.feature_qubits.total
+
+        result = norm * result[:, :num_states]
+        result = sqrt(result)
+
+        return result
 
     @property
     def max_layers(self) -> int:

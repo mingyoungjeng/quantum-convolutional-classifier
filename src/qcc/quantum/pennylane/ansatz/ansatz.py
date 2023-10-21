@@ -162,7 +162,7 @@ class Ansatz(Module, metaclass=ABCMeta):
 
         result = self._forward(result)
 
-        return result[:, : self.num_classes]
+        return result  # result[:, : self.num_classes]
 
     def _forward(self, result):
         return result

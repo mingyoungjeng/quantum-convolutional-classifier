@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["black", "pylint", "ipykernel", "pylatexenc"]
+dev = ["black", "pylint", "ipykernel", "pylatexenc", "sympy"]
 
 [project.scripts]
 qcc = "qcc.cli:cli"
