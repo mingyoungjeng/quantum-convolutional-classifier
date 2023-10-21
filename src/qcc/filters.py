@@ -1,12 +1,12 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 
 from itertools import zip_longest
 
 import numpy as np
 
 if TYPE_CHECKING:
-    from typing import Optional
+    from typing import Optional, Sequence
     from numbers import Number
 
 
@@ -56,11 +56,12 @@ def update_dims(
     padding: int | Sequence[int] = 0,
     dilation: int | Sequence[int] = 1,
 ):
+    if isinstance(kernel_size, int):
+        kernel_size = [kernel_size] * len(dims)
+    
     params = {
         "size": dims,
-        "kernel_size": kernel_size
-        if isinstance(kernel_size, Sequence)
-        else [kernel_size] * len(dims),
+        "kernel_size": kernel_size,
         "stride": stride,
         "padding": padding,
         "dilation": dilation,
@@ -68,9 +69,7 @@ def update_dims(
 
     # Type checking
     params = dict(
-        (key, value)
-        if isinstance(value, Sequence)
-        else (key, [value] * len(kernel_size))
+        (key, [value] * len(kernel_size)) if isinstance(value, int) else (key, value)
         for key, value in params.items()
     )
 
