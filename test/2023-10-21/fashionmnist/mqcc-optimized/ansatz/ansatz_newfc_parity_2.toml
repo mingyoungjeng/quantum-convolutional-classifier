@@ -14,7 +14,7 @@ verbose = true
 
 [module_options]
 pre_op = true
-filter_shape = [2, 2, 2]
+filter_shape = [2, 2]
 # U_filter = "qcc.quantum.pennylane.c2q.ConvolutionAngleFilter"
 num_features = 2
 q2c_method = "parity"
