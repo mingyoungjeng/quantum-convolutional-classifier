@@ -12,6 +12,7 @@ from qcc.ml.cnn import Layer
 from qcc.quantum import to_qubits, reconstruct
 
 from qcc.quantum.pennylane.ansatz import MQCC
+from qcc.quantum.pennylane.local import define_filter
 from qcc.quantum.pennylane.c2q import (
     ConvolutionAngleFilter,
     ConvolutionComplexAngleFilter,
@@ -20,6 +21,8 @@ from qcc.quantum.pennylane.c2q import (
 
 if TYPE_CHECKING:
     from qcc.quantum.pennylane import Unitary
+
+AnsatzFilter = define_filter(num_layers=4)
 
 
 class MQCCLayer(Module):
