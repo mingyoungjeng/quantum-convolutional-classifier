@@ -34,7 +34,7 @@ class Ansatz(Module, metaclass=ABCMeta):
 
     qubits: Qubits = QubitsProperty(slots=True)
     _num_layers: int
-    num_classes: int
+    num_classes: Optional[int]
     q2c_method: Q2CMethod
 
     class Q2CMethod(StrEnum):
@@ -46,7 +46,7 @@ class Ansatz(Module, metaclass=ABCMeta):
         self,
         qubits: Qubits,
         num_layers: int = 0,
-        num_classes: int = 2,
+        num_classes: Optional[int] = None,
         q2c_method: Q2CMethod | str = Q2CMethod.Probabilities,
     ):
         super().__init__()
@@ -172,6 +172,9 @@ class Ansatz(Module, metaclass=ABCMeta):
 
     @property
     def _num_meas(self) -> int:
+        if self.num_classes is None:
+            return self.qubits.total
+
         match self.q2c_method:
             case self.Q2CMethod.Probabilities:
                 return to_qubits(self.num_classes)
