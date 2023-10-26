@@ -16,6 +16,7 @@ verbose = true
 num_features = 4
 pooling = "torch.nn.AvgPool2d"
 relu = false
+bias = true
 
 [optimizer_options]
 lr = 0.001

@@ -16,6 +16,7 @@ verbose = true
 num_features = 4
 relu = false
 U_filter = "qcc.quantum.pennylane.c2q.ConvolutionFilter"
+bias = false
 
 [optimizer_options]
 lr = 0.001

@@ -43,6 +43,7 @@ class ConvolutionalNeuralNetwork(nn.Sequential):
         num_features: int = 1,
         num_classes: int = 2,
         relu: bool = True,
+        bias: bool = True,
         convolution: nn.Module = None,
         pooling: nn.Module = None,
     ):
@@ -72,6 +73,7 @@ class ConvolutionalNeuralNetwork(nn.Sequential):
                     in_channels=channels if i == 0 else num_features,
                     out_channels=num_features,
                     padding_mode="circular",
+                    bias=bias,
                 )
             ]
             dims = conv_layer.update_dims(*dims)

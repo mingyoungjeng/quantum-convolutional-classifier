@@ -15,6 +15,7 @@ verbose = true
 [module_options]
 num_features = 4
 U_filter = "qcc.ml.hybrid_cnn.AnsatzFilter"
+bias = false
 
 [optimizer_options]
 lr = 0.001

@@ -8,6 +8,7 @@ from torch.linalg import norm
 import numpy as np
 
 from qcc.filters import update_dims
+from qcc.ml import init_params
 from qcc.ml.cnn import Layer
 from qcc.quantum import to_qubits, reconstruct
 
@@ -46,6 +47,7 @@ class MQCCLayer(Module):
         padding: int | Iterable[int],
         dilation: int | Iterable[int],
         pooling: bool = False,
+        bias: bool = False,
         U_filter: type[Unitary] = ConvolutionAngleFilter,
     ):
         super().__init__()
@@ -54,14 +56,11 @@ class MQCCLayer(Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
 
-        self.kernel_size = (
-            [kernel_size] * len(dims) if isinstance(kernel_size, int) else kernel_size
-        )
-        self.stride = [stride] * len(dims) if isinstance(stride, int) else stride
-        self.padding = [padding] * len(dims) if isinstance(padding, int) else padding
-        self.dilation = (
-            [dilation] * len(dims) if isinstance(dilation, int) else dilation
-        )
+        names = ["kernel_size", "stride", "padding", "dilation"]
+        params = [kernel_size, stride, padding, dilation]
+        for name, param in zip(names, params):
+            param = [param] * len(dims) if isinstance(param, int) else param
+            setattr(self, name, param)
 
         num_features = int(np.ceil(out_channels / in_channels))
 
@@ -78,6 +77,10 @@ class MQCCLayer(Module):
             num_layers=1,
             **module_options,
         )
+
+        if bias:
+            self.register_parameter("bias", init_params(self.out_channels))
+            self.reset_parameters()
 
     def forward(self, inputs):
         """
@@ -121,6 +124,14 @@ class MQCCLayer(Module):
         # Crop out_channels if necessary
         result = result[: self.out_channels, ...]
 
+        try:  # Apply bias term(s) (if possible)
+            bias = self.get_parameter("bias")
+            bias = bias.reshape(self.out_channels, *(1 for _ in range(result.ndim - 1)))
+
+            result = result + bias
+        except AttributeError:
+            pass
+
         # Column-major correction (batch_size)
         result = result.moveaxis(-1, 0)
 
@@ -144,6 +155,13 @@ class MQCCLayer(Module):
         return dims
 
     def reset_parameters(self):
+        try:  # Reset bias (if possible)
+            k = self.in_channels * np.prod(self.kernel_size)
+            k = np.sqrt(1 / k)
+            nn.init.uniform_(self.get_parameter("bias"), -k, k)
+        except AttributeError:
+            pass
+
         for layer in self.children():
             if hasattr(layer, "reset_parameters"):
                 layer.reset_parameters()
@@ -157,6 +175,7 @@ class MQCCHybrid(nn.Sequential):
         num_features: int = 1,
         num_classes: int = 2,
         relu: bool = True,
+        bias: bool = False,
         U_filter: type[Unitary] = ConvolutionAngleFilter,
     ):
         *dims, channels = dims
@@ -166,12 +185,13 @@ class MQCCHybrid(nn.Sequential):
         lst = []
         for i in range(num_layers):
             # Convolution + Pooling
-            mqcc = layer(
+            mqcc: MQCCLayer = layer(
                 dims,
                 in_channels=channels if i == 0 else num_features,
                 out_channels=num_features,
                 pooling=True,
                 U_filter=U_filter,
+                bias=bias,
             )
 
             lst += [mqcc]
