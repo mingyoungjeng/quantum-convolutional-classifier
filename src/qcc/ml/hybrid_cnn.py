@@ -16,7 +16,7 @@ from qcc.quantum import reconstruct
 from qcc.quantum.pennylane import Unitary
 
 from qcc.quantum.pennylane.ansatz import MQCC
-from qcc.quantum.pennylane.local import define_filter
+from qcc.quantum.pennylane.local import FilterQML
 from qcc.quantum.pennylane.c2q import (
     ConvolutionAngleFilter,
     ConvolutionComplexAngleFilter,
@@ -26,9 +26,16 @@ from qcc.quantum.pennylane.ansatz import FullyConnected
 
 if TYPE_CHECKING:
     from typing import Optional
-    from qcc.quantum.pennylane import Unitary
+    from qcc.quantum.pennylane import Unitary, Wires
 
-AnsatzFilter = define_filter(num_layers=4)
+
+class AnsatzFilter(FilterQML):
+    def __init__(self, *params, wires: Wires, id=None, **_):
+        super().__init__(*params, wires=wires, num_layers=4, id=id)
+
+    @staticmethod
+    def _shape(num_wires: int, **_):
+        return FilterQML._shape(num_wires, num_layers=4)
 
 
 class MQCCHybrid(nn.Sequential):

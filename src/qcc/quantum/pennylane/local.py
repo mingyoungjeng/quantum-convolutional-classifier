@@ -44,8 +44,8 @@ class FilterQML(Unitary):
     @staticmethod
     def compute_decomposition(*params, wires, **hyperparameters):
         (params,) = params
-        op: type[Operation] = hyperparameters["op"]
-        num_layers: int = hyperparameters["num_layers"]
+        op: type[Operation] = hyperparameters.get("op", qml.RY)
+        num_layers: int = hyperparameters.get("num_layers", 1)
 
         op_list = []
         shape = (num_layers, len(wires), op.num_params)
@@ -72,7 +72,7 @@ class FilterQML(Unitary):
 
     @staticmethod
     def _shape(num_wires: Wires, **hyperparameters) -> int:
-        op: type[Operation] = hyperparameters["op"]
-        num_layers: int = hyperparameters["num_layers"]
+        op: type[Operation] = hyperparameters.get("op", qml.RY)
+        num_layers: int = hyperparameters.get("num_layers", 1)
 
         return num_layers * num_wires * op.num_params
