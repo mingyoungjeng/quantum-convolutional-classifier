@@ -163,7 +163,9 @@ class MQCCLayer(Module):
 
         if bias:
             self.register_parameter("bias", init_params(self.out_channels))
-            self.reset_parameters()
+
+        self.register_parameter("filter_norm", init_params(self.out_channels))
+        self.reset_parameters()
 
     def forward(self, inputs):
         """
@@ -245,6 +247,9 @@ class MQCCLayer(Module):
         except AttributeError:
             pass
 
+        # Trainable parameter for the magnitude of filter(s)
+        nn.init.uniform_(self.get_parameter("filter_norm"), -1, 1)
+
         for layer in self.children():
             if hasattr(layer, "reset_parameters"):
                 layer.reset_parameters()
@@ -274,7 +279,9 @@ class FullyConnectedLayer(Module):
 
         if bias:
             self.register_parameter("bias", init_params(self.out_features))
-            self.reset_parameters()
+
+        self.register_parameter("norm", init_params(self.out_features))
+        self.reset_parameters()
 
     def forward(self, inputs):
         # Normalize inputs
@@ -301,6 +308,9 @@ class FullyConnectedLayer(Module):
             nn.init.uniform_(self.get_parameter("bias"), -k, k)
         except AttributeError:
             pass
+
+        # Magnitude of inverse-c2q parameters
+        nn.init.uniform_(self.get_parameter("norm"), -1, 1)
 
         for layer in self.children():
             if hasattr(layer, "reset_parameters"):
