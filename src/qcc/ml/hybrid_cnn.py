@@ -5,7 +5,7 @@ from functools import partial
 
 from torch import nn
 from torch.nn import Module
-from torch.linalg import norm
+from torch import linalg
 
 import numpy as np
 
@@ -185,7 +185,7 @@ class MQCCLayer(Module):
         inputs = inputs.reshape((batch_size, self.in_channels * np.prod(dims)))
 
         # Normalize inputs
-        magnitudes = norm(inputs, dim=1)
+        magnitudes = linalg.norm(inputs, dim=1)
         inputs = (inputs.T / magnitudes).T
 
         result = self.mqcc.forward(inputs)
@@ -215,6 +215,11 @@ class MQCCLayer(Module):
 
         # Crop out_channels if necessary
         result = result[: self.out_channels, ...]
+
+        norm = self.get_parameter("filter_norm")
+        norm = norm.reshape(self.out_channels, *(1 for _ in range(result.ndim - 1)))
+
+        result = result * norm
 
         try:  # Apply bias term(s) (if possible)
             bias = self.get_parameter("bias")
@@ -292,7 +297,7 @@ class FullyConnectedLayer(Module):
 
     def forward(self, inputs):
         # Normalize inputs
-        magnitudes = norm(inputs, dim=1)
+        magnitudes = linalg.norm(inputs, dim=1)
         inputs = (inputs.T / magnitudes).T
 
         result = self.mqcc.forward(inputs)
@@ -300,9 +305,11 @@ class FullyConnectedLayer(Module):
         # Unnormalize output
         result = (result.T / magnitudes).T
 
+        norm = self.get_parameter("norm").unsqueeze(0)
+        result = result * norm
+
         try:  # Apply bias term(s) (if possible)
             bias = self.get_parameter("bias").unsqueeze(0)
-
             result = result + bias
         except AttributeError:
             pass
