@@ -16,6 +16,7 @@ verbose = true
 num_features = 4
 relu = false
 bias = true
+convolution = "torch.nn.Conv2d"
 
 [optimizer_options]
 lr = 0.001

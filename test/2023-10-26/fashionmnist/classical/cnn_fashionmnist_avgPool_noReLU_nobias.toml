@@ -14,6 +14,7 @@ verbose = true
 
 [module_options]
 num_features = 4
+convolution = "torch.nn.Conv2d"
 pooling = "torch.nn.AvgPool2d"
 relu = false
 bias = false
