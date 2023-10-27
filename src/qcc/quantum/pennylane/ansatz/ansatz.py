@@ -163,7 +163,7 @@ class Ansatz(Module, metaclass=ABCMeta):
 
         result = self._forward(result)
 
-        return result  # result[:, : self.num_classes]
+        return result
 
     def _forward(self, result):
         return result
@@ -197,7 +197,10 @@ class Ansatz(Module, metaclass=ABCMeta):
     # Instance factories
 
     @classmethod
-    def from_dims(cls, dims: Iterable[int], *args, **kwargs):
+    def from_dims(cls, dims: int | Iterable[int], *args, **kwargs):
+        if isinstance(dims, int):
+            dims = [dims]
+
         dims_q = to_qubits(dims)
         qubits = wires_to_qubits(dims_q)
 

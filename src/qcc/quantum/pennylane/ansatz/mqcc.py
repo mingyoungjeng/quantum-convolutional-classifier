@@ -1,25 +1,20 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING
 
-from torch import sqrt, float32
+from torch import sqrt
 
 from pennylane import Hadamard, Select
 
 from qcc.quantum import to_qubits
-from qcc.quantum.pennylane import (
-    Convolution,
-    Qubits,
-    Unitary,
-    QubitsProperty,
-)
+from qcc.quantum.pennylane import Convolution, Qubits, QubitsProperty
 from qcc.quantum.pennylane.ansatz import Ansatz
 from qcc.quantum.pennylane.pyramid import Pyramid
 from qcc.quantum.pennylane.local import define_filter
 
 if TYPE_CHECKING:
-    from typing import Optional
+    from typing import Optional, Iterable
     from pennylane.wires import Wires
-    from qcc.quantum.pennylane import Parameters
+    from qcc.quantum.pennylane import Parameters, Unitary
 
 
 class MQCC(Ansatz):
@@ -50,7 +45,7 @@ class MQCC(Ansatz):
         self,
         qubits: Qubits,
         num_layers: int = None,
-        num_classes: int = 2,
+        num_classes: Optional[int] = None,
         q2c_method: Ansatz.Q2CMethod | str = Ansatz.Q2CMethod.Probabilities,
         num_features: int = 1,
         filter_shape: Iterable[int] = (2, 2),
@@ -145,6 +140,7 @@ class MQCC(Ansatz):
         norm = 2**self.filter_qubits.total
         num_states = result.shape[1] // norm
         norm *= 2**self.feature_qubits.total
+        # TODO: norm parameter?
 
         # Adjust norm based on pooling
         pooling_q = to_qubits(self.pooling)
@@ -200,6 +196,6 @@ class MQCC(Ansatz):
         # Apply filter
         wires = qubits.flatten()
         filters = tuple(self.U_filter(fp, wires=wires) for fp in filter_params)
-        Select(filters, self.feature_qubits.flatten())
+        Select(filters, self.feature_qubits.flatten())  # TODO: check [::-1]
 
         return params  # Leftover parameters

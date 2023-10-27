@@ -51,7 +51,7 @@ class MQCCOptimized(Ansatz):
         self,
         qubits: Qubits,
         num_layers: int = None,
-        num_classes: int = 2,
+        num_classes: Optional[int] = 2,
         q2c_method: Ansatz.Q2CMethod | str = Ansatz.Q2CMethod.Probabilities,
         num_features: int = 1,
         filter_shape: Iterable[int] = (2, 2),

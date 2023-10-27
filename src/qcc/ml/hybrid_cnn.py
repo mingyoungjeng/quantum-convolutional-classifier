@@ -1,5 +1,7 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Iterable, Optional
+
+from functools import partial
 
 from torch import nn
 from torch.nn import Module
@@ -10,7 +12,8 @@ import numpy as np
 from qcc.filters import update_dims
 from qcc.ml import init_params
 from qcc.ml.cnn import Layer
-from qcc.quantum import to_qubits, reconstruct
+from qcc.quantum import reconstruct
+from qcc.quantum.pennylane import Unitary
 
 from qcc.quantum.pennylane.ansatz import MQCC
 from qcc.quantum.pennylane.local import define_filter
@@ -19,11 +22,91 @@ from qcc.quantum.pennylane.c2q import (
     ConvolutionComplexAngleFilter,
     ConvolutionFilter,
 )
+from qcc.quantum.pennylane.ansatz import FullyConnected
 
 if TYPE_CHECKING:
+    from typing import Optional
     from qcc.quantum.pennylane import Unitary
 
 AnsatzFilter = define_filter(num_layers=4)
+
+
+class MQCCHybrid(nn.Sequential):
+    def __init__(
+        self,
+        dims,
+        num_layers: int = 1,
+        num_features: int = 1,
+        num_classes: int = 2,
+        relu: bool = True,
+        bias: bool = False,
+        U_filter: type[Unitary] = ConvolutionAngleFilter,
+        U_fully_connected: Optional[type[Unitary]] = None,
+    ):
+        *dims, channels = dims
+
+        layer = Layer(MQCCLayer, padding=1)
+
+        lst = []
+        for i in range(num_layers):
+            # Convolution + Pooling
+            mqcc: MQCCLayer = layer(
+                dims,
+                in_channels=channels if i == 0 else num_features,
+                out_channels=num_features,
+                pooling=True,
+                U_filter=U_filter,
+                bias=bias,
+            )
+
+            lst += [mqcc]
+            dims = mqcc.update_dims(dims)
+
+            # ReLU
+            if relu:
+                lst += [nn.ReLU()]
+
+        if U_fully_connected is None:
+            fully_connected = nn.Linear
+        else:
+            fully_connected = partial(FullyConnectedLayer, U_filter=U_fully_connected)
+
+        lst += [
+            nn.Flatten(),
+            fully_connected(num_features * np.prod(dims, dtype=int), num_classes),
+        ]
+
+        super().__init__(*lst)
+
+    def reset_parameters(self):
+        for layer in self.children():
+            if hasattr(layer, "reset_parameters"):
+                layer.reset_parameters()
+
+
+# TODO: rename
+class MQCCNonHybrid(MQCCHybrid):
+    """Quantum-only"""
+
+    def __init__(
+        self,
+        dims,
+        num_layers: int = 1,
+        num_features: int = 1,
+        num_classes: int = 2,
+        U_filter: type[Unitary] = ConvolutionAngleFilter,
+        U_fully_connected: type[Unitary] = ConvolutionAngleFilter,
+    ):
+        super().__init__(
+            dims,
+            num_layers,
+            num_features,
+            num_classes,
+            relu=False,
+            bias=False,
+            U_filter=U_filter,
+            U_fully_connected=U_fully_connected,
+        )
 
 
 class MQCCLayer(Module):
@@ -167,48 +250,58 @@ class MQCCLayer(Module):
                 layer.reset_parameters()
 
 
-class MQCCHybrid(nn.Sequential):
+class FullyConnectedLayer(Module):
+    """Wrapper for PyTorch compatibility"""
+
+    __slots__ = ("in_features", "out_features")
+
     def __init__(
         self,
-        dims,
-        num_layers: int = 1,
-        num_features: int = 1,
-        num_classes: int = 2,
-        relu: bool = True,
-        bias: bool = False,
+        in_features: int,
+        out_features: int,
+        bias: bool = True,
         U_filter: type[Unitary] = ConvolutionAngleFilter,
     ):
-        *dims, channels = dims
+        super().__init__()
+        self.in_features = in_features
+        self.out_features = out_features
 
-        layer = Layer(MQCCLayer, padding=1)
+        self.mqcc = FullyConnected.from_dims(
+            [in_features],
+            out_features,
+            U_filter=U_filter,
+        )
 
-        lst = []
-        for i in range(num_layers):
-            # Convolution + Pooling
-            mqcc: MQCCLayer = layer(
-                dims,
-                in_channels=channels if i == 0 else num_features,
-                out_channels=num_features,
-                pooling=True,
-                U_filter=U_filter,
-                bias=bias,
-            )
+        if bias:
+            self.register_parameter("bias", init_params(self.out_features))
+            self.reset_parameters()
 
-            lst += [mqcc]
-            dims = mqcc.update_dims(dims)
+    def forward(self, inputs):
+        # Normalize inputs
+        magnitudes = norm(inputs, dim=1)
+        inputs = (inputs.T / magnitudes).T
 
-            # ReLU
-            if relu:
-                lst += [nn.ReLU()]
+        result = self.mqcc.forward(inputs)
 
-        lst += [
-            nn.Flatten(),
-            nn.Linear(num_features * np.prod(dims, dtype=int), num_classes),
-        ]
+        # Unnormalize output
+        result = (result.T / magnitudes).T
 
-        super().__init__(*lst)
+        try:  # Apply bias term(s) (if possible)
+            bias = self.get_parameter("bias").unsqueeze(0)
+
+            result = result + bias
+        except AttributeError:
+            pass
+
+        return result.float()
 
     def reset_parameters(self):
+        try:  # Reset bias (if possible)
+            k = np.sqrt(1 / self.in_features)
+            nn.init.uniform_(self.get_parameter("bias"), -k, k)
+        except AttributeError:
+            pass
+
         for layer in self.children():
             if hasattr(layer, "reset_parameters"):
                 layer.reset_parameters()
