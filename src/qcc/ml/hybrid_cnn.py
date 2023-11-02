@@ -183,6 +183,7 @@ class MQCCLayer(Module):
         batch_size = inputs.shape[0]
 
         inputs = inputs.reshape((batch_size, self.in_channels * np.prod(dims)))
+        inputs = inputs.cdouble()  # Fixes issues with Pennylane
 
         # Normalize inputs
         magnitudes = linalg.norm(inputs, dim=1)
