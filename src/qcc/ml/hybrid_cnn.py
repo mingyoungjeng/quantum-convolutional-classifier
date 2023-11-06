@@ -12,7 +12,7 @@ import numpy as np
 from qcc.filters import update_dims
 from qcc.ml import init_params
 from qcc.ml.cnn import Layer
-from qcc.quantum import reconstruct
+from qcc.quantum import reconstruct, to_qubits
 from qcc.quantum.pennylane import Unitary
 
 from qcc.quantum.pennylane.ansatz import MQCC
@@ -115,6 +115,12 @@ class MQCCNonHybrid(MQCCHybrid):
             U_fully_connected=U_fully_connected,
         )
 
+default = {
+    "kernel_size": 1,
+    "stride": 1,
+    "padding": 0,
+    "dilation": 1,
+}
 
 class MQCCLayer(Module):
     __slots__ = (
@@ -145,11 +151,16 @@ class MQCCLayer(Module):
         self.dims = dims
         self.in_channels = in_channels
         self.out_channels = out_channels
+        
+        if isinstance(kernel_size, int):
+            kernel_size = [kernel_size if dim >= kernel_size else default["kernel_size"] for dim in dims]
+        self.kernel_size = kernel_size
 
-        names = ["kernel_size", "stride", "padding", "dilation"]
-        params = [kernel_size, stride, padding, dilation]
+        names = ["stride", "padding", "dilation"]
+        params = [stride, padding, dilation]
         for name, param in zip(names, params):
-            param = [param] * len(dims) if isinstance(param, int) else param
+            if isinstance(param, int):
+                param = [param if k > 1 else default[name] for k in kernel_size]
             setattr(self, name, param)
 
         num_features = int(np.ceil(out_channels / in_channels))
@@ -199,7 +210,7 @@ class MQCCLayer(Module):
 
         dims_out = self.update_dims(dims)
         dims = update_dims(
-            dims,
+            2**to_qubits(dims),
             kernel_size=self.mqcc.pooling,
             stride=self.mqcc.pooling,
         )
@@ -250,6 +261,7 @@ class MQCCLayer(Module):
             kernel_size=self.mqcc.pooling,
             stride=self.mqcc.pooling,
         )
+        
         return dims
 
     def reset_parameters(self):

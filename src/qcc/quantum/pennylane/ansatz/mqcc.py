@@ -61,7 +61,7 @@ class MQCC(Ansatz):
         self.U_fully_connected = U_fully_connected  # pylint: disable=invalid-name
 
         if isinstance(pooling, bool):
-            pooling = [1 + int(pooling)] * len(filter_shape)
+            pooling = [1 + int(pooling) if f > 1 else 1 for f in filter_shape]
         self.pooling = pooling
 
         if len(filter_shape) > len(qubits):

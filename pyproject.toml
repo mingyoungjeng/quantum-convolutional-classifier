@@ -19,10 +19,12 @@ dependencies = [
     "polars>=0.18",
     "matplotlib",
     "click",
+    "plotly",
+    "kaleido",
 ]
 
 [project.optional-dependencies]
-dev = ["black", "pylint", "ipykernel", "pylatexenc", "sympy"]
+dev = ["black", "pylint", "jupyter", "pylatexenc", "sympy"]
 
 [project.scripts]
 qcc = "qcc.cli:cli"
