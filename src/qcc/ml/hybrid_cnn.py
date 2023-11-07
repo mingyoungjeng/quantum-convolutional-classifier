@@ -184,6 +184,8 @@ class MQCCLayer(Module):
 
         self.register_parameter("filter_norm", init_params(self.out_channels))
         self.reset_parameters()
+        
+        # display(self.mqcc.draw())
 
     def forward(self, inputs):
         """
