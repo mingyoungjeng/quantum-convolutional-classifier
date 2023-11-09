@@ -123,12 +123,13 @@ def get_fidelity(x_in, x_out) -> float:
     return fidelity
 
 
-def reconstruct(data: np.ndarray, size, size_out=None) -> np.ndarray:
+def reconstruct(data: np.ndarray, size, size_out=None, fix_size: bool = True) -> np.ndarray:
     if size_out is None:
         size_out = size
 
-    new_dims = [2 ** to_qubits(x) for x in size]
-    data = data.reshape(new_dims[::-1]).T
+    if fix_size:
+        size = [2 ** to_qubits(x) for x in size]
+    data = data.reshape(size[::-1]).T
     data = data[tuple([slice(s) for s in size_out])]  # Remove padded zeroes
 
     return data

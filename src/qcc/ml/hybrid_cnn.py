@@ -219,8 +219,9 @@ class MQCCLayer(Module):
 
         dims_out = (batch_size, *dims_out, self.in_channels, self.mqcc.num_features)
         dims = (batch_size, *dims, self.in_channels, self.mqcc.num_features)
+        dims = (dims[0], *(2**to_qubits(dims[1:])))
 
-        result = reconstruct(result, dims, dims_out)
+        result = reconstruct(result, dims, dims_out, fix_size=False)
         result = result.T  # Return in row-major order
 
         # Merge features into least-significant dimension
