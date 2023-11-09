@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from pathlib import Path
+
 import numpy as np
 from PIL import Image
 from astropy.io import fits
@@ -71,16 +73,20 @@ def flatten_array(arr: np.ndarray, pad: bool = False):
 
 
 def flatten_image(
-    filename: Path,
+    image: Image.Image | Path,
     include_mode: Optional[bool] = False,
     multispectral: Optional[bool] = False,
     pad=False,
 ):  # -> tuple[npt.NDArray[np.complex64], *[tuple[int, ...]]]:
-    with fits.open(filename) if multispectral else Image.open(filename, "r") as im:
-        matrix = im[0].data if multispectral else np.asarray(im, dtype=float)
-        dims = matrix.shape
-        psi = flatten_array(matrix, pad)
-        mode = "fits" if multispectral else im.mode
+    if isinstance(image, Path):
+        with fits.open(image) if multispectral else Image.open(image, "r") as im:
+            mode = "fits" if multispectral else im.mode
+            image = im[0].data if multispectral else np.asarray(im, dtype=float)
+    else:
+        mode = "fits" if multispectral else image.mode
+        image = np.asarray(image, dtype=float)
+    dims = image.shape
+    psi = flatten_array(image, pad)
 
     if include_mode:
         return psi, mode, *dims

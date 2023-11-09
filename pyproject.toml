@@ -21,6 +21,7 @@ dependencies = [
     "click",
     "plotly",
     "kaleido",
+    "PyWavelets",
 ]
 
 [project.optional-dependencies]
