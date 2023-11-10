@@ -1,0 +1,23 @@
+module = "qcc.ml.cnn.ConvolutionalNeuralNetwork"
+dataset = "torchvision.datasets.MNIST"
+optimizer = "torch.optim.Adam"
+loss = "torch.nn.CrossEntropyLoss"
+transform = "qcc.ml.data.ClassicalImageTransform"
+dimensions = [28, 28, 1]
+num_layers = 5
+classes = [0, 1]
+epoch = 8
+batch_size = [8, 1000]
+num_trials = 5
+classical = true
+verbose = true
+
+[module_options]
+num_features = 4
+convolution = "torch.nn.Conv2d"
+pooling = "qcc.ml.TwoNormPool2d"
+relu = false
+bias = true
+
+[optimizer_options]
+lr = 0.001

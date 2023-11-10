@@ -1,0 +1,129 @@
+### General Properties
+
+[layout]
+autosize = false
+width = 700              # 6in @ 100dpi
+height = 500             # 5in @ 100dpi
+paper_bgcolor = "white"
+plot_bgcolor = "#ebebeb"
+
+[layout.font]
+family = "Inter"
+size = 16
+color = "black"
+
+[layout.margin]
+l = 40
+r = 40
+b = 40
+t = 0
+pad = 0
+
+### Scatter (Line) Behavior
+
+[[data.scatter]]
+
+[data.scatter.marker]
+size = 10
+
+[data.scatter.line]
+width = 3
+shape = "spline"
+
+### Title
+
+[layout.title]
+automargin = false
+x = 0.5
+xanchor = "center"
+y = 1
+yanchor = "middle"
+
+[layout.title.font]
+family = "Inter SemiBold"
+size = 20
+color = "black"
+
+[layout.title.pad]
+l = 0
+r = 0
+b = 0
+t = 0
+
+### X-Axis
+
+[layout.xaxis]
+automargin = false
+gridcolor = "#c8c8c8"
+linecolor = "#c8c8c8"
+zerolinecolor = "#c8c8c8"
+tickcolor = "#c8c8c8"
+gridwidth = 2
+linewidth = 2
+zerolinewidth = 2
+showgrid = false
+showline = true
+mirror = true
+ticks = "outside"
+tickwidth = 2
+
+[layout.xaxis.title]
+standoff = 16
+
+[layout.xaxis.title.font]
+family = "Inter SemiBold"
+size = 20
+color = "black"
+
+[layout.xaxis.minor]
+showgrid = false
+gridcolor = "#e1e1e1"
+tickcolor = "#e1e1e1"
+ticks = "outside"
+
+### Y-Axis
+
+[layout.yaxis]
+automargin = false
+gridcolor = "#c8c8c8"
+linecolor = "#c8c8c8"
+zerolinecolor = "#c8c8c8"
+tickcolor = "#c8c8c8"
+gridwidth = 2
+linewidth = 2
+zerolinewidth = 2
+showgrid = true
+showline = true
+mirror = true
+ticks = "outside"
+tickwidth = 2
+
+[layout.yaxis.title]
+standoff = 4
+
+[layout.yaxis.title.font]
+family = "Inter SemiBold"
+size = 20
+color = "black"
+
+[layout.yaxis.minor]
+showgrid = true
+gridcolor = "#e1e1e1"
+tickcolor = "#e1e1e1"
+ticks = "outside"
+
+### Legend
+
+[layout.legend]
+# x = 0.05
+y = 1.006
+# xanchor = "center"
+yanchor = "top"
+bordercolor = "black"
+borderwidth = 2
+# itemsizing = "constant"
+
+[layout.legend.font]
+family = "Inter"
+size = 14
+color = "black"

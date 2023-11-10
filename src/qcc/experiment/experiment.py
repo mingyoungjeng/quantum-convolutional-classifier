@@ -157,12 +157,12 @@ class Experiment:
         return self.dfs.get("results")
 
     @staticmethod
-    def aggregate(name: str, op: str):
-        regex = f"^{name}(_[0-9]+)?$"
+    def aggregate(name: Optional[str] = None, op: str = "any"):
+        regex = f"^.*$" if name is None else f"^{name}(_[0-9]+)?$"
         fn = getattr(pl.element(), op)
         expr = pl.concat_list(pl.col(regex)).list.eval(fn()).list.first()
 
-        return expr.alias(f"{name}_{op}")
+        return expr.alias(op if name is None else f"{name}_{op}")
 
     def draw(
         self,

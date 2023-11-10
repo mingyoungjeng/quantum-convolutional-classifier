@@ -9,6 +9,7 @@ import torch.nn.functional as F
 import pennylane as qml
 from pennylane.templates import AngleEmbedding, RandomLayers
 
+from qcc.filters import update_dims
 from qcc.ml import reset_parameter
 from qcc.ml.cnn import ConvolutionalNeuralNetwork, Layer
 
@@ -112,15 +113,12 @@ class Quanvolution(Module):
         output = output.moveaxis(-2, -1)
 
         # Generate output shape
-        output_shape = (
-            Layer._size(*args)
-            for args in zip(
-                input_shape[-2:],
-                self.padding,
-                self.dilation,
-                self.kernel_size,
-                self.stride,
-            )
+        output_shape = update_dims(
+            input_shape, 
+            self.kernel_size,
+            self.dilation,
+            self.padding,
+            self.stride,
         )
         output_shape = (*output.shape[:-1], *output_shape)
         output = output.reshape(output_shape)

@@ -5,7 +5,8 @@ import logging
 from itertools import chain, pairwise
 
 import torch
-from torch import cuda
+from torch import Tensor, cuda
+from torch.nn import AvgPool2d, AvgPool3d
 
 if TYPE_CHECKING:
     from typing import Callable
@@ -53,3 +54,10 @@ def cut(
 
     index = chain((None,), i, (None,))
     return tuple(arr[a:b] for a, b, in pairwise(index))
+
+class TwoNormPool2d(AvgPool2d):
+    def forward(self, input: Tensor) -> Tensor:
+        return super().forward(input.pow(2)).sqrt()
+class TwoNormPool3d(AvgPool3d):
+    def forward(self, input: Tensor) -> Tensor:
+        return super().forward(input.pow(2)).sqrt()
