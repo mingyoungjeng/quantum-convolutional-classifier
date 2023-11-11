@@ -114,11 +114,11 @@ class Quanvolution(Module):
 
         # Generate output shape
         output_shape = update_dims(
-            input_shape, 
+            input_shape[-2:],
             self.kernel_size,
-            self.dilation,
-            self.padding,
             self.stride,
+            self.padding,
+            self.dilation,
         )
         output_shape = (*output.shape[:-1], *output_shape)
         output = output.reshape(output_shape)
@@ -149,7 +149,17 @@ class QuanvolutionalNeuralNetwork(torch.nn.Sequential):
 
     quanvolution: Layer = Layer(Quanvolution, stride=2)
 
-    def __init__(self, dims, num_layers=1, num_features=1, num_classes=2):
+    def __init__(
+        self,
+        dims,
+        num_layers: int = 1,
+        num_features: int = 1,
+        num_classes: int = 2,
+        relu: bool = True,
+        bias: bool = True,
+        convolution: Module = None,
+        pooling: Module = None,
+    ):
         num_channels = dims[2] if len(dims) > 2 else 1
         print(dims, num_channels)
 
@@ -158,7 +168,16 @@ class QuanvolutionalNeuralNetwork(torch.nn.Sequential):
         dims = *dims[:2], 4 * num_channels
         num_layers += -1
 
-        cnn = ConvolutionalNeuralNetwork(dims, num_layers, num_features, num_classes)
+        cnn = ConvolutionalNeuralNetwork(
+            dims,
+            num_layers,
+            num_features,
+            num_classes,
+            relu=relu,
+            bias=bias,
+            convolution=convolution,
+            pooling=pooling,
+        )
 
         return super().__init__(q, cnn)
 
