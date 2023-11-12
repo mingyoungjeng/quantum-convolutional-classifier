@@ -12,7 +12,6 @@ from qcc.quantum import to_qubits
 from qcc.quantum.pennylane import Convolution, Qubits, QubitsProperty
 from qcc.quantum.pennylane.ansatz import Ansatz, MQCC
 from qcc.quantum.pennylane.local import define_filter
-from qcc.quantum.pennylane.pyramid import Pyramid
 
 if TYPE_CHECKING:
     from typing import Iterable, Optional
@@ -20,7 +19,6 @@ if TYPE_CHECKING:
     from qcc.quantum.pennylane import Parameters, Unitary
     from qcc.quantum.pennylane.ansatz.ansatz import Statevector
     from torch import Tensor
-    
 
 
 class MQCCOptimized(Ansatz):
@@ -87,7 +85,7 @@ class MQCCOptimized(Ansatz):
         qubits = self._setup_qubits(Qubits(qubits))
 
         super().__init__(qubits, num_layers, num_classes, q2c_method)
-        
+
         if bias:
             self.register_parameter("bias", init_params(self.num_classes))
 
@@ -135,15 +133,17 @@ class MQCCOptimized(Ansatz):
 
         in_features = Qubits(data_qubits[:n_dim] + self.feature_qubits)
         # print("in_features", in_features)
-        
+
         num_params = self.num_classes * self.U_fully_connected.shape(in_features.total)
         fc_params, params = params[:num_params], params[num_params:]
         shape = (self.num_classes, len(fc_params) // self.num_classes)
         fc_params = fc_params.reshape(shape)
 
-        fcs = tuple(self.U_fully_connected(p, wires=in_features.flatten()) for p in fc_params)
+        fcs = tuple(
+            self.U_fully_connected(p, wires=in_features.flatten()) for p in fc_params
+        )
         Select(fcs, self.class_qubits.flatten())
-        
+
         meas = Qubits(self.class_qubits + in_features + controls).flatten()
         return meas
 
@@ -179,29 +179,29 @@ class MQCCOptimized(Ansatz):
 
         return num_params
 
-    def forward(self, psi_in: Optional[Statevector] = None) -> Tensor:
-        if psi_in is None:
-            return self.qnode(psi_in=psi_in)
-    
+    def forward(self, inputs: Optional[Statevector] = None) -> Tensor:
+        if inputs is None:
+            return self.qnode(psi_in=inputs)
+
         # Makes sure batch is 2D array
-        if result.dim() == 1:
-            result = result.unsqueeze(0)
-        
+        if inputs.dim() == 1:
+            inputs = inputs.unsqueeze(0)
+
         # Normalize inputs
         inputs = inputs.cdouble()  # Fixes issues with Pennylane
         magnitudes = linalg.norm(inputs, dim=1)
         inputs = (inputs.T / magnitudes).T
-    
-        result = self.qnode(psi_in=psi_in)
+
+        result = self.qnode(psi_in=inputs)
 
         # Unnormalize output
         result = (result.T / magnitudes).T
-    
+
         # Get subset of output
-        norm = 2**(self.feature_qubits.total + self.class_qubits.total)
-        result = norm * result[:, :self.num_classes]
+        norm = 2 ** (self.feature_qubits.total + self.class_qubits.total)
+        result = norm * result[:, : self.num_classes]
         result = sqrt(result + 1e-8)
-        
+
         # Norm and Bias from Fully Connected
         norm = self.get_parameter("norm").unsqueeze(0)
         result = result * norm
@@ -218,7 +218,7 @@ class MQCCOptimized(Ansatz):
     def max_layers(self) -> int:
         dims_qubits = zip(self.data_qubits, to_qubits(self.filter_shape))
         return max((len(q) // max(f, 1) for q, f in dims_qubits))
-    
+
     def reset_parameters(self):
         try:  # Reset bias (if possible)
             k = np.sqrt(1 / self.in_features)
@@ -241,10 +241,12 @@ class MQCCOptimized(Ansatz):
         # Feature qubits
         num_feature_qubits = to_qubits(self.num_features)
         self.feature_qubits = [(qubits.total + i for i in range(num_feature_qubits))]
-        
+
         # Class qubits
         num_class_qubits = to_qubits(self.num_classes)
-        self.class_qubits = [(qubits.total + num_feature_qubits + i for i in range(num_class_qubits))]
+        self.class_qubits = [
+            (qubits.total + num_feature_qubits + i for i in range(num_class_qubits))
+        ]
 
         # Data and ancilla qubits
         fltr_shape_q = to_qubits(self.filter_shape)
@@ -267,7 +269,10 @@ class MQCCOptimized(Ansatz):
         data_shape_q = self.data_qubits.shape
         fltr_shape_q = to_qubits(self.filter_shape)
 
-        fsq = (d - (self.num_layers * f) for d, f in zip(data_shape_q, fltr_shape_q))
-        fsq = (max(0, q) for q in fsq)
+        fsq = tuple(
+            d - (self.num_layers * f)
+            for d, f in zip_longest(data_shape_q, fltr_shape_q, fillvalue=0)
+        )
+        fsq = tuple(max(0, q) for q in fsq)
 
         return sum(fsq) + self.feature_qubits.total
