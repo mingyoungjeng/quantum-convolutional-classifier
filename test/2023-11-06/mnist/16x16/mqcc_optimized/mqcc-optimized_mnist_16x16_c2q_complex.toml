@@ -1,18 +1,19 @@
-module = "qcc.ml.hybrid_cnn.MQCCNonHybrid"
+module = "qcc.quantum.pennylane.ansatz.MQCCOptimized"
 dataset = "torchvision.datasets.MNIST"
 optimizer = "torch.optim.Adam"
 loss = "torch.nn.CrossEntropyLoss"
-transform = "qcc.ml.data.ClassicalImageTransform"
-dimensions = [16, 16, 1]
-num_layers = 4
+transform = "qcc.ml.data.ImageTransform"
+dimensions = [16, 16]
+num_layers = 3
 classes = [0, 1]
 epoch = 8
 batch_size = [8, 16]
 num_trials = 5
-classical = true
+quantum = true
 verbose = true
 
 [module_options]
+pre_op = true
 num_features = 4
 U_filter = "qcc.quantum.pennylane.c2q.ConvolutionAngleFilter"
 U_fully_connected = "qcc.quantum.pennylane.c2q.ConvolutionComplexAngleFilter"
