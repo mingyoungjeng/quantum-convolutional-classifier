@@ -107,8 +107,8 @@ class CLIParameters:
 
         # Save circuit drawing
         if self.is_quantum and filename is not None:
-            filename = filename.with_stem(f"{self.name}_circuit")
-            module.draw(filename=filename, decompose=True)
+            draw_path = filename.with_stem(f"{self.name}_circuit")
+            module.draw(filename=draw_path, decompose=True)
 
         # Run experiment
         results_schema = ["accuracy", "training_time", "testing_time"]

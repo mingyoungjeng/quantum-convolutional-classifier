@@ -158,7 +158,7 @@ class Experiment:
 
     @staticmethod
     def aggregate(name: Optional[str] = None, op: str = "any"):
-        regex = f"^.*$" if name is None else f"^{name}(_[0-9]+)?$"
+        regex = f"^.+$" if name is None else f"^{name}(_[0-9]+)?$"
         fn = getattr(pl.element(), op)
         expr = pl.concat_list(pl.col(regex)).list.eval(fn()).list.first()
 

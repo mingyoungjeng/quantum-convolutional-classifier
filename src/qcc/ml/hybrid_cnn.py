@@ -299,7 +299,7 @@ class FullyConnectedLayer(Module):
         self.in_features = in_features
         self.out_features = out_features
 
-        self.mqcc = FullyConnected.from_dims(
+        self.fc = FullyConnected.from_dims(
             [in_features],
             out_features,
             U_filter=U_filter,
@@ -316,7 +316,7 @@ class FullyConnectedLayer(Module):
         magnitudes = linalg.norm(inputs, dim=1)
         inputs = (inputs.T / magnitudes).T
 
-        result = self.mqcc.forward(inputs)
+        result = self.fc.forward(inputs)
 
         # Unnormalize output
         result = (result.T / magnitudes).T
