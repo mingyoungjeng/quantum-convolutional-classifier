@@ -34,7 +34,8 @@ class MQCC(Ansatz):
     feature_qubits: Qubits = QubitsProperty(slots=True)
 
     filter_shape: Iterable[int]
-    num_features: int
+    in_channels: int
+    out_channels: int
 
     U_filter: type[Unitary]
     U_fully_connected: Optional[type[Unitary]]
@@ -47,14 +48,16 @@ class MQCC(Ansatz):
         num_layers: int = None,
         num_classes: Optional[int] = None,
         q2c_method: Ansatz.Q2CMethod | str = Ansatz.Q2CMethod.Probabilities,
-        num_features: int = 1,
+        in_channels: int = 1,
+        out_channels: int = 1,
         filter_shape: Iterable[int] = (2, 2),
         U_filter: type[Unitary] = define_filter(num_layers=4),
         U_fully_connected: Optional[type[Unitary]] = Pyramid,
         pooling: Iterable[int] | bool = False,
     ):
         self._num_layers = num_layers
-        self.num_features = num_features
+        self.in_channels = in_channels
+        self.out_channels = out_channels
         self.filter_shape = filter_shape
 
         self.U_filter = U_filter  # pylint: disable=invalid-name
@@ -83,7 +86,7 @@ class MQCC(Ansatz):
             for i in range(self.num_layers)
         ]
 
-        for qubit in self.feature_qubits.flatten():
+        for qubit in self.feature_qubits.flatten()[to_qubits(self.in_channels) :]:
             Hadamard(wires=qubit)
 
         # Convolution layers
@@ -122,7 +125,7 @@ class MQCC(Ansatz):
             fsq = (f for (d, f) in zip(data_shape_q, fltr_shape_q) if d - (i * f))
             num_params += self.U_filter.shape(sum(fsq))
 
-        num_params *= self.num_features
+        num_params *= self.out_channels
 
         # TODO: work with assymmetric dims
         if self.U_fully_connected:
@@ -156,6 +159,10 @@ class MQCC(Ansatz):
         dims_qubits = zip(self.data_qubits, to_qubits(self.filter_shape))
         return max((len(q) // max(f, 1) for q, f in dims_qubits))
 
+    @property
+    def num_features(self) -> int:
+        return 2**self.feature_qubits.total
+
     ### PRIVATE
 
     def _setup_qubits(self, qubits: Qubits) -> Qubits:
@@ -164,7 +171,9 @@ class MQCC(Ansatz):
 
         # Feature qubits
         top = qubits.total
-        self.feature_qubits = [range(top, top + to_qubits(self.num_features))]
+        self.feature_qubits = [
+            range(top, top + to_qubits(max(self.in_channels, self.out_channels)))
+        ]
         top += self.feature_qubits.total
 
         # Ancilla qubits
@@ -181,21 +190,24 @@ class MQCC(Ansatz):
 
     @property
     def _data_wires(self) -> Wires:
-        return self.data_qubits.flatten()
+        in_channel_qubits = self.feature_qubits.flatten()[: to_qubits(self.in_channels)]
+        return self.data_qubits.flatten() + in_channel_qubits
 
     def _filter(self, params, qubits: Qubits):
         """Wrapper around self.U_filter that replaces Convolution.filter"""
 
         # Setup params
         qubits = Qubits(q[:fsq] for q, fsq in zip(qubits, to_qubits(self.filter_shape)))
-        num_params = self.num_features * self.U_filter.shape(qubits.total)
+        num_params = self.out_channels * self.U_filter.shape(qubits.total)
         filter_params, params = params[:num_params], params[num_params:]
-        shape = (self.num_features, len(filter_params) // self.num_features)
+        shape = (self.out_channels, len(filter_params) // self.out_channels)
         filter_params = filter_params.reshape(shape)
 
         # Apply filter
         wires = qubits.flatten()
         filters = tuple(self.U_filter(fp, wires=wires) for fp in filter_params)
-        Select(filters, self.feature_qubits.flatten())  # TODO: check [::-1]
+        Select(
+            filters, self.feature_qubits.flatten()[: to_qubits(self.out_channels)]
+        )  # TODO: check [::-1]
 
         return params  # Leftover parameters

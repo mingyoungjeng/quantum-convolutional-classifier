@@ -74,7 +74,7 @@ class ImageTransform(transforms.Compose):
         dims: Optional[Iterable[int]] = None,
         fix_bands=True,
         flatten=True,
-        norm=False,
+        norm=True,
         squeeze=True,
     ):
         ops = [transforms.ToTensor()]

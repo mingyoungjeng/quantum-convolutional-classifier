@@ -49,6 +49,7 @@ class MQCCHybrid(nn.Sequential):
         bias: bool = False,
         U_filter: type[Unitary] = ConvolutionAngleFilter,
         U_fully_connected: Optional[type[Unitary]] = None,
+        ansatz=MQCC,
     ):
         *dims, channels = dims
 
@@ -64,6 +65,7 @@ class MQCCHybrid(nn.Sequential):
                 pooling=True,
                 U_filter=U_filter,
                 bias=bias,
+                ansatz=ansatz,
             )
 
             lst += [mqcc]
@@ -103,6 +105,7 @@ class MQCCNonHybrid(MQCCHybrid):
         num_classes: int = 2,
         U_filter: type[Unitary] = ConvolutionAngleFilter,
         U_fully_connected: type[Unitary] = ConvolutionAngleFilter,
+        ansatz=MQCC,
     ):
         super().__init__(
             dims,
@@ -113,7 +116,9 @@ class MQCCNonHybrid(MQCCHybrid):
             bias=False,
             U_filter=U_filter,
             U_fully_connected=U_fully_connected,
+            ansatz=ansatz,
         )
+
 
 default = {
     "kernel_size": 1,
@@ -121,6 +126,7 @@ default = {
     "padding": 0,
     "dilation": 1,
 }
+
 
 class MQCCLayer(Module):
     __slots__ = (
@@ -145,15 +151,19 @@ class MQCCLayer(Module):
         pooling: bool = False,
         bias: bool = False,
         U_filter: type[Unitary] = ConvolutionAngleFilter,
+        ansatz=MQCC,
     ):
         super().__init__()
 
         self.dims = dims
         self.in_channels = in_channels
         self.out_channels = out_channels
-        
+
         if isinstance(kernel_size, int):
-            kernel_size = [kernel_size if dim >= kernel_size else default["kernel_size"] for dim in dims]
+            kernel_size = [
+                kernel_size if dim >= kernel_size else default["kernel_size"]
+                for dim in dims
+            ]
         self.kernel_size = kernel_size
 
         names = ["stride", "padding", "dilation"]
@@ -163,18 +173,17 @@ class MQCCLayer(Module):
                 param = [param if k > 1 else default[name] for k in kernel_size]
             setattr(self, name, param)
 
-        num_features = int(np.ceil(out_channels / in_channels))
-
         module_options = {
             "U_filter": U_filter,
-            "num_features": num_features,
+            "in_channels": in_channels,
+            "out_channels": out_channels,
             "U_fully_connected": None,
             "pooling": pooling,
             "filter_shape": self.kernel_size,
         }
 
-        self.mqcc = MQCC.from_dims(
-            (*dims, in_channels),
+        self.mqcc = ansatz.from_dims(
+            dims,
             num_layers=1,
             **module_options,
         )
@@ -184,7 +193,7 @@ class MQCCLayer(Module):
 
         self.register_parameter("filter_norm", init_params(self.out_channels))
         self.reset_parameters()
-        
+
         # display(self.mqcc.draw())
 
     def forward(self, inputs):
@@ -212,21 +221,21 @@ class MQCCLayer(Module):
 
         dims_out = self.update_dims(dims)
         dims = update_dims(
-            2**to_qubits(dims),
+            2 ** to_qubits(dims),
             kernel_size=self.mqcc.pooling,
             stride=self.mqcc.pooling,
         )
 
-        dims_out = (batch_size, *dims_out, self.in_channels, self.mqcc.num_features)
-        dims = (batch_size, *dims, self.in_channels, self.mqcc.num_features)
-        dims = (dims[0], *(2**to_qubits(dims[1:])))
+        dims_out = (batch_size, *dims_out, self.mqcc.num_features)
+        dims = (batch_size, *dims, self.mqcc.num_features)
+        dims = (dims[0], *(2 ** to_qubits(dims[1:])))
 
         result = reconstruct(result, dims, dims_out, fix_size=False)
         result = result.T  # Return in row-major order
 
         # Merge features into least-significant dimension
-        dims_out = (*dims_out[:-2], dims_out[-2] * dims_out[-1])
-        result = result.reshape(dims_out[::-1])
+        # dims_out = (*dims_out[:-2], dims_out[-2] * dims_out[-1])
+        # result = result.reshape(dims_out[::-1])
 
         # Crop out_channels if necessary
         result = result[: self.out_channels, ...]
@@ -264,7 +273,7 @@ class MQCCLayer(Module):
             kernel_size=self.mqcc.pooling,
             stride=self.mqcc.pooling,
         )
-        
+
         return dims
 
     def reset_parameters(self):

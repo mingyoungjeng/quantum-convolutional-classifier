@@ -46,8 +46,8 @@ class Qubits(list):
             item = [item]
 
         # qreg = QuantumRegister(bits=[Qubit() for _ in item])
-        return Wires.all_wires(item)
-        # return item
+        # return Wires.all_wires(item)
+        return item
 
     def flatten(self) -> Iterable:
         return [qubit for qregs in self for qubit in qregs]
