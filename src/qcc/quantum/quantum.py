@@ -12,6 +12,7 @@ from qcc.ml import create_tensor
 
 if TYPE_CHECKING:
     from typing import Optional, Iterable
+    from numbers import Number
     from pathlib import Path
 
 
@@ -123,7 +124,9 @@ def get_fidelity(x_in, x_out) -> float:
     return fidelity
 
 
-def reconstruct(data: np.ndarray, size, size_out=None, fix_size: bool = True) -> np.ndarray:
+def reconstruct(
+    data: np.ndarray, size, size_out=None, fix_size: bool = True
+) -> np.ndarray:
     if size_out is None:
         size_out = size
 
@@ -154,3 +157,43 @@ def parity(result, num_classes: int = 2):
         predictions[i] = pred
 
     return predictions
+
+
+def partial_measurement(psi_in: Iterable[Number], bits_to_remove: Iterable[int]):
+    # Output vector with same length as psi_in
+    psi_out = np.zeros_like(psi_in)
+
+    # Create bitmask from bits_to_remove
+    bitmask = sum(2**x for x in bits_to_remove)
+    bitmask = ~bitmask  # Negative mask of bitmask
+
+    # Reduce psi_in while preserving indices
+    for i, x in enumerate(psi_in):
+        i_out = i & bitmask  # index in psi_out to insert value
+
+        # Add the square of the value in psi (probability)
+        psi_out[i_out] += np.abs(x) ** 2
+    psi_out = np.sqrt(psi_out)  # Take sqrt to return to a "statevector"
+
+    return psi_out
+
+
+def remove_bits(psi_in: Iterable[Number], bits_to_remove: Iterable[int]):
+    num_bits_reduced: int = int(np.ceil(np.log2(len(psi_in)))) - len(bits_to_remove)
+    psi_reduced = np.zeros(
+        2**num_bits_reduced, dtype=psi_in.dtype
+    )  # Output vector removing all irrelevant bits
+
+    bits_to_remove.sort()  # Algorithm works from lower bits to higher bits
+    for j in range(2**num_bits_reduced):
+        j_out = j
+        for b in bits_to_remove:
+            upper_bits = j_out >> b
+            lower_bits = j_out % (1 << b) if b > 0 else 0
+
+            j_out = (upper_bits << b + 1) + lower_bits
+            # print(f"{j:b}, {j_out:b}, {b}: {upper_bits:b}, {lower_bits:b}")
+
+        psi_reduced[j] = psi_in[j_out]
+
+    return psi_reduced

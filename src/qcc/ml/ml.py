@@ -55,9 +55,12 @@ def cut(
     index = chain((None,), i, (None,))
     return tuple(arr[a:b] for a, b, in pairwise(index))
 
-class TwoNormPool2d(AvgPool2d):
+
+class EuclideanPool2d(AvgPool2d):
     def forward(self, input: Tensor) -> Tensor:
         return super().forward(input.pow(2)).sqrt()
-class TwoNormPool3d(AvgPool3d):
+
+
+class EuclideanPool3d(AvgPool3d):
     def forward(self, input: Tensor) -> Tensor:
         return super().forward(input.pow(2)).sqrt()

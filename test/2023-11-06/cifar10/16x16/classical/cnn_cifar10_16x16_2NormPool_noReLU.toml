@@ -14,7 +14,7 @@ verbose = true
 
 [module_options]
 num_features = 4
-pooling = "qcc.ml.TwoNormPool3d"
+pooling = "qcc.ml.EuclideanPool3d"
 relu = false
 
 [optimizer_options]

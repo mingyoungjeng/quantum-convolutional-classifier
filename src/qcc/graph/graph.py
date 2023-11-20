@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from typing import Optional
 
 CWD = Path(__file__).parent
-graph_template = go.layout.Template(load_toml(CWD / "supercomputing23.toml"))
+graph_template = go.layout.Template(load_toml(CWD / "graph_template.toml"))
 
 
 def plot(

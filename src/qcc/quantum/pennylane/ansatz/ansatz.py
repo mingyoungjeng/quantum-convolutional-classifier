@@ -59,7 +59,7 @@ class Ansatz(Module, metaclass=ABCMeta):
         self.reset_parameters()
 
         wires = self.qubits.flatten()[::-1]  # Big-endian format
-        device = qml.device("default.qubit", wires=wires)
+        device = qml.device("lightning.qubit", wires=wires)
         self._qnode = qml.QNode(self._circuit, device, interface="torch")
 
     # Main properties

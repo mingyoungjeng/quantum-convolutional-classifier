@@ -2,14 +2,15 @@
 
 [layout]
 autosize = false
-width = 600              # 6in @ 100dpi
-height = 500             # 5in @ 100dpi
-paper_bgcolor = "white"
-plot_bgcolor = "#ebebeb"
+width = 600                                                        # 6in @ 100dpi
+height = 500                                                       # 5in @ 100dpi
+paper_bgcolor = "#E6F5E6"
+plot_bgcolor = "#CBD5DD"
+colorway = ["#4472C4", "#ED7D31", "#548235", "#7030A0", "#CE34D1"]
 
 [layout.font]
-family = "Inter"
-size = 16
+family = "Arial"
+size = 14
 color = "black"
 
 [layout.margin]
@@ -26,10 +27,6 @@ pad = 0
 [data.scatter.marker]
 size = 10
 
-# [data.scatter.marker.line]
-# width = 2
-# color = "white"
-
 [data.scatter.line]
 width = 3
 shape = "spline"
@@ -44,7 +41,7 @@ y = 1
 yanchor = "middle"
 
 [layout.title.font]
-family = "Inter SemiBold"
+family = "Arial"
 size = 20
 color = "black"
 
@@ -59,62 +56,61 @@ t = 0
 [layout.xaxis]
 automargin = false
 gridcolor = "#c8c8c8"
-linecolor = "#c8c8c8"
-zerolinecolor = "#c8c8c8"
-tickcolor = "#c8c8c8"
-gridwidth = 2
-linewidth = 2
-zerolinewidth = 2
+linecolor = "black"
+zerolinecolor = "black"
+tickcolor = "black"
+gridwidth = 1
+linewidth = 1
+zerolinewidth = 1
 showgrid = false
 showline = true
 mirror = true
 ticks = "outside"
-tickwidth = 2
+tickwidth = 1
 
 [layout.xaxis.title]
-standoff = 12
+standoff = 16
 
 [layout.xaxis.title.font]
-family = "Inter SemiBold"
+family = "Arial"
 size = 20
 color = "black"
 
 [layout.xaxis.minor]
 showgrid = false
-gridcolor = "#e1e1e1"
-tickcolor = "#e1e1e1"
-ticks = "outside"
+gridcolor = "black"
+tickcolor = "black"
+ticks = "inside"
 
 ### Y-Axis
 
 [layout.yaxis]
 automargin = false
-gridcolor = "#c8c8c8"
-linecolor = "#c8c8c8"
-zerolinecolor = "#c8c8c8"
-tickcolor = "#c8c8c8"
-gridwidth = 2
-linewidth = 2
-zerolinewidth = 2
+gridcolor = "#ebebeb"
+linecolor = "black"
+zerolinecolor = "black"
+tickcolor = "black"
+gridwidth = 1
+linewidth = 1
+zerolinewidth = 1
 showgrid = true
 showline = true
 mirror = true
 ticks = "outside"
-tickwidth = 2
+tickwidth = 1
 
 [layout.yaxis.title]
 standoff = 0
 
 [layout.yaxis.title.font]
-family = "Inter SemiBold"
+family = "Arial"
 size = 20
 color = "black"
 
 [layout.yaxis.minor]
-showgrid = true
-gridcolor = "#e1e1e1"
-tickcolor = "#e1e1e1"
-ticks = "outside"
+showgrid = false
+tickcolor = "black"
+ticks = "inside"
 
 ### Legend
 
@@ -124,10 +120,11 @@ y = 1.006
 # xanchor = "center"
 yanchor = "top"
 bordercolor = "black"
-borderwidth = 2
+borderwidth = 1
+bgcolor = "white"
 # itemsizing = "constant"
 
 [layout.legend.font]
-family = "Inter"
+family = "Arial"
 size = 14
 color = "black"

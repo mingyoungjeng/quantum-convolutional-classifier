@@ -15,7 +15,7 @@ verbose = true
 [module_options]
 num_features = 4
 convolution = "torch.nn.Conv2d"
-pooling = "qcc.ml.TwoNormPool2d"
+pooling = "qcc.ml.EuclideanPool2d"
 bias = true
 
 [optimizer_options]

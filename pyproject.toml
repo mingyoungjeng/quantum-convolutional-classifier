@@ -8,7 +8,7 @@ name = "qcc"
 dynamic = ["version"] # "dependencies"
 dependencies = [
     "attrs",
-    "PennyLane",
+    "PennyLane==0.32.0",
     "qiskit",
     "qiskit_machine_learning",
     "qiskit-aer",

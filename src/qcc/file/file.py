@@ -8,6 +8,7 @@ from PIL import Image
 from astropy.io import fits
 from polars import DataFrame, read_csv
 from matplotlib.figure import Figure
+import numpy as np
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -69,6 +70,16 @@ def save(filename: Path, fn: Callable[[Path], None], overwrite=True) -> None:
 
     # Return filename in case stem change needed
     return filename
+
+
+def save_numpy_as_image(data: np.ndarray):
+    # Convert data type
+    data = np.abs(data).astype(np.uint8)
+
+    # Create Image
+    img = Image.fromarray(data)
+
+    return img.save
 
 
 def save_img(filename: Path, img: Image.Image, overwrite=True) -> None:

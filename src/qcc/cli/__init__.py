@@ -12,12 +12,14 @@ from multiprocessing import Pool, set_start_method
 import click
 
 from qcc.cli.run import CLIParameters
+from .pooling import DimensionReduction, _pooling
 from qcc.experiment import Experiment
 
 if TYPE_CHECKING:
     from typing import Iterable
 
 log = logging.getLogger(__name__)
+
 
 class ObjectType(click.ParamType):
     name = "object"
@@ -310,6 +312,63 @@ def _run(
 
     cmd = CLIParameters(**kwargs)
     cmd()
+
+
+@cli.command()
+@click.pass_context
+@click.option(
+    "--method",
+    "decomposition_type",
+    type=click.Choice(
+        [e.value for e in DimensionReduction],
+        case_sensitive=False,
+    ),
+)
+@click.option(
+    "-l",
+    "--decomposition_levels",
+    type=int,
+    multiple=True,
+    default=[0],
+)
+@click.option(
+    "-i",
+    "--inputs",
+    required=True,
+    type=click.Path(
+        exists=True,
+        path_type=Path,
+        resolve_path=True,
+        file_okay=False,
+        writable=True,
+    ),
+    default=Path.cwd() / "data",
+    show_default=False,
+    help="Input data",
+)
+@click.option(
+    "-o",
+    "--output_dir",
+    required=True,
+    type=click.Path(
+        exists=True,
+        path_type=Path,
+        resolve_path=True,
+        file_okay=False,
+        writable=True,
+    ),
+    default=Path.cwd(),
+    show_default=False,
+    callback=create_results,
+    help="Output directory",
+)
+@click.option(
+    "--noiseless/--noisy",
+    default=True,
+    required=True,
+)
+def pooling(ctx, **kwargs):
+    _pooling(**kwargs)
 
 
 if __name__ == "__main__":
