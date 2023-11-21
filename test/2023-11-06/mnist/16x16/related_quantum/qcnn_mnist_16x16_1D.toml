@@ -1,0 +1,18 @@
+module = "qcc.quantum.pennylane.ansatz.QCNN"
+dataset = "torchvision.datasets.MNIST"
+optimizer = "torch.optim.Adam"
+loss = "torch.nn.CrossEntropyLoss"
+transform = "qcc.ml.data.ImageTransform1D"
+dimensions = [16, 16]
+num_layers = 3
+classes = [0, 1]
+epoch = 8
+batch_size = [8, 16]
+num_trials = 5
+quantum = true
+verbose = true
+
+[module_options]
+
+[optimizer_options]
+lr = 0.001

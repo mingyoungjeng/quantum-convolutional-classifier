@@ -27,6 +27,7 @@ class Quanvolution(Module):
         "num_layers",
         "qnode",
         "seed",
+        "params",
     )
 
     kernel_size: tuple[int, int]
@@ -50,6 +51,7 @@ class Quanvolution(Module):
         out_channels: Optional[int] = None,
         # padding_mode: str = "constant",
         num_layers: int = 4,
+        parameterized: bool = True,
         **_,
     ) -> None:
         super().__init__()
@@ -74,7 +76,13 @@ class Quanvolution(Module):
 
         device = qml.device("default.qubit", wires=range(num_wires))
         qnode = qml.QNode(self.circuit, device, interface="torch")
-        self.qnode = qml.qnn.TorchLayer(qnode, {"params": (self.num_layers, num_wires)})
+
+        weight_shape = (self.num_layers, num_wires)
+        self.qnode = qml.qnn.TorchLayer(
+            qnode, {"params": weight_shape if parameterized else 0}
+        )
+        if not parameterized:
+            self.params = torch.randint(low=0, high=1, size=weight_shape)
 
     def forward(self, input):
         input_shape = input.shape
@@ -126,6 +134,9 @@ class Quanvolution(Module):
         return output
 
     def circuit(self, inputs: torch.Tensor, params: torch.Tensor):
+        if len(params) == 0:
+            params = self.params
+
         wires = range(params.shape[-1])
 
         # Normalize the input from [0, 1] to [0, π]
