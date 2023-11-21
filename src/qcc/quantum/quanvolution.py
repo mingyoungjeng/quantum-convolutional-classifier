@@ -170,11 +170,12 @@ class QuanvolutionalNeuralNetwork(torch.nn.Sequential):
         bias: bool = True,
         convolution: Module = None,
         pooling: Module = None,
+        parameterized=True,
     ):
         num_channels = dims[2] if len(dims) > 2 else 1
         print(dims, num_channels)
 
-        q = self.quanvolution(padding_mode="circular")
+        q = self.quanvolution(padding_mode="circular", parameterized=parameterized)
         dims = self.quanvolution.update_dims(*dims)
         dims = *dims[:2], 4 * num_channels
         num_layers += -1
