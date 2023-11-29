@@ -37,7 +37,7 @@ def plot(
         layout["xaxis_title_text"] = "<b>" + xlabel
 
         num_br = xlabel.count("<br>")
-        layout["margin_b"] = 34 * (num_br + 2)
+        layout["margin_b"] = 32 * (num_br + 2)
     if ylabel is not None:
         layout["yaxis_title_text"] = "<b>" + ylabel
 
