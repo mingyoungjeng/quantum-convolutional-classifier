@@ -9,7 +9,7 @@ plot_bgcolor = "#ebebeb"
 
 [layout.font]
 family = "Inter"
-size = 16
+size = 14
 color = "black"
 
 [layout.margin]

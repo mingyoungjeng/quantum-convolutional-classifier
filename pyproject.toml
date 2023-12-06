@@ -9,6 +9,7 @@ dynamic = ["version"] # "dependencies"
 dependencies = [
     "attrs",
     "PennyLane==0.32.0",
+    "PennyLane-Lightning==0.32.0",
     "qiskit",
     "qiskit_machine_learning",
     "qiskit-aer",
