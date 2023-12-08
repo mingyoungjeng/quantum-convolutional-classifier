@@ -17,10 +17,6 @@ if TYPE_CHECKING:
     from torch.optim import Optimizer as TorchOptimizer
 
 
-if TYPE_CHECKING:
-    pass
-
-
 def str_to_mod(x):
     return lookup(x) if isinstance(x, str) else x
 
@@ -33,7 +29,7 @@ def dict_converter(x: Mapping):
 
 
 @define(kw_only=True)
-class CLIParameters:
+class Classify:
     name: str
     module: type[Module] = field(converter=str_to_mod)
     dataset: type[Dataset] = field(converter=str_to_mod)
@@ -53,7 +49,10 @@ class CLIParameters:
     verbose: bool = False
 
     @classmethod
-    def from_toml(cls, filename: Path, **kwargs) -> CLIParameters:
+    def from_toml(cls, filename: Path, **kwargs) -> Classify:
+        """
+        Load from toml config
+        """
         kwargs["name"] = filename.stem
         kwargs = load_toml(filename) | kwargs
 
@@ -65,6 +64,9 @@ class CLIParameters:
         return cls(**kwargs)
 
     def __call__(self) -> None:
+        """
+        Perform classification experiment from parameter
+        """
         if self.output_dir is None:
             filename = None
         else:
@@ -74,7 +76,7 @@ class CLIParameters:
         if self.is_quantum:
             self.module = self.module.from_dims
 
-        # Create module
+        # Prepare module, data, optimize, loss_fn from parameters
         module: Module = self.module(
             self.dimensions,
             num_layers=self.num_layers,
@@ -90,6 +92,8 @@ class CLIParameters:
         )
         optimizer = Optimizer(self.optimizer, **self.optimizer_options)
         loss: Callable = self.loss()
+
+        # Create a ML model from paramters
         model = Model.with_logging(module, data, optimizer, loss, epoch=self.epoch)
 
         # Log important values
@@ -105,7 +109,7 @@ class CLIParameters:
         model.logger.info(f"{self.epoch=}")
         model.logger.info(f"{self.module_options=}")
 
-        # Save circuit drawing
+        # Save circuit drawing (if QML)
         if self.is_quantum and filename is not None:
             draw_path = filename.with_stem(f"{self.name}_circuit")
             module.draw(filename=draw_path, decompose=True)

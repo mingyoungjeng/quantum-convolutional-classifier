@@ -1,4 +1,4 @@
-module = "qcc.ml.hybrid_cnn.MQCCHybrid"
+module = "qcc.ml.quantum.MQCCHybrid"
 dataset = "torchvision.datasets.FashionMNIST"
 optimizer = "torch.optim.Adam"
 loss = "torch.nn.CrossEntropyLoss"
@@ -15,7 +15,7 @@ verbose = true
 [module_options]
 num_features = 4
 relu = false
-U_filter = "qcc.ml.hybrid_cnn.AnsatzFilter"
+U_filter = "qcc.ml.quantum.AnsatzFilter"
 bias = false
 
 [optimizer_options]

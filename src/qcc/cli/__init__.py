@@ -1,3 +1,9 @@
+"""
+Command line interface
+
+Very useful for rapid and efficient experiment execution (e.g. on cluster)
+"""
+
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
@@ -11,7 +17,7 @@ from multiprocessing import Pool, set_start_method
 
 import click
 
-from qcc.cli.run import CLIParameters
+from qcc.cli.ml import Classify
 from .pooling import DimensionReduction, _pooling
 from qcc.experiment import Experiment
 
@@ -21,11 +27,22 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+###=============###
+### Boilerplate ###
+###=============###
 class ObjectType(click.ParamType):
+    """
+    click.ParamType for compatibility with TOML config files
+    """
+
     name = "object"
 
 
 class DictType(click.ParamType):
+    """
+    click.ParamType for compatibility with TOML config files
+    """
+
     name = "key:value"
 
     def convert(self, value, param, ctx):
@@ -43,7 +60,7 @@ class DictType(click.ParamType):
             self.fail(f"{value!r} is not a valid {self.name}", param, ctx)
 
 
-def create_results(ctx, param, value):
+def create_results(ctx, param, value: Path):
     results_dir = value / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
     return results_dir
@@ -56,6 +73,11 @@ def cli(ctx: click.Context):
 
     # Set context settings
     ctx.show_default = True
+
+
+###==================###
+### Classify Command ###
+###==================###
 
 
 @cli.command()
@@ -168,8 +190,47 @@ def cli(ctx: click.Context):
     "--verbose",
     is_flag=True,
 )
-def run(**kwargs):
-    _run(**kwargs)
+def classify(**kwargs):
+    """
+    Quantum and classical classification / supervised learning
+    """
+    _classify(**kwargs)
+
+
+def _setup_module(root: str, obj: str = None):
+    if obj is None or "." in obj:
+        return obj
+
+    return f"{root}.{obj}"
+
+
+def _classify(
+    ansatz: str,
+    dataset: str,
+    optimizer: str,
+    loss: str,
+    transform: str,
+    *,
+    quantum: bool,
+    **kwargs,
+):
+    """
+    See Classify for more details
+    """
+    kwargs["ansatz"] = _setup_module("qcc.quantum.pennylane.ansatz", ansatz)
+    kwargs["dataset"] = _setup_module("torchvision.datasets", dataset)
+    kwargs["optimizer"] = _setup_module("torch.optim", optimizer)
+    kwargs["loss"] = _setup_module("torch.nn", loss)
+    kwargs["transform"] = _setup_module("qcc.ml.data", transform)
+    kwargs["is_quantum"] = quantum
+
+    cmd = Classify(**kwargs)
+    cmd()
+
+
+###==============###
+### Load Command ###
+###==============###
 
 
 @cli.command()
@@ -222,7 +283,7 @@ def load(ctx, paths: Iterable[Path], glob: str, parallel: bool, output_dir: Path
             if fnmatch(path, glob):
                 toml_files.add(path)
 
-    cmds = (CLIParameters.from_toml(toml, output_dir=output_dir) for toml in toml_files)
+    cmds = (Classify.from_toml(toml, output_dir=output_dir) for toml in toml_files)
 
     errs = []
 
@@ -241,7 +302,7 @@ def load(ctx, paths: Iterable[Path], glob: str, parallel: bool, output_dir: Path
         raise RuntimeError(f"{len(errs)} file(s) encountered an error")
 
 
-def _run_pool(cmds: Iterable[CLIParameters]):
+def _run_pool(cmds: Iterable[Classify]):
     experiments: dict[str, Experiment] = dict()
     output_dir: Path = None
 
@@ -266,7 +327,7 @@ def _run_pool(cmds: Iterable[CLIParameters]):
 
             args += (cmd for _ in range(num_trials))
 
-        results = pool.imap_unordered(CLIParameters.__call__, args)
+        results = pool.imap_unordered(Classify.__call__, args)
 
         for name, dfs in results:
             experiment = experiments[name]
@@ -284,34 +345,6 @@ def _run_pool(cmds: Iterable[CLIParameters]):
             filename = output_dir / name / name
             experiment.save(filename, overwrite=True)
             experiment.draw(filename, overwrite=True, close=True)
-
-
-def _setup_module(root: str, obj: str = None):
-    if obj is None or "." in obj:
-        return obj
-
-    return f"{root}.{obj}"
-
-
-def _run(
-    ansatz: str,
-    dataset: str,
-    optimizer: str,
-    loss: str,
-    transform: str,
-    *,
-    quantum: bool,
-    **kwargs,
-):
-    kwargs["ansatz"] = _setup_module("qcc.quantum.pennylane.ansatz", ansatz)
-    kwargs["dataset"] = _setup_module("torchvision.datasets", dataset)
-    kwargs["optimizer"] = _setup_module("torch.optim", optimizer)
-    kwargs["loss"] = _setup_module("torch.nn", loss)
-    kwargs["transform"] = _setup_module("qcc.ml.data", transform)
-    kwargs["is_quantum"] = quantum
-
-    cmd = CLIParameters(**kwargs)
-    cmd()
 
 
 @cli.command()

@@ -1,4 +1,4 @@
-module = "qcc.ml.hybrid_cnn.MQCCNonHybrid"
+module = "qcc.ml.quantum.MQCCNonHybrid"
 dataset = "torchvision.datasets.CIFAR10"
 optimizer = "torch.optim.Adam"
 loss = "torch.nn.CrossEntropyLoss"
@@ -16,7 +16,7 @@ verbose = true
 ansatz = "qcc.quantum.pennylane.ansatz.MQCCOptimized"
 num_features = 4
 U_filter = "qcc.quantum.pennylane.c2q.ConvolutionComplexAngleFilter"
-U_fully_connected = "qcc.ml.hybrid_cnn.AnsatzFilter"
+U_fully_connected = "qcc.ml.quantum.AnsatzFilter"
 
 [optimizer_options]
 lr = 0.001

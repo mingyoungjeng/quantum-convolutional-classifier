@@ -47,7 +47,7 @@ class MQCCHybrid(nn.Sequential):
         num_classes: int = 2,
         relu: bool = True,
         bias: bool = False,
-        U_filter: type[Unitary] = ConvolutionAngleFilter,
+        U_kernel: type[Unitary] = ConvolutionAngleFilter,
         U_fully_connected: Optional[type[Unitary]] = None,
         ansatz=MQCC,
         pool="euclidean",
@@ -64,7 +64,7 @@ class MQCCHybrid(nn.Sequential):
                 in_channels=channels if i == 0 else num_features,
                 out_channels=num_features,
                 pooling=(pool == "euclidean"),
-                U_filter=U_filter,
+                U_kernel=U_kernel,
                 bias=bias,
                 ansatz=ansatz,
             )
@@ -84,7 +84,7 @@ class MQCCHybrid(nn.Sequential):
         if U_fully_connected is None:
             fully_connected = nn.Linear
         else:
-            fully_connected = partial(FullyConnectedLayer, U_filter=U_fully_connected)
+            fully_connected = partial(FullyConnectedLayer, U_kernel=U_fully_connected)
 
         lst += [
             nn.Flatten(),
@@ -109,7 +109,7 @@ class MQCCNonHybrid(MQCCHybrid):
         num_layers: int = 1,
         num_features: int = 1,
         num_classes: int = 2,
-        U_filter: type[Unitary] = ConvolutionAngleFilter,
+        U_kernel: type[Unitary] = ConvolutionAngleFilter,
         U_fully_connected: type[Unitary] = ConvolutionAngleFilter,
         ansatz=MQCC,
     ):
@@ -120,7 +120,7 @@ class MQCCNonHybrid(MQCCHybrid):
             num_classes,
             relu=False,
             bias=False,
-            U_filter=U_filter,
+            U_kernel=U_kernel,
             U_fully_connected=U_fully_connected,
             ansatz=ansatz,
         )
@@ -156,7 +156,7 @@ class MQCCLayer(Module):
         dilation: int | Iterable[int],
         pooling: bool = False,
         bias: bool = False,
-        U_filter: type[Unitary] = ConvolutionAngleFilter,
+        U_kernel: type[Unitary] = ConvolutionAngleFilter,
         ansatz=MQCC,
     ):
         super().__init__()
@@ -180,7 +180,7 @@ class MQCCLayer(Module):
             setattr(self, name, param)
 
         module_options = {
-            "U_filter": U_filter,
+            "U_kernel": U_kernel,
             "in_channels": in_channels,
             "out_channels": out_channels,
             "U_fully_connected": None,
@@ -267,10 +267,10 @@ class MQCCLayer(Module):
     def update_dims(self, dims):
         dims = update_dims(
             dims,
-            kernel_size=self.kernel_size,
-            stride=self.stride,
             padding=self.padding,
             dilation=self.dilation,
+            kernel_size=self.kernel_size,
+            stride=self.stride,
         )
 
         # Correct for pooling
@@ -308,7 +308,7 @@ class FullyConnectedLayer(Module):
         in_features: int,
         out_features: int,
         bias: bool = True,
-        U_filter: type[Unitary] = ConvolutionAngleFilter,
+        U_kernel: type[Unitary] = ConvolutionAngleFilter,
     ):
         super().__init__()
         self.in_features = in_features
@@ -317,7 +317,7 @@ class FullyConnectedLayer(Module):
         self.fc = FullyConnected.from_dims(
             [in_features],
             out_features,
-            U_filter=U_filter,
+            U_kernel=U_kernel,
         )
 
         if bias:

@@ -1,3 +1,7 @@
+"""
+_summary_
+"""
+
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
@@ -12,19 +16,35 @@ if TYPE_CHECKING:
 
 # TODO: padding, dilation
 def convolution(
-    img_data: np.ndarray,
-    fltr: np.ndarray,
+    img_data: np.array,
+    fltr: np.array,
     stride: int | Sequence[int] = 1,
     padding: int | Sequence[int] = 0,
     dilation: int | Sequence[int] = 1,
     bounds: Optional[tuple[Number, Number]] = None,
-):
+    use_abs: bool = True,
+) -> np.array:
+    """
+    Direct implementation of convolution
+
+    Args:
+        img_data (np.array): Input (multidimensinal) data
+        fltr (np.array): Input (multidimensinal) filter/kernel
+        stride (int | Sequence[int]): Distance to shift each window. Defaults to 1.
+        padding (int | Sequence[int]): NOT IMPLEMENTED. Defaults to 0.
+        dilation (int | Sequence[int]): NOT IMPLEMENTED. Defaults to 1.
+        bounds (Optional[tuple[Number, Number]]): (Min, Max) of data values. Defaults to None.
+        use_abs (bool): Takes the magnitude of result - needed for quantum compatibility. Defaults to True.
+
+    Returns:
+        np.array: Output (multidimensinal) data
+    """
     shape_out = update_dims(
         img_data.shape,
-        kernel_size=fltr.shape,
-        stride=stride,
         padding=padding,
         dilation=dilation,
+        kernel_size=fltr.shape,
+        stride=stride,
     )
     img = np.zeros(shape_out)
 
@@ -38,7 +58,7 @@ def convolution(
         # Covers for if fltr and image are different dimensionality (color images)
         window = window.reshape(fltr.shape, order="F")
 
-        # Performs convolution operation
+        # Performs kernel / MAC operation
         img[tuple(idx)] = np.sum(window * fltr)
 
     if bounds is not None:
@@ -46,19 +66,63 @@ def convolution(
         img = np.maximum(img, low * np.ones_like(img))
         img = np.minimum(img, high * np.ones_like(img))
 
-    return np.abs(img)
+    return np.abs(img) if use_abs else img
+
+
+def update_size(
+    size: int,
+    padding: int = 0,
+    dilation: int = 1,
+    kernel_size: int = 2,
+    stride: int = 1,
+) -> int:
+    """
+    Calculate output size after convolution/pooling for one dimension
+
+    Args:
+        size (int): Input data size
+        padding (int): Defaults to 0.
+        dilation (int): Defaults to 1.
+        kernel_size (int): Defaults to 2.
+        stride (int): Defaults to 1.
+
+    Returns:
+        int: Output data size
+    """
+    size += 2 * padding
+    size += -dilation * (kernel_size - 1)
+    size += -1
+    size = size // stride
+    size += 1
+
+    return size
 
 
 def update_dims(
-    dims,
-    kernel_size: int | Sequence[int] = 2,
-    stride: int | Sequence[int] = 1,
+    dims: int | Sequence[int],
     padding: int | Sequence[int] = 0,
     dilation: int | Sequence[int] = 1,
-):
-    if isinstance(kernel_size, int):
+    kernel_size: int | Sequence[int] = 2,
+    stride: int | Sequence[int] = 1,
+) -> int | Sequence[int]:
+    """
+    Calculate output size after multidimensional convolution/pooling.
+    Integer-type arguments assume symmetry across dimensions.
+
+    Args:
+        dims (int | Sequence[int]): Input data size
+        kernel_size (int | Sequence[int]): Defaults to 2.
+        stride (int | Sequence[int]): Defaults to 1.
+        padding (int | Sequence[int]): Defaults to 0.
+        dilation (int | Sequence[int]): Defaults to 1.
+
+    Returns:
+        int | Sequence[int]: Output data size
+    """
+    if isinstance(kernel_size, int):  # Handle integer value for kernel_size
         kernel_size = [kernel_size] * len(dims)
-    
+
+    ### Handle integer values for other parameters
     params = {
         "size": dims,
         "kernel_size": kernel_size,
@@ -66,14 +130,19 @@ def update_dims(
         "padding": padding,
         "dilation": dilation,
     }
-
-    # Type checking
-    params = dict(
+    params = dict(  # Type checking
         (key, [value] * len(kernel_size)) if isinstance(value, int) else (key, value)
         for key, value in params.items()
     )
 
-    # zip_longest with diferent fill values
+    ### All arguments need to be sequences of the same length
+    # Fill shorter arguments with default values
+    # padding = 0
+    # dilation = 1
+    # kernel_size = 1
+    # stride = 1
+
+    # zip_longest with different fill values
     longest = max(len(value) for value in params.values())
     for key, value in params.items():
         if len(value) == longest:
@@ -93,27 +162,32 @@ def update_dims(
     return new_dims
 
 
-def update_size(
-    size: int,
-    padding: int = 0,
-    dilation: int = 1,
-    kernel_size: int = 2,
-    stride: int = 1,
-) -> int:
-    size += 2 * padding
-    size += -dilation * (kernel_size - 1)
-    size += -1
-    size = size // stride
-    size += 1
+def avg_filter(N: int, dim: int = 1) -> np.array:
+    """
+    _summary_
 
-    return size
+    Args:
+        N (int): _description_
+        dim (int, optional): _description_. Defaults to 1.
 
-
-def avg_filter(N: int, dim: int = 1):
+    Returns:
+        np.array: _description_
+    """
     return np.ones([N for _ in range(dim)]) / (N**dim)
 
 
 def sobel_filter(N, dim: int = 2, axis: int = 0):
+    """
+    _summary_
+
+    Args:
+        N (_type_): _description_
+        dim (int, optional): _description_. Defaults to 2.
+        axis (int, optional): _description_. Defaults to 0.
+
+    Returns:
+        _type_: _description_
+    """
     fltr = np.zeros([N for _ in range(dim)])
 
     middle = N // 2
@@ -135,10 +209,32 @@ def sobel_filter(N, dim: int = 2, axis: int = 0):
 
 
 def normal(x, sigma: int = 1):
+    """
+    Normal distribution.
+    Used when computing Gaussian blur.
+
+    Args:
+        x (_type_): _description_
+        sigma (int, optional): _description_. Defaults to 1.
+
+    Returns:
+        _type_: _description_
+    """
     return np.exp(-((x / sigma) ** 2) / 2) / np.sqrt(2 * np.pi * sigma**2)
 
 
 def gaussian_blur(N, sigma=1, dim: int = 2):
+    """
+    _summary_
+
+    Args:
+        N (_type_): _description_
+        sigma (int, optional): _description_. Defaults to 1.
+        dim (int, optional): _description_. Defaults to 2.
+
+    Returns:
+        _type_: _description_
+    """
     centre = (N - 1) / 2
     fltr = np.zeros([N for _ in range(dim)])
 
@@ -151,6 +247,17 @@ def gaussian_blur(N, sigma=1, dim: int = 2):
 
 
 def laplacian_of_gaussian(N, sigma=0.6, dim: int = 2):
+    """
+    _summary_
+
+    Args:
+        N (_type_): _description_
+        sigma (float, optional): _description_. Defaults to 0.6.
+        dim (int, optional): _description_. Defaults to 2.
+
+    Returns:
+        _type_: _description_
+    """
     center = (N - 1) / 2
     fltr = gaussian_blur(N, sigma, dim)
 
@@ -168,6 +275,16 @@ def laplacian_of_gaussian(N, sigma=0.6, dim: int = 2):
 
 # TODO: only works for odd right now
 def laplacian_approx(N, dim: int = 2):
+    """
+    Integer approximation of Laplacian outline
+
+    Args:
+        N (_type_): _description_
+        dim (int, optional): _description_. Defaults to 2.
+
+    Returns:
+        _type_: _description_
+    """
     centre = (N - 1) // 2
     fltr = np.ones([N for _ in range(dim)])
 

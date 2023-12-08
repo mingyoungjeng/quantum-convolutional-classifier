@@ -1,3 +1,10 @@
+"""
+Qiskit implementations of common quantum operations.
+
+!! ASSUME EVERYTHING IN qcc.quantum.qiskit HAS NOT BEEN MAINTAINED !!
+"""
+
+
 from __future__ import annotations
 from typing import TYPE_CHECKING
 

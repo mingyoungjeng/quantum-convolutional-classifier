@@ -16,7 +16,6 @@
 **To build and install the `qcc` package, run the following.**
 
 ```bash
-pip install --upgrade build # for setuptools
 pip install -e .[dev] # --editable installation
 ```
 

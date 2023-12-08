@@ -1,4 +1,4 @@
-module = "qcc.ml.hybrid_cnn.MQCCHybrid"
+module = "qcc.ml.quantum.MQCCHybrid"
 dataset = "torchvision.datasets.FashionMNIST"
 optimizer = "torch.optim.Adam"
 loss = "torch.nn.CrossEntropyLoss"

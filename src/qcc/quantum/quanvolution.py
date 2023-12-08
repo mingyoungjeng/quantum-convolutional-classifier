@@ -123,10 +123,10 @@ class Quanvolution(Module):
         # Generate output shape
         output_shape = update_dims(
             input_shape[-2:],
-            self.kernel_size,
-            self.stride,
-            self.padding,
-            self.dilation,
+            padding=self.padding,
+            dilation=self.dilation,
+            kernel_size=self.kernel_size,
+            stride=self.stride,
         )
         output_shape = (*output.shape[:-1], *output_shape)
         output = output.reshape(output_shape)

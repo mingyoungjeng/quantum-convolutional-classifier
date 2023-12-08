@@ -63,17 +63,17 @@ class Convolution(Gate):
     def shift(qc: QuantumCircuit, filter_shape_q, stride=1, H=True) -> QuantumCircuit:
         for i, fsq in enumerate(filter_shape_q):
             data_qubits = qc.qregs[i]
-            filter_qubits = qc.qregs[i - len(filter_shape_q)][:fsq]
+            kernel_qubits = qc.qregs[i - len(filter_shape_q)][:fsq]
 
             if len(data_qubits) == 0:
                 continue
 
             # Apply Hadamard to filter qubits
             if H:
-                qc.h(filter_qubits)
+                qc.h(kernel_qubits)
 
             # Shift operation
-            for j, control in enumerate(filter_qubits):
+            for j, control in enumerate(kernel_qubits):
                 gate = Shift(k=-stride, num_qubits=len(data_qubits[j:])).control()
                 qc.compose(gate, [control, *data_qubits[j:]], inplace=True)
 
@@ -102,9 +102,9 @@ class Convolution(Gate):
     def permute(qc: QuantumCircuit, filter_shape_q):
         for i, fsq in enumerate(filter_shape_q):
             data_qubits = qc.qregs[i][:fsq]
-            filter_qubits = qc.qregs[i - len(filter_shape_q)][:fsq]
+            kernel_qubits = qc.qregs[i - len(filter_shape_q)][:fsq]
 
-            for f, a in zip(data_qubits, filter_qubits):
+            for f, a in zip(data_qubits, kernel_qubits):
                 qc.swap(f, a)
 
         return qc

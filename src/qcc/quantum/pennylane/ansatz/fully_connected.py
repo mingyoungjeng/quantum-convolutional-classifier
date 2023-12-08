@@ -17,10 +17,10 @@ if TYPE_CHECKING:
 
 
 class FullyConnected(Ansatz):
-    (
+    __slots__ = (
         "_data_qubits",
         "_feature_qubits",
-        "U_filter",
+        "U_kernel",
     )
 
     data_qubits: Qubits = QubitsProperty(slots=True)
@@ -33,10 +33,10 @@ class FullyConnected(Ansatz):
         qubits: Qubits,
         num_classes: int = 2,
         q2c_method: Ansatz.Q2CMethod | str = Ansatz.Q2CMethod.Probabilities,
-        U_filter: type[Unitary] = define_filter(num_layers=4),
+        U_kernel: type[Unitary] = define_filter(num_layers=4),
     ):
         self._num_layers = 1
-        self.U_filter = U_filter  # pylint: disable=invalid-name
+        self.U_kernel = U_kernel  # pylint: disable=invalid-name
 
         # Data qubits
         self.data_qubits = Qubits(qubits)
@@ -63,14 +63,14 @@ class FullyConnected(Ansatz):
 
         # Apply filter
         wires = self.data_qubits.flatten()
-        filters = tuple(self.U_filter(param, wires=wires) for param in params)
+        filters = tuple(self.U_kernel(param, wires=wires) for param in params)
         Select(filters, self.feature_qubits.flatten()[::-1])
 
         return Qubits(self.feature_qubits + self.data_qubits).flatten()
 
     @property
     def shape(self) -> int:
-        return self.U_filter.shape(self.data_qubits.total) * self.num_classes
+        return self.U_kernel.shape(self.data_qubits.total) * self.num_classes
 
     def _forward(self, result):
         # Get subset of output

@@ -1,3 +1,11 @@
+"""
+Convolution CLI
+
+Taken from entropy2023. Might not work.
+
+TODO: implement
+"""
+
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
@@ -28,7 +36,7 @@ from qcc.filters import (
     avg_filter,
     sobel_filter,
     gaussian_blur,
-    laplacian,
+    laplacian_approx,
 )
 from qcc.quantum import (
     flatten_array,
@@ -38,6 +46,7 @@ from qcc.quantum import (
     reconstruct,
     get_fidelity,
 )
+from qcc.quantum.qiskit import shift, c2q
 
 if TYPE_CHECKING:
     pass
@@ -150,7 +159,7 @@ def run(
         case Filters.SOBEL_Y:
             fltr = sobel_filter(filter_size, axis=0, dim=dim)
         case Filters.LAPLACIAN:
-            fltr = laplacian(filter_size, dim=dim)
+            fltr = laplacian_approx(filter_size, dim=dim)
         case Filters.GAUSSIAN:
             fltr = gaussian_blur(filter_size, dim=dim)
         case _:
@@ -215,7 +224,7 @@ def _import_file(filename: Path):
         mode = "audio"
         # suffix = ".png"
         # write_fn = partial(_write_audio_as_img, samplerate=samplerate)
-        
+
         suffix = ".flac"
         write_fn = partial(_write_audio, samplerate=samplerate)
 
@@ -228,7 +237,7 @@ def _import_file(filename: Path):
         mode = "hyperspectral"
         # suffix = ".png"
         # write_fn = _write_hyperspectral_as_img
-        
+
         suffix = ".npy"
         write_fn = _write_hyperspectral
 
@@ -237,90 +246,6 @@ def _import_file(filename: Path):
         print(e)
 
     raise RuntimeError(f"No valid file input found for {filename}")
-
-
-def shift(qc: QuantumCircuit, k: int = 1, targets=None, control=None):
-    if k == 0:
-        return
-    if targets is None:
-        targets = qc.qubits
-
-    # Increment / Decrement for
-    for _ in range(abs(k)):
-        for i in range(len(targets))[:: -np.sign(k)]:
-            controls = list(targets[:i])
-
-            if control is not None:
-                controls += [control]
-
-            if len(controls) == 0:
-                qc.x(targets[i])
-            else:
-                qc.mcx(controls, targets[i])
-
-
-def get_params(x_in):
-    p = x_in
-    while len(p) > 1:
-        x = np.reshape(p, (int(len(p) / 2), 2))
-        p = np.linalg.norm(x, axis=1)
-
-        with np.errstate(divide="ignore", invalid="ignore"):
-            alpha, beta = np.array([y / m if m > 0 else (1, 0) for y, m in zip(x, p)]).T
-
-            alpha_mag, beta_mag = np.abs((alpha, beta))
-            alpha_phase, beta_phase = np.angle((alpha, beta))
-
-            with np.errstate(divide="ignore"):
-                theta = 2 * np.arctan(beta_mag / alpha_mag)
-            phi = beta_phase - alpha_phase
-            r = np.sqrt(alpha_mag**2 + beta_mag**2)
-            t = beta_phase + alpha_phase
-
-        yield theta, phi, r, t
-
-
-def c2q(qc: QuantumCircuit, psi_in, targets=None, transpose=False) -> None:
-    if targets is None:
-        targets = qc.qubits
-
-    theta = []
-    phi = []
-    t = []
-
-    length = int(2 ** (len(targets) - 1))
-    for _theta, _phi, _, _t in get_params(psi_in):
-        _theta, _phi, _t = [np.pad(x, (0, length - len(x))) for x in [_theta, _phi, _t]]
-        theta.append(_theta)
-        phi.append(_phi)
-        t.append(_t)
-    theta = np.stack(theta, axis=1)
-    phi = np.stack(phi, axis=1)
-    t = np.stack(t, axis=1)
-
-    if transpose:
-        theta = -theta
-        phi, t = -t, -phi
-
-    tmp = list(enumerate(targets))
-    for j, target in tmp if transpose else reversed(tmp):
-        control = [qc.qubits[k] for k in targets[j + 1 :]]
-
-        n_j = len(targets) - 1 - j
-        i_max = 2 ** (n_j)
-
-        theta_j = theta[:i_max, j]
-        t_j = t[:i_max, j]
-        phi_j = phi[:i_max, j]
-
-        if t_j.any():
-            t_j = -t_j
-            qc.ucrz(t_j.tolist(), control, target)
-
-        qc.ucry(theta_j.tolist(), control, target)
-
-        if phi_j.any():
-            qc.ucrz(phi_j.tolist(), control, target)
 
 
 def quantum_convolution(
@@ -348,12 +273,12 @@ def quantum_convolution(
     qc.initialize(psi, qc.qubits[:-num_ancilla])
 
     for i, (dim, fq) in enumerate(zip(dims_q[: fltr.ndim], fltr_shape_q)):
-        filter_qubits = num_qubits + sum(fltr_shape_q[:i]) + np.arange(fq)
-        qc.h(filter_qubits)
+        kernel_qubits = num_qubits + sum(fltr_shape_q[:i]) + np.arange(fq)
+        qc.h(kernel_qubits)
 
         # Shift operation
         qubits = list(sum(dims_q[:i]) + np.arange(dim))
-        for i, control_qubit in enumerate(filter_qubits):
+        for i, control_qubit in enumerate(kernel_qubits):
             shift(qc, -1, targets=qubits[i:], control=control_qubit)
 
     params, fltr_mag = normalize(fltr.flatten(order="F"), include_magnitude=True)
@@ -361,7 +286,7 @@ def quantum_convolution(
     roots = np.concatenate(
         [np.zeros(1, dtype=int), np.cumsum(dims_q[: fltr.ndim - 1])]
     )  # base
-    filter_qubits = np.array(
+    kernel_qubits = np.array(
         [root + np.arange(fq) for root, fq in zip(roots, fltr_shape_q)], dtype=int
     ).flatten()
 
@@ -373,7 +298,7 @@ def quantum_convolution(
         dtype=int,
     ).flatten()
 
-    for a, b in zip(filter_qubits, swap_targets):
+    for a, b in zip(kernel_qubits, swap_targets):
         qc.swap(a, b)
 
     c2q(qc, params, targets=swap_targets, transpose=True)
