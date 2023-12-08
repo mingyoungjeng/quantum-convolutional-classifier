@@ -15,7 +15,7 @@ verbose = true
 [module_options]
 num_features = 4
 relu = false
-U_filter = "qcc.ml.quantum.AnsatzFilter"
+U_kernel = "qcc.ml.quantum.AnsatzFilter"
 bias = false
 
 [optimizer_options]

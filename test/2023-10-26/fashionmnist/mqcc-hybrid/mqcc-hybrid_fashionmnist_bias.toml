@@ -14,7 +14,7 @@ verbose = true
 
 [module_options]
 num_features = 4
-U_filter = "qcc.quantum.pennylane.c2q.ConvolutionAngleFilter"
+U_kernel = "qcc.quantum.pennylane.c2q.ConvolutionAngleFilter"
 bias = true
 
 [optimizer_options]

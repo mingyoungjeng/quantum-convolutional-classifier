@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 # TODO: padding, dilation
 def convolution(
     img_data: np.array,
-    fltr: np.array,
+    kernel: np.array,
     stride: int | Sequence[int] = 1,
     padding: int | Sequence[int] = 0,
     dilation: int | Sequence[int] = 1,
@@ -29,7 +29,7 @@ def convolution(
 
     Args:
         img_data (np.array): Input (multidimensinal) data
-        fltr (np.array): Input (multidimensinal) filter/kernel
+        kernel (np.array): Input (multidimensinal) filter/kernel
         stride (int | Sequence[int]): Distance to shift each window. Defaults to 1.
         padding (int | Sequence[int]): NOT IMPLEMENTED. Defaults to 0.
         dilation (int | Sequence[int]): NOT IMPLEMENTED. Defaults to 1.
@@ -43,7 +43,7 @@ def convolution(
         img_data.shape,
         padding=padding,
         dilation=dilation,
-        kernel_size=fltr.shape,
+        kernel_size=kernel.shape,
         stride=stride,
     )
     img = np.zeros(shape_out)
@@ -51,15 +51,15 @@ def convolution(
     for idx, _ in np.ndenumerate(img):
         # Create the window
         window = img_data
-        for i, (id, f) in enumerate(zip_longest(idx, fltr.shape, fillvalue=1)):
+        for i, (id, f) in enumerate(zip_longest(idx, kernel.shape, fillvalue=1)):
             id *= stride
             window = window.take(range(id, id + f), mode="wrap", axis=i)
 
-        # Covers for if fltr and image are different dimensionality (color images)
-        window = window.reshape(fltr.shape, order="F")
+        # Covers for if kernel and image are different dimensionality (color images)
+        window = window.reshape(kernel.shape, order="F")
 
         # Performs kernel / MAC operation
-        img[tuple(idx)] = np.sum(window * fltr)
+        img[tuple(idx)] = np.sum(window * kernel)
 
     if bounds is not None:
         low, high = bounds
@@ -188,7 +188,7 @@ def sobel_filter(N, dim: int = 2, axis: int = 0):
     Returns:
         _type_: _description_
     """
-    fltr = np.zeros([N for _ in range(dim)])
+    kernel = np.zeros([N for _ in range(dim)])
 
     middle = N // 2
     middle = [middle - 1, middle] if N % 2 == 0 else [middle, middle]
@@ -202,10 +202,10 @@ def sobel_filter(N, dim: int = 2, axis: int = 0):
             c = (-1) ** j * i
 
             idx = np.index_exp[:] * axis + np.index_exp[m - c]
-            fltr[idx] = c * vec
+            kernel[idx] = c * vec
 
     # normalizing factor is just the sum of all of the (abs() of all) components
-    return 2 * fltr / np.sum(np.abs(fltr))
+    return 2 * kernel / np.sum(np.abs(kernel))
 
 
 def normal(x, sigma: int = 1):
@@ -236,14 +236,14 @@ def gaussian_blur(N, sigma=1, dim: int = 2):
         _type_: _description_
     """
     centre = (N - 1) / 2
-    fltr = np.zeros([N for _ in range(dim)])
+    kernel = np.zeros([N for _ in range(dim)])
 
-    for idx in np.ndindex(fltr.shape):
-        fltr[idx] = np.prod(tuple(normal(i - centre, sigma) for i in idx))
+    for idx in np.ndindex(kernel.shape):
+        kernel[idx] = np.prod(tuple(normal(i - centre, sigma) for i in idx))
 
-    fltr = fltr / np.sum(fltr)  # normalizing the matrix
+    kernel = kernel / np.sum(kernel)  # normalizing the matrix
 
-    return fltr
+    return kernel
 
 
 def laplacian_of_gaussian(N, sigma=0.6, dim: int = 2):
@@ -259,18 +259,20 @@ def laplacian_of_gaussian(N, sigma=0.6, dim: int = 2):
         _type_: _description_
     """
     center = (N - 1) / 2
-    fltr = gaussian_blur(N, sigma, dim)
+    kernel = gaussian_blur(N, sigma, dim)
 
-    for idx in np.ndindex(fltr.shape):
+    for idx in np.ndindex(kernel.shape):
         coeff = np.sum((i - center) ** 2 for i in idx) / (2 * sigma**2) - 1
-        fltr[idx] = coeff * fltr[idx] * (np.sqrt(2 / sigma**2)) ** dim
+        kernel[idx] = coeff * kernel[idx] * (np.sqrt(2 / sigma**2)) ** dim
 
-    avg = np.sum(fltr) / np.prod(fltr.shape)
-    for i in range(0, fltr.shape[0]):
-        for j in range(0, fltr.shape[1]):
-            fltr[i][j] = fltr[i][j] - avg  # we instead normalize the LoG kernel to 0
+    avg = np.sum(kernel) / np.prod(kernel.shape)
+    for i in range(0, kernel.shape[0]):
+        for j in range(0, kernel.shape[1]):
+            kernel[i][j] = (
+                kernel[i][j] - avg
+            )  # we instead normalize the LoG kernel to 0
 
-    return fltr
+    return kernel
 
 
 # TODO: only works for odd right now
@@ -286,10 +288,10 @@ def laplacian_approx(N, dim: int = 2):
         _type_: _description_
     """
     centre = (N - 1) // 2
-    fltr = np.ones([N for _ in range(dim)])
+    kernel = np.ones([N for _ in range(dim)])
 
     idx = tuple(centre for _ in range(dim))
-    fltr[idx] = -(N**dim - 1)
+    kernel[idx] = -(N**dim - 1)
 
     norm = (N**dim) - N
-    return fltr / norm
+    return kernel / norm

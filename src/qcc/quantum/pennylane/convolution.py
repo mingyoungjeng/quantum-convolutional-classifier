@@ -60,12 +60,12 @@ class Convolution(Operation):
     #     return self.hyperparameters["dilation"]
 
     @staticmethod
-    def shift(filter_shape_q, qubits, stride=1, H=True):
+    def shift(kernel_shape_q, qubits, stride=1, H=True):
         op_list = []
 
-        for i, fsq in enumerate(filter_shape_q):
+        for i, fsq in enumerate(kernel_shape_q):
             data_wires = qubits[i]
-            filter_wires = qubits[i - len(filter_shape_q)][:fsq]
+            filter_wires = qubits[i - len(kernel_shape_q)][:fsq]
 
             if len(data_wires) == 0:
                 continue
@@ -83,18 +83,18 @@ class Convolution(Operation):
         return op_list
 
     @staticmethod
-    def filter(fltr: np.ndarray, qubits):
-        qubits = Qubits(q[:fsq] for q, fsq in zip(qubits, to_qubits(fltr.shape)))
+    def filter(kernel: np.ndarray, qubits):
+        qubits = Qubits(q[:fsq] for q, fsq in zip(qubits, to_qubits(kernel.shape)))
 
-        return [C2Q(fltr, wires=qubits.flatten(), transpose=True)]
+        return [C2Q(kernel, wires=qubits.flatten(), transpose=True)]
 
     @staticmethod
-    def permute(filter_shape_q, qubits):
+    def permute(kernel_shape_q, qubits):
         op_list = []
 
-        for i, fsq in enumerate(filter_shape_q):
+        for i, fsq in enumerate(kernel_shape_q):
             data_wires = qubits[i][:fsq]
-            filter_wires = qubits[i - len(filter_shape_q)][:fsq]
+            filter_wires = qubits[i - len(kernel_shape_q)][:fsq]
 
             op_list += [qml.SWAP((f, a)) for f, a in zip(data_wires, filter_wires)]
 
@@ -111,15 +111,15 @@ class Convolution(Operation):
         dims_q = hyperparameters["dims_q"]
         do_swaps = hyperparameters["do_swaps"]
 
-        filter_shape_q = to_qubits(params.shape)
+        kernel_shape_q = to_qubits(params.shape)
         qubits = wires_to_qubits(dims_q, wires)
 
-        op_list = Convolution.shift(filter_shape_q, qubits)
+        op_list = Convolution.shift(kernel_shape_q, qubits)
 
-        if filter_shape_q.any():
+        if kernel_shape_q.any():
             op_list += Convolution.filter(params, qubits)
 
         if do_swaps:
-            op_list += Convolution.permute(filter_shape_q, qubits)
+            op_list += Convolution.permute(kernel_shape_q, qubits)
 
         return op_list

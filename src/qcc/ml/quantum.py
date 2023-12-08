@@ -185,7 +185,7 @@ class MQCCLayer(Module):
             "out_channels": out_channels,
             "U_fully_connected": None,
             "pooling": pooling,
-            "filter_shape": self.kernel_size,
+            "kernel_shape": self.kernel_size,
         }
 
         self.mqcc = ansatz.from_dims(

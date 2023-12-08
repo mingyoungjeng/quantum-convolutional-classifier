@@ -14,8 +14,8 @@ verbose = true
 
 [module_options]
 pre_op = true
-filter_shape = [2, 2, 2]
-U_filter = "qcc.quantum.pennylane.c2q.ConvolutionAngleFilter"
+kernel_shape = [2, 2, 2]
+U_kernel = "qcc.quantum.pennylane.c2q.ConvolutionAngleFilter"
 num_features = 1
 q2c_method = "probs"
 # U_fully_connected = "qcc.quantum.pennylane.pyramid.Pyramid"

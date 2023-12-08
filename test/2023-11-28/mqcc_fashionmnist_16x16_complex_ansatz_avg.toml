@@ -14,7 +14,7 @@ verbose = true
 
 [module_options]
 num_features = 4
-U_filter = "qcc.quantum.pennylane.c2q.ConvolutionComplexAngleFilter"
+U_kernel = "qcc.quantum.pennylane.c2q.ConvolutionComplexAngleFilter"
 U_fully_connected = "qcc.ml.quantum.AnsatzFilter"
 pool = "average"
 

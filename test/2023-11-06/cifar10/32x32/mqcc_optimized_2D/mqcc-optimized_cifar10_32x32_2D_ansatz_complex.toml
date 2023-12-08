@@ -15,7 +15,7 @@ verbose = true
 [module_options]
 ansatz = "qcc.quantum.pennylane.ansatz.MQCCOptimized"
 num_features = 4
-U_filter = "qcc.ml.quantum.AnsatzFilter"
+U_kernel = "qcc.ml.quantum.AnsatzFilter"
 U_fully_connected = "qcc.quantum.pennylane.c2q.ConvolutionComplexAngleFilter"
 
 [optimizer_options]

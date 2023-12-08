@@ -24,7 +24,7 @@ class MQCC(Ansatz):
         "_feature_qubits",
         "U_kernel",
         "U_fully_connected",
-        "filter_shape",
+        "kernel_shape",
         "num_features",
         "pooling",
     )
@@ -33,7 +33,7 @@ class MQCC(Ansatz):
     kernel_qubits: Qubits = QubitsProperty(slots=True)
     feature_qubits: Qubits = QubitsProperty(slots=True)
 
-    filter_shape: Iterable[int]
+    kernel_shape: Iterable[int]
     in_channels: int
     out_channels: int
 
@@ -50,7 +50,7 @@ class MQCC(Ansatz):
         q2c_method: Ansatz.Q2CMethod | str = Ansatz.Q2CMethod.Probabilities,
         in_channels: int = 1,
         out_channels: int = 1,
-        filter_shape: Iterable[int] = (2, 2),
+        kernel_shape: Iterable[int] = (2, 2),
         U_kernel: type[Unitary] = define_filter(num_layers=4),
         U_fully_connected: Optional[type[Unitary]] = Pyramid,
         pooling: Iterable[int] | bool = False,
@@ -58,17 +58,17 @@ class MQCC(Ansatz):
         self._num_layers = num_layers
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.filter_shape = filter_shape
+        self.kernel_shape = kernel_shape
 
         self.U_kernel = U_kernel  # pylint: disable=invalid-name
         self.U_fully_connected = U_fully_connected  # pylint: disable=invalid-name
 
         if isinstance(pooling, bool):
-            pooling = [1 + int(pooling) if f > 1 else 1 for f in filter_shape]
+            pooling = [1 + int(pooling) if f > 1 else 1 for f in kernel_shape]
         self.pooling = pooling
 
-        if len(filter_shape) > len(qubits):
-            msg = f"Filter dimensionality ({len(filter_shape)}) is greater than data dimensionality ({len(qubits)})"
+        if len(kernel_shape) > len(qubits):
+            msg = f"Filter dimensionality ({len(kernel_shape)}) is greater than data dimensionality ({len(qubits)})"
             raise ValueError(msg)
 
         # Setup feature and ancilla qubits
@@ -78,11 +78,11 @@ class MQCC(Ansatz):
 
     def circuit(self, *params: Parameters) -> Wires:
         (params,) = params
-        fltr_shape_q = to_qubits(self.filter_shape)
-        fltr_dim = len(self.filter_shape)
+        kernel_shape_q = to_qubits(self.kernel_shape)
+        kernel_dim = len(self.kernel_shape)
         data_qubits = self.data_qubits
         kernel_qubits = [
-            self.kernel_qubits[fltr_dim * i : fltr_dim * (i + 1)]
+            self.kernel_qubits[kernel_dim * i : kernel_dim * (i + 1)]
             for i in range(self.num_layers)
         ]
 
@@ -94,13 +94,13 @@ class MQCC(Ansatz):
             qubits = data_qubits + kernel_qubits[i]
 
             ### SHIFT
-            Convolution.shift(fltr_shape_q, qubits)
+            Convolution.shift(kernel_shape_q, qubits)
 
             ### FILTER
             params = self._filter(params, qubits)
 
             ### PERMUTE
-            Convolution.permute(fltr_shape_q, qubits)
+            Convolution.permute(kernel_shape_q, qubits)
 
             ### POOLING
             pooling_q = to_qubits(self.pooling)
@@ -118,11 +118,11 @@ class MQCC(Ansatz):
     @property
     def shape(self) -> int:
         data_shape_q = self.data_qubits.shape
-        fltr_shape_q = to_qubits(self.filter_shape)
+        kernel_shape_q = to_qubits(self.kernel_shape)
 
         num_params = 0
         for i in range(self.num_layers):
-            fsq = (f for (d, f) in zip(data_shape_q, fltr_shape_q) if d - (i * f))
+            fsq = (f for (d, f) in zip(data_shape_q, kernel_shape_q) if d - (i * f))
             num_params += self.U_kernel.shape(sum(fsq))
 
         num_params *= self.out_channels
@@ -156,7 +156,7 @@ class MQCC(Ansatz):
 
     @property
     def max_layers(self) -> int:
-        dims_qubits = zip(self.data_qubits, to_qubits(self.filter_shape))
+        dims_qubits = zip(self.data_qubits, to_qubits(self.kernel_shape))
         return max((len(q) // max(f, 1) for q, f in dims_qubits))
 
     @property
@@ -178,7 +178,7 @@ class MQCC(Ansatz):
 
         # Kernel qubits
         for i in range(self.num_layers):
-            for fsq, dsq in zip(to_qubits(self.filter_shape), self.data_qubits.shape):
+            for fsq, dsq in zip(to_qubits(self.kernel_shape), self.data_qubits.shape):
                 if i * fsq >= dsq:
                     self.kernel_qubits += [[]]
                     continue
@@ -197,7 +197,7 @@ class MQCC(Ansatz):
         """Wrapper around self.U_kernel that replaces Convolution.filter"""
 
         # Setup params
-        qubits = Qubits(q[:fsq] for q, fsq in zip(qubits, to_qubits(self.filter_shape)))
+        qubits = Qubits(q[:fsq] for q, fsq in zip(qubits, to_qubits(self.kernel_shape)))
         num_params = self.out_channels * self.U_kernel.shape(qubits.total)
         filter_params, params = params[:num_params], params[num_params:]
         shape = (self.out_channels, len(filter_params) // self.out_channels)

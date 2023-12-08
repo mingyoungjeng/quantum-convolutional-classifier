@@ -153,19 +153,19 @@ def run(
 
     match filter_name:
         case Filters.AVG:
-            fltr = avg_filter(filter_size, dim=dim)
+            kernel = avg_filter(filter_size, dim=dim)
         case Filters.SOBEL_X:
-            fltr = sobel_filter(filter_size, axis=1, dim=dim)
+            kernel = sobel_filter(filter_size, axis=1, dim=dim)
         case Filters.SOBEL_Y:
-            fltr = sobel_filter(filter_size, axis=0, dim=dim)
+            kernel = sobel_filter(filter_size, axis=0, dim=dim)
         case Filters.LAPLACIAN:
-            fltr = laplacian_approx(filter_size, dim=dim)
+            kernel = laplacian_approx(filter_size, dim=dim)
         case Filters.GAUSSIAN:
-            fltr = gaussian_blur(filter_size, dim=dim)
+            kernel = gaussian_blur(filter_size, dim=dim)
         case _:
             raise AttributeError(f"Invalid filter selected: {filter_name}")
 
-    filter_dims = "x".join(str(i) for i in fltr.shape)
+    filter_dims = "x".join(str(i) for i in kernel.shape)
     name = f"{filter_name}_{filter_dims}"
 
     for filename in inputs.glob("**/*"):
@@ -180,8 +180,8 @@ def run(
         filename = filename_labels(filename, "noiseless" if noiseless else "noisy")
         filename = filename.with_suffix(suffix)
 
-        quantum_data = quantum_convolution(data, fltr, not noiseless)
-        classical_data = convolution(data, fltr)
+        quantum_data = quantum_convolution(data, kernel, not noiseless)
+        classical_data = convolution(data, kernel)
 
         # Save results
         save(filename, write_fn(quantum_data))
@@ -250,11 +250,11 @@ def _import_file(filename: Path):
 
 def quantum_convolution(
     data: np.array,
-    fltr: np.array,
+    kernel: np.array,
     noisy_execution: bool = True,
 ):
-    npad = tuple((0, 2 ** int(np.ceil(np.log2(N))) - N) for N in fltr.shape)
-    fltr = np.pad(fltr, pad_width=npad, mode="constant", constant_values=0)
+    npad = tuple((0, 2 ** int(np.ceil(np.log2(N))) - N) for N in kernel.shape)
+    kernel = np.pad(kernel, pad_width=npad, mode="constant", constant_values=0)
 
     dims = data.shape
     psi = flatten_array(data, pad=True)
@@ -265,15 +265,17 @@ def quantum_convolution(
     num_qubits = sum(dims_q)
     num_states = 2**num_qubits
 
-    fltr_shape_q = [int(np.ceil(np.log2(filter_size))) for filter_size in fltr.shape]
-    num_ancilla = sum(fltr_shape_q)
+    kernel_shape_q = [
+        int(np.ceil(np.log2(filter_size))) for filter_size in kernel.shape
+    ]
+    num_ancilla = sum(kernel_shape_q)
     total_qubits = num_qubits + num_ancilla
 
     qc = QuantumCircuit(total_qubits)
     qc.initialize(psi, qc.qubits[:-num_ancilla])
 
-    for i, (dim, fq) in enumerate(zip(dims_q[: fltr.ndim], fltr_shape_q)):
-        kernel_qubits = num_qubits + sum(fltr_shape_q[:i]) + np.arange(fq)
+    for i, (dim, fq) in enumerate(zip(dims_q[: kernel.ndim], kernel_shape_q)):
+        kernel_qubits = num_qubits + sum(kernel_shape_q[:i]) + np.arange(fq)
         qc.h(kernel_qubits)
 
         # Shift operation
@@ -281,19 +283,19 @@ def quantum_convolution(
         for i, control_qubit in enumerate(kernel_qubits):
             shift(qc, -1, targets=qubits[i:], control=control_qubit)
 
-    params, fltr_mag = normalize(fltr.flatten(order="F"), include_magnitude=True)
+    params, kernel_mag = normalize(kernel.flatten(order="F"), include_magnitude=True)
 
     roots = np.concatenate(
-        [np.zeros(1, dtype=int), np.cumsum(dims_q[: fltr.ndim - 1])]
+        [np.zeros(1, dtype=int), np.cumsum(dims_q[: kernel.ndim - 1])]
     )  # base
     kernel_qubits = np.array(
-        [root + np.arange(fq) for root, fq in zip(roots, fltr_shape_q)], dtype=int
+        [root + np.arange(fq) for root, fq in zip(roots, kernel_shape_q)], dtype=int
     ).flatten()
 
     swap_targets = np.array(
         [
-            num_qubits + sum(fltr_shape_q[:i]) + np.arange(fq)
-            for i, fq in enumerate(fltr_shape_q)
+            num_qubits + sum(kernel_shape_q[:i]) + np.arange(fq)
+            for i, fq in enumerate(kernel_shape_q)
         ],
         dtype=int,
     ).flatten()
@@ -329,7 +331,7 @@ def quantum_convolution(
     ### Construct image
     i = 0
     data = psi_out.data[i * num_states : (i + 1) * num_states]
-    norm = mag * fltr_mag * np.sqrt(2**num_ancilla)
+    norm = mag * kernel_mag * np.sqrt(2**num_ancilla)
     data = norm * data
 
     new_dims = [2 ** to_qubits(x) for x in dims]

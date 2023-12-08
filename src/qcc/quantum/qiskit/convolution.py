@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class Convolution(Gate):
     instances_counter = count()
     dims: Iterable[int]
-    filter_shape: Iterable[int]
+    kernel_shape: Iterable[int]
 
     @property
     def _id(self):
@@ -29,41 +29,41 @@ class Convolution(Gate):
     def __init__(
         self,
         dims: Iterable[int],
-        filter_shape: Iterable[int] = (1,),
+        kernel_shape: Iterable[int] = (1,),
         label: Optional[str] = None,
     ) -> None:
         params_name = f"filter{self._id}"
-        params = ParameterVector(params_name, length=np.prod(filter_shape))
+        params = ParameterVector(params_name, length=np.prod(kernel_shape))
 
-        self.filter_shape = (
-            filter_shape if isinstance(filter_shape, Iterable) else (filter_shape,)
+        self.kernel_shape = (
+            kernel_shape if isinstance(kernel_shape, Iterable) else (kernel_shape,)
         )
         self.dims = dims if isinstance(dims, Iterable) else (dims,)
 
-        if len(self.filter_shape) > len(self.dims):
-            msg = f"Dimensionality of filter larger than dimensionality of data ({len(self.filter_shape)} > {len(self.dims)})"
+        if len(self.kernel_shape) > len(self.dims):
+            msg = f"Dimensionality of filter larger than dimensionality of data ({len(self.kernel_shape)} > {len(self.dims)})"
             raise ValueError(msg)
 
-        num_qubits = sum(self.dims_q) + sum(self.filter_shape_q)
+        num_qubits = sum(self.dims_q) + sum(self.kernel_shape_q)
         super().__init__("convolution", int(num_qubits), params, label)
 
     @property
     def dim(self):
-        return len(self.filter_shape)
+        return len(self.kernel_shape)
 
     @property
     def dims_q(self):
         return to_qubits(self.dims)
 
     @property
-    def filter_shape_q(self):
-        return to_qubits(self.filter_shape)
+    def kernel_shape_q(self):
+        return to_qubits(self.kernel_shape)
 
     @staticmethod
-    def shift(qc: QuantumCircuit, filter_shape_q, stride=1, H=True) -> QuantumCircuit:
-        for i, fsq in enumerate(filter_shape_q):
+    def shift(qc: QuantumCircuit, kernel_shape_q, stride=1, H=True) -> QuantumCircuit:
+        for i, fsq in enumerate(kernel_shape_q):
             data_qubits = qc.qregs[i]
-            kernel_qubits = qc.qregs[i - len(filter_shape_q)][:fsq]
+            kernel_qubits = qc.qregs[i - len(kernel_shape_q)][:fsq]
 
             if len(data_qubits) == 0:
                 continue
@@ -80,8 +80,8 @@ class Convolution(Gate):
         return qc
 
     @staticmethod
-    def filter(qc: QuantumCircuit, fltr: np.ndarray) -> QuantumCircuit:
-        qubits = [q[:fsq] for q, fsq in zip(qc.qregs, to_qubits(fltr.shape))]
+    def filter(qc: QuantumCircuit, kernel: np.ndarray) -> QuantumCircuit:
+        qubits = [q[:fsq] for q, fsq in zip(qc.qregs, to_qubits(kernel.shape))]
         qubits = [x for q in qubits for x in q]
 
         # Create gate
@@ -89,8 +89,8 @@ class Convolution(Gate):
         c2q.compose(C2Q(len(qubits), inplace=True))
 
         # Mapping parameters
-        fltr = np.conj(fltr).flatten(order="F")
-        mapping = {key: value for key, value in zip(c2q.parameters, fltr)}
+        kernel = np.conj(kernel).flatten(order="F")
+        mapping = {key: value for key, value in zip(c2q.parameters, kernel)}
         c2q.assign_parameters(mapping, inplace=True)
 
         # Add inverse gate to QuantumCircuit
@@ -99,10 +99,10 @@ class Convolution(Gate):
         return qc
 
     @staticmethod
-    def permute(qc: QuantumCircuit, filter_shape_q):
-        for i, fsq in enumerate(filter_shape_q):
+    def permute(qc: QuantumCircuit, kernel_shape_q):
+        for i, fsq in enumerate(kernel_shape_q):
             data_qubits = qc.qregs[i][:fsq]
-            kernel_qubits = qc.qregs[i - len(filter_shape_q)][:fsq]
+            kernel_qubits = qc.qregs[i - len(kernel_shape_q)][:fsq]
 
             for f, a in zip(data_qubits, kernel_qubits):
                 qc.swap(f, a)
@@ -110,16 +110,16 @@ class Convolution(Gate):
         return qc
 
     @staticmethod
-    def filter_post_permute(qc: QuantumCircuit, fltr: np.ndarray) -> QuantumCircuit:
-        fltr = np.conj(fltr).flatten(order="F")
-        num_qubits = int(to_qubits(len(fltr)))
+    def filter_post_permute(qc: QuantumCircuit, kernel: np.ndarray) -> QuantumCircuit:
+        kernel = np.conj(kernel).flatten(order="F")
+        num_qubits = int(to_qubits(len(kernel)))
 
         # Create gate
         c2q = QuantumCircuit(num_qubits)
         c2q.compose(C2Q(num_qubits), inplace=True)
 
         # Mapping parameters
-        mapping = {key: value for key, value in zip(c2q.parameters, fltr)}
+        mapping = {key: value for key, value in zip(c2q.parameters, kernel)}
         c2q.assign_parameters(mapping, inplace=True)
 
         # Add inverse gate to QuantumCircuit
@@ -130,17 +130,17 @@ class Convolution(Gate):
     def _define(self):
         qregs = [QuantumRegister(n, name=f"dim{i}") for i, n in enumerate(self.dims_q)]
         qregs += [
-            QuantumRegister(n, name=f"fltr{i}")
-            for i, n in enumerate(self.filter_shape_q)
+            QuantumRegister(n, name=f"kernel{i}")
+            for i, n in enumerate(self.kernel_shape_q)
         ]
         qc = QuantumCircuit(*qregs, name=self.name)
 
-        Convolution.shift(qc, self.filter_shape_q)
+        Convolution.shift(qc, self.kernel_shape_q)
 
-        fltr = np.array(self.params).reshape(self.filter_shape, order="F")
-        # Convolution.filter(qc, fltr)
+        kernel = np.array(self.params).reshape(self.kernel_shape, order="F")
+        # Convolution.filter(qc, kernel)
 
-        Convolution.permute(qc, self.filter_shape_q)
-        Convolution.filter_post_permute(qc, fltr)
+        Convolution.permute(qc, self.kernel_shape_q)
+        Convolution.filter_post_permute(qc, kernel)
 
         self.definition = qc
