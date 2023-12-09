@@ -29,15 +29,53 @@ qcc --help
 cd test; qcc load config/
 ```
 
+## Code Structure
+
+### Source Code File Tree (`src/qcc`)
+
+```bash
+.
+├── cli # Command-line interface (start here)
+├── experiment # Generic class that runs multiple experimental trials
+│   └── logger # Custom logging that stores outputs in DataFrames
+├── file # Useful I/O commands
+├── filters.py # Classical convolution and common filters
+├── graph # Auto-formatted graphs based on plotly - a.k.a. David bot
+├── ml # PyTorch implementations of ML models
+│   ├── cnn.py # Convolutional neural network implementation
+│   ├── data.py # Custom dataset wrapper
+│   ├── ml.py # ML-related functions
+│   ├── mlp.py # Multi-layer perceptron implementation
+│   ├── model.py # Generic class for ML experiments (training + testing)
+│   ├── optimize.py # Custom optimizer wrapper
+│   └── quantum.py # MQCC and MQCC Optimized
+└── quantum
+    ├── pennylane # Quantum operations in Pennylane
+    │   ├── ansatz # Ansatz compatible with Pennylane
+    ├── qiskit # Qiskit classes and functions 
+               # (WARNING: ML / Ansatz related items are likely jank)
+    ├── quantum.py # Quantum-related functions
+    ├── quanvolution.py # Quanvolution PyTorch module (move to ML?)
+    └── qubits.py # 2D list for representing multidimensional quantum circuits
+```
+
+### Docs / Examples File Tree (`docs/`)
+
+**TBD**
+
+### Test Suite File Tree (`test/`)
+
+**TBD**
+
 ## Todo
 
 - [ ] Write documentation / comments
   - [ ] Sphinx / MKDocs deployment?
 - [ ] Rewrite all draw methods to use plotly
 - [ ] Rename variables to match publication(s) and report
-  - [ ] Shift &rarr stride
-  - [ ] Permute &rarr Data Rearrangement
-  - [ ] Filter &rarr Kernel
+  - [ ] Shift → stride
+  - [ ] Permute → Data Rearrangement
+  - [ ] Filter → Kernel
 - [ ] Get Pennylane lightning working for faster execution
 - [ ] Stride, dilation, padding in convolution
 - [ ] Spin-off general methods into seperate KUARQ package
