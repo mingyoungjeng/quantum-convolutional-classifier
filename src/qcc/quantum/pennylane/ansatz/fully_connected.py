@@ -17,11 +17,9 @@ if TYPE_CHECKING:
 
 
 class FullyConnected(Ansatz):
-    __slots__ = (
-        "_data_qubits",
-        "_feature_qubits",
-        "U_kernel",
-    )
+    """Fully-connected layer in Pennylane"""
+
+    __slots__ = "_data_qubits", "_feature_qubits", "U_kernel"
 
     data_qubits: Qubits = QubitsProperty(slots=True)
     feature_qubits: Qubits = QubitsProperty(slots=True)
@@ -84,7 +82,7 @@ class FullyConnected(Ansatz):
     def max_layers(self) -> int:
         return 1
 
-    ### PRIVATE
+    # ==== private ==== #
 
     @property
     def _data_wires(self) -> Wires:

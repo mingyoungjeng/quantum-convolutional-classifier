@@ -30,6 +30,8 @@ log = logging.getLogger(__name__)
 
 
 class Ansatz(Module, metaclass=ABCMeta):
+    """Base class for QML ansatz"""
+    
     __slots__ = "_qubits", "_num_layers", "_qnode", "num_classes", "q2c_method"
 
     qubits: Qubits = QubitsProperty(slots=True)

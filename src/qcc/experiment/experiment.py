@@ -1,3 +1,9 @@
+"""
+Experiment
+
+Generic method of taking 
+"""
+
 from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
@@ -138,7 +144,7 @@ class Experiment:
 
         offset = {len(df.columns) for df in self.dfs.values()}
         offset = max(offset) if len(offset) > 0 else 0
-        if parallel:  # TODO: doesn't work
+        if parallel:
             try:  # For CUDA compatibility in PyTorch
                 set_start_method("spawn")
             except RuntimeError:

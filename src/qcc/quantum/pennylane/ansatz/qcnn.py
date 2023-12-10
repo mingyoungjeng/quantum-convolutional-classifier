@@ -11,6 +11,8 @@ from qcc.quantum.pennylane.ansatz import Ansatz
 
 
 class QCNNConvolution(Unitary):
+    """QCNN Convolution Ansatz"""
+
     @staticmethod
     def compute_decomposition(params, wires, **_):
         return [
@@ -32,6 +34,8 @@ class QCNNConvolution(Unitary):
 
 
 class QCNNPooling1(Unitary):
+    """QCNN Pooling Ansatz from Related Work"""
+
     @staticmethod
     def compute_decomposition(params, wires, **_):
         return [
@@ -46,6 +50,8 @@ class QCNNPooling1(Unitary):
 
 
 class QCNNPooling2(Unitary):
+    """My Experimental QCNN Pooling Ansatz"""
+
     @staticmethod
     def compute_decomposition(params, wires, **_):
         return [
@@ -61,6 +67,8 @@ class QCNNPooling2(Unitary):
 
 
 class QCNNPooling3(Unitary):
+    """My Experimental QCNN Pooling Ansatz"""
+
     @staticmethod
     def compute_decomposition(params, wires, **_):
         m_0 = qml.measure(wires[0])
@@ -74,7 +82,10 @@ class QCNNPooling3(Unitary):
 
 # TODO: work with num_classes > 2
 class QCNN(Ansatz):
+    """Quantum Convolutional Neural Network (Cong, 2018)"""
+
     __slots__ = "convolve", "pool"
+
     convolve: type[Operation]
     pool: type[Operation]
 

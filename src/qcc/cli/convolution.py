@@ -268,11 +268,11 @@ def quantum_convolution(
     kernel_shape_q = [
         int(np.ceil(np.log2(filter_size))) for filter_size in kernel.shape
     ]
-    num_ancilla = sum(kernel_shape_q)
-    total_qubits = num_qubits + num_ancilla
+    num_kernel = sum(kernel_shape_q)
+    total_qubits = num_qubits + num_kernel
 
     qc = QuantumCircuit(total_qubits)
-    qc.initialize(psi, qc.qubits[:-num_ancilla])
+    qc.initialize(psi, qc.qubits[:-num_kernel])
 
     for i, (dim, fq) in enumerate(zip(dims_q[: kernel.ndim], kernel_shape_q)):
         kernel_qubits = num_qubits + sum(kernel_shape_q[:i]) + np.arange(fq)
@@ -305,7 +305,7 @@ def quantum_convolution(
 
     c2q(qc, params, targets=swap_targets, transpose=True)
 
-    ### Run
+    # ==== Run ==== #
 
     backend = Aer.get_backend("aer_simulator")
     shots = backend.configuration().max_shots
@@ -328,10 +328,10 @@ def quantum_convolution(
     # dims = dims[:2]
     # num_states = np.prod(dims)
 
-    ### Construct image
+    # ==== Construct image ==== #
     i = 0
     data = psi_out.data[i * num_states : (i + 1) * num_states]
-    norm = mag * kernel_mag * np.sqrt(2**num_ancilla)
+    norm = mag * kernel_mag * np.sqrt(2**num_kernel)
     data = norm * data
 
     new_dims = [2 ** to_qubits(x) for x in dims]

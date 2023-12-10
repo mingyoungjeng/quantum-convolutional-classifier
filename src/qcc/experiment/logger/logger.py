@@ -1,3 +1,9 @@
+"""
+Wrapper around default Python logging module that stores values in DataFrames for easy output.
+
+There probably is a better way of doing this...
+"""
+
 from __future__ import annotations
 from typing import TYPE_CHECKING
 

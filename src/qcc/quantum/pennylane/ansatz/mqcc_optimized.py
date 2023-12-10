@@ -18,6 +18,8 @@ if TYPE_CHECKING:
 
 
 class MQCCOptimized(Ansatz):
+    """Quantum-Optimized Multidimensional Quantum Convolutional Classifier"""
+
     __slots__ = (
         "_data_qubits",
         "_kernel_qubits",
@@ -71,7 +73,7 @@ class MQCCOptimized(Ansatz):
             msg = f"Filter dimensionality ({len(kernel_shape)}) is greater than data dimensionality ({len(qubits)})"
             raise ValueError(msg)
 
-        # Setup feature and ancilla qubits
+        # Setup feature and kernel qubits
         qubits = self._setup_qubits(Qubits(qubits))
 
         super().__init__(qubits, num_layers, num_classes, q2c_method)
@@ -91,7 +93,7 @@ class MQCCOptimized(Ansatz):
 
         # Convolution layers
         for i in range(self.num_layers):
-            ### POOLING
+            # ==== pooling ==== #
             pooling_q = to_qubits(self.pooling)
             for j, pq in enumerate(pooling_q):
                 data_qubits[j] = data_qubits[j][pq:]
@@ -101,13 +103,13 @@ class MQCCOptimized(Ansatz):
 
             qubits = data_qubits + kernel_qubits[i]
 
-            ### SHIFT
+            # ==== shift ==== #
             Convolution.shift(kernel_shape_q, qubits)
 
-            ### FILTER
+            # ==== filter ==== #
             params = self._filter(params, qubits)
 
-            ### PERMUTE
+            # ==== permute ==== #
             Convolution.permute(kernel_shape_q, qubits)
 
         # Fully connected layer
@@ -166,7 +168,7 @@ class MQCCOptimized(Ansatz):
     def num_features(self) -> int:
         return 2**self.feature_qubits.total
 
-    ### PRIVATE
+    # ==== private ==== #
 
     def _setup_qubits(self, qubits: Qubits) -> Qubits:
         # Data qubits

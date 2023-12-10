@@ -18,6 +18,8 @@ if TYPE_CHECKING:
 
 # TODO: stride and padding and dilation currently aren't implemented
 class Convolution(Operation):
+    """Convolution operation in Pennylane"""
+
     num_wires = AnyWires
 
     def __init__(
@@ -70,7 +72,7 @@ class Convolution(Operation):
             if len(data_wires) == 0:
                 continue
 
-            # Apply Hadamard to ancilla wires
+            # Apply Hadamard to kernel wires
             if H:
                 op_list += [qml.Hadamard(aq) for aq in filter_wires]
 
@@ -108,6 +110,7 @@ class Convolution(Operation):
     ) -> Iterable[Operation]:
         # Keep the type-checker happy
         (params,) = params
+
         dims_q = hyperparameters["dims_q"]
         do_swaps = hyperparameters["do_swaps"]
 

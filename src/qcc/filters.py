@@ -1,5 +1,5 @@
 """
-_summary_
+Convolution implementation and common filters
 """
 
 from __future__ import annotations
@@ -122,7 +122,7 @@ def update_dims(
     if isinstance(kernel_size, int):  # Handle integer value for kernel_size
         kernel_size = [kernel_size] * len(dims)
 
-    ### Handle integer values for other parameters
+    # ==== Handle integer values for other parameters ==== #
     params = {
         "size": dims,
         "kernel_size": kernel_size,
@@ -135,7 +135,7 @@ def update_dims(
         for key, value in params.items()
     )
 
-    ### All arguments need to be sequences of the same length
+    # ==== All arguments need to be sequences of the same length ==== #
     # Fill shorter arguments with default values
     # padding = 0
     # dilation = 1
@@ -164,30 +164,32 @@ def update_dims(
 
 def avg_filter(N: int, dim: int = 1) -> np.array:
     """
-    _summary_
+    Square averaging filter
 
     Args:
-        N (int): _description_
-        dim (int, optional): _description_. Defaults to 1.
+        N (int): Size of each dimension (rows, cols, etc.)
+        dim (int, optional): Number of dimensions. Defaults to 1.
 
     Returns:
-        np.array: _description_
+        np.array: Averaging filter
     """
+    
     return np.ones([N for _ in range(dim)]) / (N**dim)
 
 
-def sobel_filter(N, dim: int = 2, axis: int = 0):
+def sobel_filter(N: int, dim: int = 2, axis: int = 0) -> np.array:
     """
-    _summary_
+    Sobel filter and its extensions
 
     Args:
-        N (_type_): _description_
-        dim (int, optional): _description_. Defaults to 2.
-        axis (int, optional): _description_. Defaults to 0.
+        N (int): Size of each dimension (3 for Sobel)
+        dim (int): Number of dimensions (2 for Sobel). Defaults to 2.
+        axis (int): Axis of edge detection. Defaults to 0.
 
     Returns:
-        _type_: _description_
+        np.array: edge detection filter
     """
+    
     kernel = np.zeros([N for _ in range(dim)])
 
     middle = N // 2
@@ -208,14 +210,14 @@ def sobel_filter(N, dim: int = 2, axis: int = 0):
     return 2 * kernel / np.sum(np.abs(kernel))
 
 
-def normal(x, sigma: int = 1):
+def normal(x: float, sigma: int = 1):
     """
     Normal distribution.
     Used when computing Gaussian blur.
 
     Args:
-        x (_type_): _description_
-        sigma (int, optional): _description_. Defaults to 1.
+        x (position): some position for normal distribution
+        sigma (int): standard deviation. Defaults to 1.
 
     Returns:
         _type_: _description_
@@ -223,17 +225,17 @@ def normal(x, sigma: int = 1):
     return np.exp(-((x / sigma) ** 2) / 2) / np.sqrt(2 * np.pi * sigma**2)
 
 
-def gaussian_blur(N, sigma=1, dim: int = 2):
+def gaussian_blur(N: int, sigma=1, dim: int = 2) -> np.array:
     """
-    _summary_
+    Square Gaussian blur filter
 
     Args:
-        N (_type_): _description_
-        sigma (int, optional): _description_. Defaults to 1.
-        dim (int, optional): _description_. Defaults to 2.
+        N (int): Size of each dimension.
+        sigma (int): standard deviation. Defaults to 1.
+        dim (int): Number of dimensions. Defaults to 2.
 
     Returns:
-        _type_: _description_
+        np.array: Gaussian blur filter
     """
     centre = (N - 1) / 2
     kernel = np.zeros([N for _ in range(dim)])
@@ -246,18 +248,19 @@ def gaussian_blur(N, sigma=1, dim: int = 2):
     return kernel
 
 
-def laplacian_of_gaussian(N, sigma=0.6, dim: int = 2):
+def laplacian_of_gaussian(N: int, sigma=0.6, dim: int = 2) -> np.array:
     """
-    _summary_
+    Square Laplacian / Outline filter derived from Gaussian blue
 
     Args:
-        N (_type_): _description_
-        sigma (float, optional): _description_. Defaults to 0.6.
-        dim (int, optional): _description_. Defaults to 2.
+        N (int): Size of each dimension.
+        sigma (int): standard deviation. Defaults to 0.6.
+        dim (int): Number of dimensions. Defaults to 2.
 
     Returns:
-        _type_: _description_
+        np.array: outline filter
     """
+    
     center = (N - 1) / 2
     kernel = gaussian_blur(N, sigma, dim)
 
@@ -276,16 +279,16 @@ def laplacian_of_gaussian(N, sigma=0.6, dim: int = 2):
 
 
 # TODO: only works for odd right now
-def laplacian_approx(N, dim: int = 2):
+def laplacian_approx(N: int, dim: int = 2) -> np.array:
     """
     Integer approximation of Laplacian outline
 
     Args:
-        N (_type_): _description_
-        dim (int, optional): _description_. Defaults to 2.
+        N (int): Size of each dimension
+        dim (int): Number of dimensions. Defaults to 2.
 
     Returns:
-        _type_: _description_
+        np.array
     """
     centre = (N - 1) // 2
     kernel = np.ones([N for _ in range(dim)])

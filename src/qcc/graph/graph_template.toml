@@ -1,4 +1,4 @@
-### General Properties
+# ==== general properties ==== #
 
 [layout]
 autosize = false
@@ -19,7 +19,7 @@ b = 40
 t = 0
 pad = 0
 
-### Scatter (Line) Behavior
+# ==== scatter (line) behavior ==== #
 
 [[data.scatter]]
 
@@ -34,7 +34,7 @@ size = 10
 width = 3
 shape = "spline"
 
-### Title
+# ==== title ==== #
 
 [layout.title]
 automargin = false
@@ -54,7 +54,7 @@ r = 0
 b = 0
 t = 0
 
-### X-Axis
+# ==== x-axis ==== #
 
 [layout.xaxis]
 automargin = false
@@ -85,7 +85,7 @@ gridcolor = "#e1e1e1"
 tickcolor = "#e1e1e1"
 ticks = "outside"
 
-### Y-Axis
+# ==== y-axis ==== #
 
 [layout.yaxis]
 automargin = false
@@ -116,7 +116,7 @@ gridcolor = "#e1e1e1"
 tickcolor = "#e1e1e1"
 ticks = "outside"
 
-### Legend
+# ==== legend ==== #
 
 [layout.legend]
 # x = 0.05

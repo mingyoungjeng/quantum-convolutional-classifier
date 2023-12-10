@@ -26,7 +26,10 @@ def define_filter(op: type[Operation] = qml.RY, num_layers: int = 1):
 
 
 class FilterQML(Unitary):
-    """Alternative to C2Q for implementing convolutional filters in QML"""
+    """
+    Alternative to MAC for implementing convolution kernels in QML.
+    Called "Ansatz" in the thesis
+    """
 
     def __init__(
         self,

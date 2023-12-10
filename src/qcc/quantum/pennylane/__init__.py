@@ -1,9 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-# Qubits class
-from .qubits import Qubits, QubitsProperty
-
 # Base class
 from .unitary import Unitary
 

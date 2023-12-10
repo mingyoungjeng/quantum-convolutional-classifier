@@ -48,14 +48,14 @@ cd test; qcc load config/
 │   ├── mlp.py # Multi-layer perceptron implementation
 │   ├── model.py # Generic class for ML experiments (training + testing)
 │   ├── optimize.py # Custom optimizer wrapper
-│   └── quantum.py # MQCC and MQCC Optimized
+│   ├── quantum.py # MQCC and MQCC Optimized
+│   └── quanvolution.py # Quanvolution PyTorch module (move to ML?)
+│                       # (WARNING: ML / Ansatz related items are likely jank)
 └── quantum
     ├── pennylane # Quantum operations in Pennylane
-    │   ├── ansatz # Ansatz compatible with Pennylane
+    │   └── ansatz # Ansatz compatible with Pennylane
     ├── qiskit # Qiskit classes and functions 
-               # (WARNING: ML / Ansatz related items are likely jank)
     ├── quantum.py # Quantum-related functions
-    ├── quanvolution.py # Quanvolution PyTorch module (move to ML?)
     └── qubits.py # 2D list for representing multidimensional quantum circuits
 ```
 

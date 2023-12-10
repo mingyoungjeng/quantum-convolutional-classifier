@@ -1,4 +1,4 @@
-module = "qcc.quantum.quanvolution.QuanvolutionalNeuralNetwork"
+module = "qcc.ml.quanvolution.QuanvolutionalNeuralNetwork"
 dataset = "torchvision.datasets.CIFAR10"
 optimizer = "torch.optim.Adam"
 loss = "torch.nn.CrossEntropyLoss"

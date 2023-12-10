@@ -173,7 +173,7 @@ def quantum_no_pooling(
     qc = QuantumCircuit(num_qubits)
     qc.initialize(psi)
 
-    ### Run
+    # ==== run ==== #
 
     if noisy_execution:
         qc.measure_all()
@@ -190,7 +190,7 @@ def quantum_no_pooling(
     else:
         psi_out = result.get_statevector(qc).data
 
-    ### Construct image
+    # ==== construct image ==== #
 
     img = psi_out.data
 
@@ -231,7 +231,7 @@ def quantum_average_pooling(
         for i in range(l):
             rotate_right(qc, b, t - i)
 
-    ### Run
+    # ==== run ==== #
 
     if noisy_execution:
         qc.measure_all()
@@ -248,7 +248,7 @@ def quantum_average_pooling(
     else:
         psi_out = result.get_statevector(qc).data
 
-    ### Construct image
+    # ==== construct image ==== #
 
     img = psi_out.data
     norm = mag / np.sqrt(2 ** sum(decomposition_levels))
@@ -292,7 +292,7 @@ def quantum_euclidean_pooling(
         trace += list(range(q, q + l))
         meas += qc.qubits[q + l : t]
 
-    ### Run
+    # ==== run ==== #
 
     if noisy_execution:
         creg = ClassicalRegister(len(meas))
@@ -315,7 +315,7 @@ def quantum_euclidean_pooling(
         # psi_out = partial_trace(psi_out, trace)
         # psi_out = np.sqrt(np.diag(psi_out))
 
-    ### Construct image
+    # ==== construct image ==== #
 
     img = psi_out
     norm = mag / np.sqrt(2 ** sum(decomposition_levels))

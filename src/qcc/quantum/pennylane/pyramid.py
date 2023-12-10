@@ -1,3 +1,10 @@
+"""
+An ansatz for the fully-connected layer that I tried.
+Inspired by the pooling layers in QCNN
+
+It's not that good.
+"""
+
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
@@ -11,6 +18,8 @@ if TYPE_CHECKING:
 
 
 class Pyramid(Unitary):
+    """Alternative to MAC for implementing convolution kernels in QML."""
+
     def __init__(
         self,
         *params,

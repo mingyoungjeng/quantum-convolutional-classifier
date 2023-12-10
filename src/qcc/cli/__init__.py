@@ -17,7 +17,7 @@ from multiprocessing import Pool, set_start_method
 
 import click
 
-from qcc.cli.ml import Classify
+from .ml import Classify
 from .pooling import DimensionReduction, _pooling
 from qcc.experiment import Experiment
 
@@ -27,9 +27,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-###=============###
-### Boilerplate ###
-###=============###
+# ==== boilerplate ==== #
 class ObjectType(click.ParamType):
     """
     click.ParamType for compatibility with TOML config files
@@ -75,9 +73,7 @@ def cli(ctx: click.Context):
     ctx.show_default = True
 
 
-###==================###
-### Classify Command ###
-###==================###
+# ==== classify command ==== #
 
 
 @cli.command()
@@ -191,13 +187,12 @@ def cli(ctx: click.Context):
     is_flag=True,
 )
 def classify(**kwargs):
-    """
-    Quantum and classical classification / supervised learning
-    """
+    """Quantum and classical classification / supervised learning"""
     _classify(**kwargs)
 
 
 def _setup_module(root: str, obj: str = None):
+    """String formatting of Python modules for string => module conversion down the line"""
     if obj is None or "." in obj:
         return obj
 
@@ -214,9 +209,8 @@ def _classify(
     quantum: bool,
     **kwargs,
 ):
-    """
-    See Classify for more details
-    """
+    """See Classify for more details"""
+
     kwargs["ansatz"] = _setup_module("qcc.quantum.pennylane.ansatz", ansatz)
     kwargs["dataset"] = _setup_module("torchvision.datasets", dataset)
     kwargs["optimizer"] = _setup_module("torch.optim", optimizer)
@@ -228,9 +222,7 @@ def _classify(
     cmd()
 
 
-###==============###
-### Load Command ###
-###==============###
+# ==== load command ==== #
 
 
 @cli.command()
@@ -274,7 +266,15 @@ def _classify(
     callback=create_results,
     help="Output directory",
 )
-def load(ctx, paths: Iterable[Path], glob: str, parallel: bool, output_dir: Path):
+def load(
+    ctx,
+    paths: Iterable[Path],
+    glob: str,
+    parallel: bool,
+    output_dir: Path,
+) -> None:
+    """Load files(s) and perform classification"""
+
     toml_files = set()
     for path in paths:
         if path.is_dir():
@@ -285,24 +285,27 @@ def load(ctx, paths: Iterable[Path], glob: str, parallel: bool, output_dir: Path
 
     cmds = (Classify.from_toml(toml, output_dir=output_dir) for toml in toml_files)
 
-    errs = []
-
+    # parallel execution of files(s) in threadpool
     if parallel:
-        return _run_pool(cmds)
+        return _classify_pool(cmds)
 
+    # ==== serial execution of files(s) ==== #
+    errs = []
     for cmd in cmds:
         try:
             cmd()
-        except BaseException:  # TODO: this is lazy
-            errs.append(traceback.format_exc())
+        except Exception as e:
+            errs.append(e)
 
     if len(errs) > 0:
         for error_message in errs:
             log.error(error_message)
         raise RuntimeError(f"{len(errs)} file(s) encountered an error")
 
+    return
 
-def _run_pool(cmds: Iterable[Classify]):
+
+def _classify_pool(cmds: Iterable[Classify]):
     experiments: dict[str, Experiment] = dict()
     output_dir: Path = None
 
@@ -312,6 +315,7 @@ def _run_pool(cmds: Iterable[Classify]):
         pass
 
     with Pool() as pool:
+        # ==== generate experiments ==== #
         args = []
         for cmd in cmds:
             num_trials = cmd.num_trials
@@ -327,8 +331,10 @@ def _run_pool(cmds: Iterable[Classify]):
 
             args += (cmd for _ in range(num_trials))
 
+        # ==== run experiments in thread pool ==== #
         results = pool.imap_unordered(Classify.__call__, args)
 
+        # ==== write results to dataframe ==== #
         for name, dfs in results:
             experiment = experiments[name]
 
@@ -345,6 +351,9 @@ def _run_pool(cmds: Iterable[Classify]):
             filename = output_dir / name / name
             experiment.save(filename, overwrite=True)
             experiment.draw(filename, overwrite=True, close=True)
+
+
+# ==== pooling command ==== #
 
 
 @cli.command()
@@ -401,6 +410,7 @@ def _run_pool(cmds: Iterable[Classify]):
     required=True,
 )
 def pooling(ctx, **kwargs):
+    """Multilevel, multidimensional pooling / dimension reduction / downsampling"""
     _pooling(**kwargs)
 
 

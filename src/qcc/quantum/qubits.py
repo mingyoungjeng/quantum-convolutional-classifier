@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from typing import Iterable
-
-from qiskit.circuit import QuantumRegister, Qubit
 from pennylane.wires import Wires
 
 
@@ -44,13 +42,10 @@ class Qubits(list):
     def _convert(item):
         if not isinstance(item, Iterable):
             item = [item]
+        return Wires.all_wires(item)
 
-        # qreg = QuantumRegister(bits=[Qubit() for _ in item])
-        # return Wires.all_wires(item)
-        return item
-
-    def flatten(self) -> Iterable:
-        return [qubit for qregs in self for qubit in qregs]
+    def flatten(self) -> Wires:
+        return Wires.all_wires(self)
 
     @property
     def total(self) -> int:
@@ -67,7 +62,7 @@ class Qubits(list):
 
 
 class QubitsProperty:
-    """Descriptor that handles getting and setting Qubits"""
+    """Descriptor that handles getting and setting Qubits in classes"""
 
     __slots__ = "name", "use_slots"
 

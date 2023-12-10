@@ -13,9 +13,7 @@ if TYPE_CHECKING:
 
 
 class Unitary(Operation):
-    """
-    A quantum unitary operation
-    """
+    """Base class for a quantum unitary operation"""
 
     num_wires = AnyWires
 

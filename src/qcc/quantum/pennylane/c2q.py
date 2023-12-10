@@ -1,3 +1,10 @@
+"""
+C2Q Operation in Pennylane
+
+I am overall not happy with this implementation, since there is a lot of breaking gradients.
+Rewrite get_params to not break the gradient. Don't use generator, just allocate memory statically.
+"""
+
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
@@ -16,7 +23,6 @@ if TYPE_CHECKING:
     from pennylane.wires import Wires
 
 
-# TODO: use qubit unitary
 class C2Q(Operation):
     num_wires = AnyWires
 
@@ -32,6 +38,7 @@ class C2Q(Operation):
 
         super().__init__(*params, wires=wires, id=id)
 
+    # TODO: merge with other geT_params in the package
     @staticmethod
     def get_params(x_in):
         p = x_in
@@ -120,7 +127,7 @@ class ConvolutionFilter(Unitary):
         # TODO: generalize
         tmp = params.cpu().detach().unsqueeze(0)
         nullspace = torch.tensor(la.null_space(tmp))
-        
+
         if USE_CUDA:
             nullspace = nullspace.cuda()
 
