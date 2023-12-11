@@ -1,7 +1,7 @@
 """
 Experiment
 
-Generic method of taking 
+Generic method of performing and aggregating multiple experimental trials
 """
 
 from __future__ import annotations
