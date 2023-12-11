@@ -71,6 +71,7 @@ cd test; qcc load config/
 
 - [ ] Write documentation / comments
   - [ ] Sphinx / MKDocs deployment?
+- [ ] Use <https://arxiv.org/pdf/quant-ph/0410184.pdf> for shift operation
 - [ ] Rewrite all draw methods to use plotly
 - [ ] Rename variables to match publication(s) and report
   - [ ] Shift → stride
