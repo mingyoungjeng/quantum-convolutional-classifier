@@ -49,8 +49,8 @@ cd test; qcc load config/
 │   ├── model.py # Generic class for ML experiments (training + testing)
 │   ├── optimize.py # Custom optimizer wrapper
 │   ├── quantum.py # MQCC and MQCC Optimized
+│   │              # (WARNING: ML / Ansatz related items are likely jank)
 │   └── quanvolution.py # Quanvolution PyTorch module (move to ML?)
-│                       # (WARNING: ML / Ansatz related items are likely jank)
 └── quantum
     ├── pennylane # Quantum operations in Pennylane
     │   └── ansatz # Ansatz compatible with Pennylane
