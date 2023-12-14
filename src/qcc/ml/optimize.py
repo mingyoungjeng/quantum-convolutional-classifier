@@ -8,7 +8,7 @@ from torch.optim import Optimizer as TorchOptimizer
 from qcc.ml import USE_CUDA, init_params
 
 if TYPE_CHECKING:
-    from typing import Callable, Optional
+    from typing import Callable
     from torch import Tensor
     from torch.nn import Module
     from torch.utils.data import DataLoader
@@ -105,7 +105,7 @@ def train(
     training_dataloader: DataLoader,
     cost_fn: CostFunction,
     epoch: int = 1,
-    params: Optional[Iterable[Number]] = None,
+    params: Iterable[Number] | None = None,
 ):
     if USE_CUDA:
         fn = fn.to("cuda")
@@ -123,7 +123,7 @@ def train(
 def test(
     fn: Module,
     testing_dataloader: DataLoader,
-    params: Optional[Iterable[Number]] = None,
+    params: Iterable[Number] | None = None,
 ):
     if USE_CUDA:
         fn = fn.to("cuda")

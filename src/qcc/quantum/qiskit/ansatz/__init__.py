@@ -1,0 +1,3 @@
+"""
+!! ASSUME EVERYTHING IN qcc.quantum.qiskit.ansatz HAS NOT BEEN MAINTAINED AND IS OUTDATED !!
+"""

@@ -11,7 +11,7 @@ from qcc.experiment import Experiment
 from qcc.file import load_toml, new_dir, lookup
 
 if TYPE_CHECKING:
-    from typing import Iterable, Optional, Callable, Mapping
+    from typing import Iterable, Callable, Mapping
     from torch.nn import Module
     from torch.utils.data import Dataset
     from torch.optim import Optimizer as TorchOptimizer
@@ -35,16 +35,16 @@ class Classify:
     dataset: type[Dataset] = field(converter=str_to_mod)
     optimizer: type[TorchOptimizer] = field(converter=str_to_mod)
     loss: Callable | type[ImageTransform] = field(converter=str_to_mod)
-    transform: Optional[Callable] = field(converter=str_to_mod)
-    dimensions: Optional[Iterable[int]] = (16, 16)
-    num_trials: Optional[int] = 1
-    num_layers: Optional[int] = 0
-    classes: Optional[Iterable[int]] = (0, 1)
+    transform: Callable | None = field(converter=str_to_mod)
+    dimensions: Iterable[int] | None = (16, 16)
+    num_trials: int | None = 1
+    num_layers: int | None = 0
+    classes: Iterable[int] | None = (0, 1)
     epoch: int = 1
-    batch_size: Optional[int | tuple[int, int]] = 1
+    batch_size: int | tuple[int, int] | None = 1
     module_options: Mapping = field(factory=dict, converter=dict_converter)
     optimizer_options: Mapping = field(factory=dict, converter=dict_converter)
-    output_dir: Optional[Path] = None
+    output_dir: Path | None = None
     is_quantum: bool = True
     verbose: bool = False
 

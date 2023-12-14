@@ -10,7 +10,7 @@ from itertools import zip_longest
 import numpy as np
 
 if TYPE_CHECKING:
-    from typing import Optional, Sequence
+    from typing import Sequence
     from numbers import Number
 
 
@@ -21,7 +21,7 @@ def convolution(
     stride: int | Sequence[int] = 1,
     padding: int | Sequence[int] = 0,
     dilation: int | Sequence[int] = 1,
-    bounds: Optional[tuple[Number, Number]] = None,
+    bounds: tuple[Number, Number] | None = None,
     use_abs: bool = True,
 ) -> np.array:
     """
@@ -33,7 +33,7 @@ def convolution(
         stride (int | Sequence[int]): Distance to shift each window. Defaults to 1.
         padding (int | Sequence[int]): NOT IMPLEMENTED. Defaults to 0.
         dilation (int | Sequence[int]): NOT IMPLEMENTED. Defaults to 1.
-        bounds (Optional[tuple[Number, Number]]): (Min, Max) of data values. Defaults to None.
+        bounds (tuple[Number, Number] | None): (Min, Max) of data values. Defaults to None.
         use_abs (bool): Takes the magnitude of result - needed for quantum compatibility. Defaults to True.
 
     Returns:
@@ -173,7 +173,7 @@ def avg_filter(N: int, dim: int = 1) -> np.array:
     Returns:
         np.array: Averaging filter
     """
-    
+
     return np.ones([N for _ in range(dim)]) / (N**dim)
 
 
@@ -189,7 +189,7 @@ def sobel_filter(N: int, dim: int = 2, axis: int = 0) -> np.array:
     Returns:
         np.array: edge detection filter
     """
-    
+
     kernel = np.zeros([N for _ in range(dim)])
 
     middle = N // 2
@@ -260,7 +260,7 @@ def laplacian_of_gaussian(N: int, sigma=0.6, dim: int = 2) -> np.array:
     Returns:
         np.array: outline filter
     """
-    
+
     center = (N - 1) / 2
     kernel = gaussian_blur(N, sigma, dim)
 

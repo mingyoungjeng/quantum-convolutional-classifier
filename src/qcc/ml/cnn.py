@@ -9,12 +9,11 @@ from qcc.filters import update_dims
 
 if TYPE_CHECKING:
     from torch.nn import Module
-    from typing import Optional
 
 
 @define
 class Layer:
-    """Wrapper of convolution/pooling layers that stores parameters and tracks data size."""
+    """Wrapper of convolution/pooling layers that stores parameters and tracks data size"""
 
     module: type[Module]
     kernel_size: int | Iterable[int] = 2
@@ -43,18 +42,18 @@ class ConvolutionalNeuralNetwork(nn.Sequential):
 
     def __init__(
         self,
-        dims: list[int],
+        dims: Iterable[int],
         num_layers: int = 1,
         num_features: int = 1,
         num_classes: int = 2,
         relu: bool = True,
         bias: bool = True,
-        convolution: Optional[nn.Module] = None,
-        pooling: Optional[nn.Module] = None,
+        convolution: nn.Module | None = None,
+        pooling: nn.Module | None = None,
     ):
         """
         Args:
-            dims (list[int]): _description_
+            dims (Iterable[int]): Dimensions of data in column-major order (breaking from PyTorch expectations). Ex: [16, 16, 3] not [3, 16, 16].
             num_layers (int): Number of convolution-pooling layers. Defaults to 1.
             num_features (int): Number of features per convolution layer. Defaults to 1.
             num_classes (int): Number of output clases. Defaults to 2.
@@ -77,14 +76,7 @@ class ConvolutionalNeuralNetwork(nn.Sequential):
         for i in range(num_layers):
             # ==== convolution layer ==== #
             if convolution is None:
-                # Guess convolution layer if not defined
-                match len(dims):
-                    case 3:
-                        conv_layer = Layer(nn.Conv3d, padding=1)
-                    case 2:
-                        conv_layer = Layer(nn.Conv2d, padding=1)
-                    case _:
-                        conv_layer = Layer(nn.Conv1d, padding=1)
+                conv_layer = _guess_convolution(*dims)
             lst += [
                 conv_layer(
                     in_channels=channels if i == 0 else num_features,
@@ -97,14 +89,7 @@ class ConvolutionalNeuralNetwork(nn.Sequential):
 
             # ==== pooling layer==== #
             if pooling is None:
-                # Guess pooling layer if not defined
-                match len(dims):
-                    case 3:
-                        pool_layer = Layer(nn.MaxPool3d, stride=2)
-                    case 2:
-                        pool_layer = Layer(nn.MaxPool2d, stride=2)
-                    case _:
-                        pool_layer = Layer(nn.MaxPool1d, stride=2)
+                pool_layer = _guess_pooling_max(*dims)
             lst += [pool_layer()]
             dims = pool_layer.update_dims(*dims)
 
@@ -124,3 +109,45 @@ class ConvolutionalNeuralNetwork(nn.Sequential):
         for layer in self.children():
             if hasattr(layer, "reset_parameters"):
                 layer.reset_parameters()
+
+
+# ==== TODO: eventually optimize and remove these because they are ugly and clunky ==== #
+
+
+def _guess_convolution(*dims: int) -> Layer:
+    """Guess convolution layer if not defined"""
+    match len(dims):
+        case 3:
+            module = nn.Conv3d
+        case 2:
+            module = nn.Conv2d
+        case _:
+            module = nn.Conv1d
+
+    return Layer(module, padding=1)
+
+
+def _guess_pooling_max(*dims: int) -> Layer:
+    """Guess max pooling layer if not defined"""
+    match len(dims):
+        case 3:
+            module = nn.MaxPool3d
+        case 2:
+            module = nn.MaxPool2d
+        case _:
+            module = nn.MaxPool1d
+
+    return Layer(module, stride=2)
+
+
+def _guess_pooling_avg(*dims: int) -> Layer:
+    """Guess avg pooling layer if not defined"""
+    match len(dims):
+        case 3:
+            module = nn.AvgPool3d
+        case 2:
+            module = nn.AvgPool2d
+        case _:
+            module = nn.AvgPool1d
+
+    return Layer(module, stride=2)

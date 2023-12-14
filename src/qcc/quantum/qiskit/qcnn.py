@@ -15,7 +15,7 @@ from qiskit.circuit.parametervector import ParameterVector
 from qcc.quantum.qiskit.ansatz import Ansatz
 
 if TYPE_CHECKING:
-    from typing import Optional, Iterable
+    from typing import Iterable
 
 
 class QCNNFilter(Gate):
@@ -26,7 +26,7 @@ class QCNNFilter(Gate):
         i = next(self.instances_counter)
         return str() if i == 0 else i
 
-    def __init__(self, label: Optional[str] = None) -> None:
+    def __init__(self, label: str | None = None) -> None:
         params_name = f"qcnn_filter{self._id}"
         params = ParameterVector(params_name, length=15)
 
@@ -59,7 +59,7 @@ class QCNNPooling(Gate):
         i = next(self.instances_counter)
         return str() if i == 0 else i
 
-    def __init__(self, label: Optional[str] = None) -> None:
+    def __init__(self, label: str | None = None) -> None:
         params_name = f"qcnn_pooling{self._id}"
         params = ParameterVector(params_name, length=2)
 

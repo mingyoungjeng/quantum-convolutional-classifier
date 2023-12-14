@@ -1,13 +1,26 @@
+"""
+Qubits
+Representation of qubits for multidimensional data as a 2D list.
+"""
+
 from __future__ import annotations
 
-from typing import Iterable
+from typing import TYPE_CHECKING, Any, Callable, Iterable
 from pennylane.wires import Wires
 
+if TYPE_CHECKING:
+    from typing import Any, Callable
 
-class Qubits(list):
-    """Multidimensional qubits"""
 
-    def __init__(self, iterable=None):
+class TwoDimensionalList(list):
+    """List of lists"""
+
+    __slots__ = "fn"
+
+    # ==== Overrides of list ==== #
+
+    def __init__(self, iterable=None, fn: Callable[[Any], Any] = None):
+        self.fn = lambda x: x if fn is None else fn
         if iterable is None:
             super().__init__()
         else:
@@ -28,24 +41,25 @@ class Qubits(list):
         else:
             super().extend(self._convert(item) for item in other)
 
-    def __add__(self, value) -> Qubits:
-        return Qubits(super().__add__(value))
+    def __add__(self, value) -> TwoDimensionalList:
+        return TwoDimensionalList(super().__add__(value))
 
-    def __iadd__(self, value) -> Qubits:
+    def __iadd__(self, value) -> TwoDimensionalList:
         self.extend(value)
         return self
 
-    def copy(self) -> Qubits:
-        return Qubits(super().copy())
+    def copy(self) -> TwoDimensionalList:
+        return TwoDimensionalList(super().copy())
 
-    @staticmethod
-    def _convert(item):
+    # ==== Extensions to list ==== #
+
+    def _convert(self, item):
         if not isinstance(item, Iterable):
             item = [item]
-        return Wires.all_wires(item)
+        return [self.fn(i) for i in item]
 
-    def flatten(self) -> Wires:
-        return Wires.all_wires(self)
+    def flatten(self) -> list:
+        return [item for dim in self for item in dim]
 
     @property
     def total(self) -> int:
@@ -61,7 +75,20 @@ class Qubits(list):
         return len(self)
 
 
-class QubitsProperty:
+class QubitsPennylane(TwoDimensionalList):
+    def __init__(self, iterable=None):
+        super().__init__(iterable, fn=Wires.all_wires)
+
+    def _convert(self, item):
+        if not isinstance(item, Iterable):
+            item = [item]
+        return Wires.all_wires(item)
+
+    def flatten(self) -> Wires:
+        return Wires.all_wires(self)
+
+
+class QubitsPennylaneProperty:
     """Descriptor that handles getting and setting Qubits in classes"""
 
     __slots__ = "name", "use_slots"
@@ -79,15 +106,15 @@ class QubitsProperty:
 
         self.name = f"_{name}" if self.use_slots else name
 
-    def __get__(self, obj: object, _=None) -> Qubits:
+    def __get__(self, obj: object, _=None) -> QubitsPennylane:
         if self.use_slots:
-            qubits = getattr(obj, self.name, Qubits())
+            qubits = getattr(obj, self.name, QubitsPennylane())
         else:
-            qubits = obj.__dict__.get(self.name, Qubits())
+            qubits = obj.__dict__.get(self.name, QubitsPennylane())
         return qubits.copy()
 
     def __set__(self, obj: object, value: Iterable) -> None:
         if self.use_slots:
-            setattr(obj, self.name, Qubits(value))
+            setattr(obj, self.name, QubitsPennylane(value))
         else:
-            obj.__dict__[self.name] = Qubits(value)
+            obj.__dict__[self.name] = QubitsPennylane(value)

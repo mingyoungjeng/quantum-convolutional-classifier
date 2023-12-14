@@ -10,7 +10,7 @@ from qcc.file import load_toml
 from qcc.experiment import Experiment
 
 if TYPE_CHECKING:
-    from typing import Optional
+    pass
 
 CWD = Path(__file__).parent
 graph_template = go.layout.Template(load_toml(CWD / "graph_template.toml"))
@@ -18,10 +18,10 @@ graph_template = go.layout.Template(load_toml(CWD / "graph_template.toml"))
 
 def plot(
     *args,
-    title: Optional[str] = None,
-    xlabel: Optional[str] = None,
-    ylabel: Optional[str] = None,
-    legend: Optional[tuple[int, int]] = None,
+    title: str | None = None,
+    xlabel: str | None = None,
+    ylabel: str | None = None,
+    legend: tuple[int, int] | None = None,
     **kwargs,
 ) -> go.Figure:
     layout = dict()

@@ -17,7 +17,6 @@ from qcc.ml import init_params, reset_parameter
 from qcc.file import draw
 
 if TYPE_CHECKING:
-    from typing import Optional
     from numbers import Number
     from pennylane.wires import Wires
     from pennylane.operation import Operation
@@ -31,12 +30,12 @@ log = logging.getLogger(__name__)
 
 class Ansatz(Module, metaclass=ABCMeta):
     """Base class for QML ansatz"""
-    
+
     __slots__ = "_qubits", "_num_layers", "_qnode", "num_classes", "q2c_method"
 
     qubits: Qubits = QubitsProperty(slots=True)
     _num_layers: int
-    num_classes: Optional[int]
+    num_classes: int | None
     q2c_method: Q2CMethod
 
     class Q2CMethod(StrEnum):
@@ -48,7 +47,7 @@ class Ansatz(Module, metaclass=ABCMeta):
         self,
         qubits: Qubits,
         num_layers: int = 0,
-        num_classes: Optional[int] = None,
+        num_classes: int | None = None,
         q2c_method: Q2CMethod | str = Q2CMethod.Probabilities,
     ):
         super().__init__()
@@ -136,15 +135,15 @@ class Ansatz(Module, metaclass=ABCMeta):
 
     def _circuit(
         self,
-        psi_in: Optional[Statevector] = None,
-        params: Optional[Parameters] = None,
+        psi_in: Statevector | None = None,
+        params: Parameters | None = None,
     ):
         if psi_in is not None:  # this is done to facilitate drawing
             self.c2q(psi_in)
         meas = self.circuit(*self.parameters() if params is None else params)
         return self.q2c(meas)
 
-    def forward(self, psi_in: Optional[Statevector] = None) -> Tensor:
+    def forward(self, psi_in: Statevector | None = None) -> Tensor:
         result = self.qnode(psi_in=psi_in)  # pylint: disable=not-callable
 
         match self.q2c_method:

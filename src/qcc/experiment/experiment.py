@@ -23,7 +23,7 @@ from qcc.file import (
 from qcc.experiment.logger import Logger
 
 if TYPE_CHECKING:
-    from typing import Optional, Mapping, Any
+    from typing import Mapping, Any
     from qcc.experiment.logger import SchemaDefinition
 
     # TODO: Add type for class that has a Logger
@@ -33,9 +33,9 @@ if TYPE_CHECKING:
 class Experiment:
     """Perform and aggregate multiple experimental trials"""
 
-    cls: Optional[Any] = field(default=None)
+    cls: Any | None = field(default=None)
     num_trials: int = 1
-    results_schema: Optional[SchemaDefinition] = None
+    results_schema: SchemaDefinition | None = None
     dfs: dict[str, pl.DataFrame] = field(repr=False, factory=dict)
 
     @cls.validator
@@ -59,7 +59,7 @@ class Experiment:
     def _run_trial(
         self,
         idx: int | Iterable[int],
-        cls: Optional[Any] = None,
+        cls: Any | None = None,
         rename: bool = False,
     ) -> Mapping[str, pl.DataFrame]:
         if cls is None:
@@ -94,7 +94,7 @@ class Experiment:
             dfs[key] = dfs.get(key).select(col)
 
     def _merge_dfs(
-        self, dfs: Mapping[str, pl.DataFrame], filename: Optional[Path] = None
+        self, dfs: Mapping[str, pl.DataFrame], filename: Path | None = None
     ) -> None:
         for metric, df in dfs.items():
             if metric not in self.dfs:
@@ -109,7 +109,7 @@ class Experiment:
             # Save DataFrames
             self.save(filename, overwrite=True)
 
-    def read(self, filename: Optional[Path] = None) -> None:
+    def read(self, filename: Path | None = None) -> None:
         if filename is None:
             return
         else:
@@ -125,7 +125,7 @@ class Experiment:
         dfs = dict((m, df) for m, df in zip(metrics, dfs) if df is not None)
         self._merge_dfs(dfs)
 
-    def save(self, filename: Optional[Path] = None, overwrite: bool = False) -> None:
+    def save(self, filename: Path | None = None, overwrite: bool = False) -> None:
         if filename is None:
             return
 
@@ -136,7 +136,7 @@ class Experiment:
     def __call__(
         self,
         *,
-        filename: Optional[Path] = None,
+        filename: Path | None = None,
         parallel: bool = False,
     ) -> pl.DataFrame:
         # Import from path
@@ -163,7 +163,7 @@ class Experiment:
         return self.dfs.get("results")
 
     @staticmethod
-    def aggregate(name: Optional[str] = None, op: str = "any"):
+    def aggregate(name: str | None = None, op: str = "any"):
         regex = f"^.+$" if name is None else f"^{name}(_[0-9]+)?$"
         fn = getattr(pl.element(), op)
         expr = pl.concat_list(pl.col(regex)).list.eval(fn()).list.first()

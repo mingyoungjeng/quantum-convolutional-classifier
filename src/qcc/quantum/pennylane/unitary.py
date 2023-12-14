@@ -7,8 +7,6 @@ from pennylane.wires import Wires
 from pennylane.operation import Operation, AnyWires
 
 if TYPE_CHECKING:
-    from typing import Optional
-
     Parameters = Iterable[Number]
 
 
@@ -27,7 +25,7 @@ class Unitary(Operation):
         pass
 
     @classmethod
-    def shape(cls, wires: Optional[Wires | int] = None, **hyperparameters) -> int:
+    def shape(cls, wires: Wires | int | None = None, **hyperparameters) -> int:
         """
         Total trainable parameters required when applying operation to a set of qubits
 

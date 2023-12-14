@@ -311,8 +311,8 @@ def _classify_pool(cmds: Iterable[Classify]):
 
     try:  # For CUDA compatibility in PyTorch
         set_start_method("spawn")
-    except RuntimeError:
-        pass
+    except RuntimeError as e:
+        log.warning(e)
 
     with Pool() as pool:
         # ==== generate experiments ==== #
@@ -352,6 +352,8 @@ def _classify_pool(cmds: Iterable[Classify]):
             experiment.save(filename, overwrite=True)
             experiment.draw(filename, overwrite=True, close=True)
 
+
+# ==== TODO: convolution command ==== #
 
 # ==== pooling command ==== #
 

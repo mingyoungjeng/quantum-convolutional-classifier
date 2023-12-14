@@ -14,7 +14,7 @@ from qcc.ml import reset_parameter
 from qcc.ml.cnn import ConvolutionalNeuralNetwork, Layer
 
 if TYPE_CHECKING:
-    from typing import Optional
+    pass
 
 
 class Quanvolution(Module):
@@ -36,7 +36,7 @@ class Quanvolution(Module):
     dilation: tuple[int, int]
 
     # padding_mode: str
-    out_channels: Optional[int]
+    out_channels: int | None
 
     num_layers: int
     qnode: Module
@@ -48,7 +48,7 @@ class Quanvolution(Module):
         stride: int | Iterable[int] = 1,
         padding: int | Iterable[int] = 0,
         dilation: int | Iterable[int] = 1,
-        out_channels: Optional[int] = None,
+        out_channels: int | None = None,
         # padding_mode: str = "constant",
         num_layers: int = 4,
         parameterized: bool = True,
@@ -173,7 +173,6 @@ class QuanvolutionalNeuralNetwork(torch.nn.Sequential):
         parameterized=True,
     ):
         num_channels = dims[2] if len(dims) > 2 else 1
-        print(dims, num_channels)
 
         q = self.quanvolution(padding_mode="circular", parameterized=parameterized)
         dims = self.quanvolution.update_dims(*dims)

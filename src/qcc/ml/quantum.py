@@ -1,5 +1,11 @@
+"""
+Wrapper of QML layers and techniques as PyTorch modules.
+
+TODO: Due to simulator limitations, MQCC and MQCC Optimized had to be split into layers instead of running the entire multilayer quantum ansatz at once. Once the `lightning.gpu` backend is working, this should be able to be remedied.
+"""
+
 from __future__ import annotations
-from typing import TYPE_CHECKING, Iterable, Optional
+from typing import TYPE_CHECKING, Iterable
 
 from functools import partial
 
@@ -25,8 +31,8 @@ from qcc.quantum.pennylane.c2q import (
 from qcc.quantum.pennylane.ansatz import FullyConnected
 
 if TYPE_CHECKING:
-    from typing import Optional
-    from qcc.quantum.pennylane import Unitary, Wires
+    from qcc.quantum.pennylane import Unitary
+    from pennylane import Wires
 
 
 class AnsatzFilter(FilterQML):
@@ -48,7 +54,7 @@ class MQCCHybrid(nn.Sequential):
         relu: bool = True,
         bias: bool = False,
         U_kernel: type[Unitary] = ConvolutionAngleFilter,
-        U_fully_connected: Optional[type[Unitary]] = None,
+        U_fully_connected: type[Unitary] | None = None,
         ansatz=MQCC,
         pool="euclidean",
     ):
@@ -70,7 +76,7 @@ class MQCCHybrid(nn.Sequential):
             )
 
             lst += [mqcc]
-            dims = mqcc.update_dims(dims)
+            dims = mqcc.update_dims(*dims)
 
             if (pool == "avg") or (pool == "average"):
                 pool_layer = Layer(nn.AvgPool2d, stride=2)
@@ -225,7 +231,7 @@ class MQCCLayer(Module):
         # Column-major correction (batch_size)
         result = result.moveaxis(0, -1)
 
-        dims_out = self.update_dims(dims)
+        dims_out = self.update_dims(*dims)
         dims = update_dims(
             2 ** to_qubits(dims),
             kernel_size=self.mqcc.pooling,
@@ -264,7 +270,7 @@ class MQCCLayer(Module):
 
         return result.float()
 
-    def update_dims(self, dims):
+    def update_dims(self, *dims: int):
         dims = update_dims(
             dims,
             padding=self.padding,

@@ -15,7 +15,7 @@ import polars as pl
 from qcc.file import save_dataframe_as_csv, filename_labels
 
 if TYPE_CHECKING:
-    from typing import Optional, Mapping
+    from typing import Mapping
 
     SchemaDefinition = list[tuple[str, pl.DataType]]
 
@@ -81,7 +81,7 @@ class Logger:
 
         self.logger.info(msg)
 
-    def save(self, filename: Optional[Path] = None, overwrite=True) -> None:
+    def save(self, filename: Path | None = None, overwrite=True) -> None:
         if filename is None:
             filename = Path(f"{self.name}.csv")
 

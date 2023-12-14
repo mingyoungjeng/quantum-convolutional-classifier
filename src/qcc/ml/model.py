@@ -15,7 +15,6 @@ from qcc.experiment.logger import Logger
 import matplotlib.pyplot as plt
 
 if TYPE_CHECKING:
-    from typing import Optional
     from pathlib import Path
     from qcc.ml import CostFunction
 
@@ -29,7 +28,7 @@ class Model:
     optimizer: Optimizer
     cost_fn: CostFunction
     epoch: int = 1
-    logger: Optional[Logger] = None
+    logger: Logger | None = None
 
     def _cost(self, *args, **kwargs):
         """Evaluate cost/loss and log it for history"""
@@ -96,12 +95,12 @@ class Model:
         return accuracy, training_time, testing_time
 
     @classmethod
-    def with_logging(cls, *args, name: Optional[str] = None, **kwargs) -> Model:
+    def with_logging(cls, *args, name: str | None = None, **kwargs) -> Model:
         """
         Class constructor that generates new Logger
 
         Args:
-            name (Optional[str]): Name of Logger. Defaults to __name__ of first argument.
+            name (str | None): Name of Logger. Defaults to __name__ of first argument.
 
         Returns:
             Model
@@ -135,7 +134,7 @@ class Model:
 
         return (fig, ax) if include_axis else fig
 
-    def save(self, filename: Optional[Path] = None):
+    def save(self, filename: Path | None = None):
         # TODO: Save loss history
 
         self.logger.save(filename)

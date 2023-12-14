@@ -11,7 +11,7 @@ import torch.nn.functional as F
 from qcc.ml import create_tensor
 
 if TYPE_CHECKING:
-    from typing import Optional, Iterable
+    from typing import Iterable
     from numbers import Number
     from pathlib import Path
 
@@ -38,7 +38,7 @@ def binary(i: int, num_bits: int):
 
 
 def random_data(
-    qubits: int, is_complex: Optional[bool] = False, seed: Optional[float] = None
+    qubits: int, is_complex: bool | None = False, seed: float | None = None
 ):
     if seed is not None:
         np.random.seed(seed)
@@ -75,8 +75,8 @@ def flatten_array(arr: np.ndarray, pad: bool = False):
 
 def flatten_image(
     image: Image.Image | Path,
-    include_mode: Optional[bool] = False,
-    multispectral: Optional[bool] = False,
+    include_mode: bool | None = False,
+    multispectral: bool | None = False,
     pad=False,
 ):  # -> tuple[npt.NDArray[np.complex64], *[tuple[int, ...]]]:
     if isinstance(image, Path):
@@ -98,7 +98,7 @@ def flatten_image(
 def from_counts(
     counts: dict,
     shots: int,
-    num_qubits: Optional[int] = None,
+    num_qubits: int | None = None,
     reverse_bits: bool = False,
 ):
     num_states: int = 2 ** (

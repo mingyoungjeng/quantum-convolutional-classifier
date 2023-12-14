@@ -1,7 +1,8 @@
 """
 Qiskit implementations of common quantum operations.
 
-!! ASSUME EVERYTHING IN qcc.quantum.qiskit HAS NOT BEEN MAINTAINED !!
+!! ASSUME EVERYTHING IN qcc.quantum.qiskit.ansatz HAS NOT BEEN MAINTAINED AND IS OUTDATED !!
+- Immediately, I notice there is duplicate code between the gates and methods in this file. clean up!
 """
 
 
@@ -12,36 +13,6 @@ import numpy as np
 
 if TYPE_CHECKING:
     from qiskit import QuantumCircuit
-
-
-def shift(qc: QuantumCircuit, k: int = 1, targets=None, control=None) -> None:
-    if k == 0:
-        return
-    if targets is None:
-        targets = qc.qubits
-
-    # Increment / Decrement for
-    for _ in range(abs(k)):
-        for i in range(len(targets))[:: -np.sign(k)]:
-            controls = list(targets[:i])
-
-            if control is not None:
-                controls += [control]
-
-            if len(controls) == 0:
-                qc.x(targets[i])
-            else:
-                qc.mcx(controls, targets[i])
-
-
-def rotate(qc: QuantumCircuit, start: int, end: int, direction: str = "right") -> None:
-    rng = range(start, end)
-
-    if direction == "left":
-        rng = reversed(rng)
-
-    for y in rng:
-        qc.swap(y, y + 1)
 
 
 def get_params(x_in):

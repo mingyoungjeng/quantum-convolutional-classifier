@@ -12,7 +12,7 @@ from qcc.quantum.pennylane.pyramid import Pyramid
 from qcc.quantum.pennylane.local import define_filter
 
 if TYPE_CHECKING:
-    from typing import Optional, Iterable
+    from typing import Iterable
     from pennylane.wires import Wires
     from qcc.quantum.pennylane import Parameters, Unitary
 
@@ -27,7 +27,6 @@ class MQCC(Ansatz):
         "U_kernel",
         "U_fully_connected",
         "kernel_shape",
-        "num_features",
         "pooling",
     )
 
@@ -40,7 +39,7 @@ class MQCC(Ansatz):
     out_channels: int
 
     U_kernel: type[Unitary]
-    U_fully_connected: Optional[type[Unitary]]
+    U_fully_connected: type[Unitary] | None
 
     pooling: Iterable[int]
 
@@ -48,13 +47,13 @@ class MQCC(Ansatz):
         self,
         qubits: Qubits,
         num_layers: int = None,
-        num_classes: Optional[int] = None,
+        num_classes: int | None = None,
         q2c_method: Ansatz.Q2CMethod | str = Ansatz.Q2CMethod.Probabilities,
         in_channels: int = 1,
         out_channels: int = 1,
         kernel_shape: Iterable[int] = (2, 2),
         U_kernel: type[Unitary] = define_filter(num_layers=4),
-        U_fully_connected: Optional[type[Unitary]] = Pyramid,
+        U_fully_connected: type[Unitary] | None = Pyramid,
         pooling: Iterable[int] | bool = False,
     ):
         self._num_layers = num_layers
@@ -173,9 +172,8 @@ class MQCC(Ansatz):
 
         # Feature qubits
         top = qubits.total
-        self.feature_qubits = [
-            range(top, top + to_qubits(max(self.in_channels, self.out_channels)))
-        ]
+        num_features = to_qubits(max(self.in_channels, self.out_channels))
+        self.feature_qubits = [range(top, top + num_features)]
         top += self.feature_qubits.total
 
         # Kernel qubits

@@ -13,12 +13,12 @@ from qcc.quantum import to_qubits, wires_to_qubits
 from qcc.quantum.pennylane import Qubits, QubitsProperty
 from qcc.ml import init_params, reset_parameter
 from qcc.file import draw
-from qcc.quantum.qiskit.c2q import C2QAnsatz
+from qcc.quantum.qiskit.ansatz.c2q import C2QAnsatz
 from qiskit.circuit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
 
 if TYPE_CHECKING:
-    from typing import Iterable, Optional
+    from typing import Iterable
     from numbers import Number
     from pathlib import Path
 
@@ -104,7 +104,7 @@ class Ansatz(Module, metaclass=ABCMeta):
     # Abstract methods
 
     @abstractmethod
-    def circuit(self) -> tuple[QuantumCircuit, Optional[set[int]]]:
+    def circuit(self) -> tuple[QuantumCircuit, set[int] | None]:
         pass
 
     @property
@@ -114,7 +114,7 @@ class Ansatz(Module, metaclass=ABCMeta):
 
     # Circuit operation
 
-    def forward(self, psi_in: Optional[Statevector] = None):
+    def forward(self, psi_in: Statevector | None = None):
         result = self.module.forward(psi_in)
 
         # Makes sure batch is 2D array
@@ -126,7 +126,7 @@ class Ansatz(Module, metaclass=ABCMeta):
         for parameter in self.parameters():
             reset_parameter(parameter)
 
-    def draw(self, filename: Optional[Path] = None, **_):
+    def draw(self, filename: Path | None = None, **_):
         fig = self.circuit()[0].draw("mpl", reverse_bits=True)
         return draw((fig, None), filename, overwrite=False, include_axis=False)
 

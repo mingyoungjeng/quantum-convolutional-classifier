@@ -1,34 +1,67 @@
+"""_summary_"""
+
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 from qiskit.circuit.gate import Gate
 from qiskit.circuit.controlledgate import ControlledGate
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 from numpy import sign
 
+from qcc.quantum import to_qubits
+
 if TYPE_CHECKING:
-    from typing import Optional
+    pass
 
 
 def _shift(qc: QuantumCircuit, k: int = 1, num_ctrl_qubits: int = 0) -> None:
+    """
+    _summary_
+
+    Args:
+        qc (QuantumCircuit): _description_
+        k (int, optional): _description_. Defaults to 1.
+        num_ctrl_qubits (int, optional): _description_. Defaults to 0.
+    """
+
     if k == 0:
         return
 
+    k, sgn = abs(k), sign(k)
     controls, targets = qc.qubits[:num_ctrl_qubits], qc.qubits[num_ctrl_qubits:]
 
-    for _ in range(abs(k)):
-        for i in range(len(targets))[:: -sign(k)]:
-            ctrls_i = controls + list(targets[:i])
+    # ==== calculate the number of bits to use in binary decomposition of shift ==== #
+    # k+1 so powers of 2 are represented with the correct number of bits
+    #   Ex: 2 = 011, and ceil(log2(3)) = 2
+    #       4 = 100, but ceil(log2(4)) = 2
+    num_bits = min(to_qubits(k + 1), len(targets))
 
-            if len(ctrls_i) == 0:
-                qc.x(targets[i])
+    # ==== perform shift operation by ±k ==== #
+    # Big or little endian depending on which minimizes depth [::sgn]
+    for i in range(num_bits)[::sgn]:
+        k_i = k // 2**i % 2
+        if k_i == 0:
+            continue
+
+        # ==== shift by ±1, see [::-sgn] ==== #
+        targets_i = targets[i:]
+        for j in range(len(targets_i))[::-sgn]:
+            ctrls_j = controls + targets_i[:j]
+
+            if len(ctrls_j) == 0:
+                qc.x(targets_i[j])
             else:
-                qc.mcx(ctrls_i, targets[i])
+                qc.mcx(ctrls_j, targets_i[j])
 
 
 class Shift(Gate):
+    """_summary_"""
+
     def __init__(
-        self, num_qubits: int, k: int = 1, label: Optional[str] = None
+        self,
+        num_qubits: int,
+        k: int = 1,
+        label: str | None = None,
     ) -> None:
         super().__init__("shift", num_qubits, [k], label=label)
 
@@ -36,7 +69,7 @@ class Shift(Gate):
     def k(self):
         return self.params[0]
 
-    def _define(self):
+    def _define(self) -> None:
         qc = QuantumCircuit(self.num_qubits, name=self.name)
         _shift(qc, self.k)
         self.definition = qc
@@ -44,9 +77,9 @@ class Shift(Gate):
     def control(
         self,
         num_ctrl_qubits: int = 1,
-        label: Optional[str] = None,
+        label: str | None = None,
         ctrl_state: int | str | None = None,
-    ):
+    ) -> ControlledGate:
         gate = CShift(
             self.num_qubits + num_ctrl_qubits,
             k=self.k,
@@ -57,18 +90,20 @@ class Shift(Gate):
         gate.base_gate.label = self.label
         return gate
 
-    def inverse(self):
+    def inverse(self) -> Shift:
         return self.__class__(self.num_qubits, k=-self.k)
 
 
 class CShift(ControlledGate):
+    """_summary_"""
+
     def __init__(
         self,
         num_qubits: int,
         k: int = 1,
         label: str | None = None,
         num_ctrl_qubits: int = 1,
-        ctrl_state: Optional[int | str] = None,
+        ctrl_state: int | str | None = None,
     ):
         base_gate = Shift(num_qubits - num_ctrl_qubits, k=k)
         super().__init__(
@@ -99,17 +134,23 @@ class CShift(ControlledGate):
         )
 
 
-class Decrementor(Shift):
-    def __init__(self, num_qubits: int, k: int = 1, label: str | None = None) -> None:
-        if k < 0:
-            raise ValueError(f"k must be > 0, got {k}")
-
-        super().__init__(num_qubits, -k, label)
-
-
 class Incrementor(Shift):
+    """_summary_"""
+
     def __init__(self, num_qubits: int, k: int = 1, label: str | None = None) -> None:
         if k < 0:
-            raise ValueError(f"k must be > 0, got {k}")
+            raise ValueError(f"k must be >= 0, got {k}")
 
         super().__init__(num_qubits, k, label)
+        self.name = "incrementer"
+
+
+class Decrementor(Shift):
+    """_summary_"""
+
+    def __init__(self, num_qubits: int, k: int = 1, label: str | None = None) -> None:
+        if k < 0:
+            raise ValueError(f"k must be >= 0, got {k}")
+
+        super().__init__(num_qubits, -k, label)
+        self.name = "decrementer"

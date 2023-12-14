@@ -12,7 +12,7 @@ from qcc.quantum.pennylane.pyramid import Pyramid
 from qcc.quantum.pennylane.local import define_filter
 
 if TYPE_CHECKING:
-    from typing import Optional, Iterable
+    from typing import Iterable
     from pennylane.wires import Wires
     from qcc.quantum.pennylane import Parameters, Unitary
 
@@ -27,7 +27,6 @@ class MQCCOptimized(Ansatz):
         "U_kernel",
         "U_fully_connected",
         "kernel_shape",
-        "num_features",
         "pooling",
     )
 
@@ -40,7 +39,7 @@ class MQCCOptimized(Ansatz):
     out_channels: int
 
     U_kernel: type[Unitary]
-    U_fully_connected: Optional[type[Unitary]]
+    U_fully_connected: type[Unitary] | None
 
     pooling: Iterable[int]
 
@@ -48,13 +47,13 @@ class MQCCOptimized(Ansatz):
         self,
         qubits: Qubits,
         num_layers: int = None,
-        num_classes: Optional[int] = None,
+        num_classes: int | None = None,
         q2c_method: Ansatz.Q2CMethod | str = Ansatz.Q2CMethod.Probabilities,
         in_channels: int = 1,
         out_channels: int = 1,
         kernel_shape: Iterable[int] = (2, 2),
         U_kernel: type[Unitary] = define_filter(num_layers=4),
-        U_fully_connected: Optional[type[Unitary]] = Pyramid,
+        U_fully_connected: type[Unitary] | None = Pyramid,
         pooling: Iterable[int] | bool = False,
     ):
         self._num_layers = num_layers
@@ -107,7 +106,7 @@ class MQCCOptimized(Ansatz):
             Convolution.shift(kernel_shape_q, qubits)
 
             # ==== filter ==== #
-            params = self._filter(params, qubits)
+            params = self._kernel(params, qubits)
 
             # ==== permute ==== #
             Convolution.permute(kernel_shape_q, qubits)
@@ -176,9 +175,8 @@ class MQCCOptimized(Ansatz):
 
         # Feature qubits
         top = qubits.total
-        self.feature_qubits = [
-            range(top, top + to_qubits(max(self.in_channels, self.out_channels)))
-        ]
+        num_features = to_qubits(max(self.in_channels, self.out_channels))
+        self.feature_qubits = [range(top, top + num_features)]
         top += self.feature_qubits.total
 
         # Kernel qubits
@@ -198,19 +196,19 @@ class MQCCOptimized(Ansatz):
         in_channel_qubits = self.feature_qubits.flatten()[: to_qubits(self.in_channels)]
         return self.data_qubits.flatten() + in_channel_qubits
 
-    def _filter(self, params, qubits: Qubits):
-        """Wrapper around self.U_kernel that replaces Convolution.filter"""
+    def _kernel(self, params, qubits: Qubits):
+        """Wrapper around self.U_kernel that replaces Convolution.kernel"""
 
         # Setup params
         qubits = Qubits(q[:fsq] for q, fsq in zip(qubits, to_qubits(self.kernel_shape)))
         num_params = self.out_channels * self.U_kernel.shape(qubits.total)
-        filter_params, params = params[:num_params], params[num_params:]
-        shape = (self.out_channels, len(filter_params) // self.out_channels)
-        filter_params = filter_params.reshape(shape)
+        kernel_params, params = params[:num_params], params[num_params:]
+        shape = (self.out_channels, len(kernel_params) // self.out_channels)
+        kernel_params = kernel_params.reshape(shape)
 
         # Apply filter
         wires = qubits.flatten()
-        filters = tuple(self.U_kernel(fp, wires=wires) for fp in filter_params)
-        Select(filters, self.feature_qubits.flatten()[: to_qubits(self.out_channels)])
+        kernels = tuple(self.U_kernel(fp, wires=wires) for fp in kernel_params)
+        Select(kernels, self.feature_qubits.flatten()[: to_qubits(self.out_channels)])
 
         return params  # Leftover parameters

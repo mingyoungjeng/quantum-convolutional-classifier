@@ -10,15 +10,15 @@ from qcc.ml import USE_CUDA
 from qcc.quantum import flatten_array, normalize
 
 if TYPE_CHECKING:
-    from typing import Optional, Callable
+    from typing import Callable
 
 
 @define
 class Data:
     dataset: type[Dataset] = Dataset
-    transform: Optional[Callable] = field(factory=transforms.ToTensor)
-    target_transform: Optional[Callable] = None
-    classes: Optional[Iterable] = None
+    transform: Callable | None = field(factory=transforms.ToTensor)
+    target_transform: Callable | None = None
+    classes: Iterable | None = None
     batch_size: tuple[int, int] | int = 0
 
     def _load(self, is_train: bool = True) -> DataLoader:
@@ -50,7 +50,7 @@ class Data:
         return dataloader
 
     def load(
-        self, is_train: Optional[bool] = None
+        self, is_train: bool | None = None
     ) -> DataLoader | tuple[DataLoader, DataLoader]:
         if is_train is None:
             return self._load(True), self._load(False)
@@ -71,7 +71,7 @@ class BinaryData(Data):
 class ImageTransform(transforms.Compose):
     def __init__(
         self,
-        dims: Optional[Iterable[int]] = None,
+        dims: Iterable[int] | None = None,
         fix_bands=True,
         flatten=True,
         norm=True,

@@ -12,7 +12,7 @@ import numpy as np
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
-    from typing import Iterable, Callable, Optional, Any
+    from typing import Iterable, Callable, Any
 
 
 def create_parent(path: Path):
@@ -112,7 +112,7 @@ def load_dataframe_from_csv(filename: Path) -> None:
 
 def draw(
     fig_ax: tuple[Figure, Axes],
-    filename: Optional[Path] = None,
+    filename: Path | None = None,
     overwrite: bool = False,
     include_axis: bool = False,
 ) -> tuple[Figure, Axes] | Figure:
@@ -130,7 +130,7 @@ def draw(
 
 #     def wrapper(
 #         *args,
-#         filename: Optional[Path] = None,
+#         filename: Path | None = None,
 #         overwrite: bool = False,
 #         include_axis: bool = False,
 #         **kwargs,
