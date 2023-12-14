@@ -49,23 +49,24 @@ cd test; qcc load config/
 │   ├── model.py # Generic class for ML experiments (training + testing)
 │   ├── optimize.py # Custom optimizer wrapper
 │   ├── quantum.py # MQCC and MQCC Optimized
-│   │              # (WARNING: ML / Ansatz related items are likely jank)
-│   └── quanvolution.py # Quanvolution PyTorch module (move to ML?)
+│   └── quanvolution.py # Quanvolution PyTorch module
 └── quantum
     ├── pennylane # Quantum operations in Pennylane
     │   └── ansatz # Ansatz compatible with Pennylane
     ├── qiskit # Qiskit classes and functions 
+    │   └── ansatz # Ansatz compatible with Qiskit
+    │              # (WARNING: ML / Ansatz related items are likely jank)
     ├── quantum.py # Quantum-related functions
     └── qubits.py # 2D list for representing multidimensional quantum circuits
 ```
 
 ### Docs / Examples File Tree (`docs/`)
 
-**TBD**
+TBD
 
 ### Test Suite File Tree (`test/`)
 
-**TBD**
+TBD
 
 ## Todo
 
