@@ -30,14 +30,14 @@ def mac(qc: QuantumCircuit, psi_in: np.ndarray | Tensor) -> None:
         control = qc.qubits[j + 1 :]
 
         if j == 0 and phi.any():
-            qc.ucrz(t.tolist(), control, target)
+            qc.ucrz(list(-phi), control, target)
 
         if j > 0:
             theta = next(params)
-        qc.ucry((-theta).tolist(), control, target)
+        qc.ucry(list(-theta), control, target)
 
         if j == 0 and t.any():
-            qc.ucrz((-t).tolist(), control, target)
+            qc.ucrz(list(t), control, target)
 
 
 def get_params(x_in: np.ndarray | Tensor):
