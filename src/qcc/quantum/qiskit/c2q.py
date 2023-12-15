@@ -20,7 +20,7 @@ class C2Q(Gate):
     def __init__(
         self,
         params: np.ndarray | Tensor,
-        label: str | None = None,
+        label: str | None = "$U_\\text{C2Q}$",
     ) -> None:
         num_qubits = int(to_qubits(len(params)))
         super().__init__("C2Q", num_qubits, params, label)

@@ -62,6 +62,8 @@ class Shift(Gate):
         k: int = 1,
         label: str | None = None,
     ) -> None:
+        if label is None:
+            label = f"$U_\\text{{Shift}}$"  # ^{{{k}}}
         super().__init__("shift", num_qubits, [k], label=label)
 
     @property
@@ -106,7 +108,7 @@ class CShift(ControlledGate):
     ):
         base_gate = Shift(num_qubits - num_ctrl_qubits, k=k)
         super().__init__(
-            "controlled shift",
+            "shift",
             num_qubits,
             [k],
             label=label,

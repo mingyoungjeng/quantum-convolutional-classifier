@@ -59,7 +59,7 @@ class QuantumHaarTransform(Gate):
         dims: int | Sequence[int],
         decomposition_levels: int | Sequence[int] = 0,
         method: str = "packet",
-        label: str | None = None,
+        label: str | None = "$U_\\text{QHT}$",
     ) -> None:
         """
         _summary_

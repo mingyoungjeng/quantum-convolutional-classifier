@@ -1,7 +1,7 @@
 """
 Multiply-and-Accumulate
 
-TODO: Use conj or not?
+TODO: Using complex kernels is something I've generally left unexplored. Not sure if to conj the row vector or not.
 """
 
 from __future__ import annotations
@@ -76,7 +76,7 @@ class MultiplyAndAccumulate(Gate):
     def __init__(
         self,
         params: np.ndarray | Tensor,
-        label: str | None = None,
+        label: str | None = "$U_\\text{MAC}$",
     ) -> None:
         num_qubits = int(to_qubits(len(params)))
         super().__init__("MAC", num_qubits, params, label)

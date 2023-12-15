@@ -10,10 +10,10 @@ from typing import TYPE_CHECKING
 from numbers import Number
 import numpy as np
 from qiskit.circuit import QuantumCircuit, QuantumRegister, Gate
-from qiskit.circuit.library import StatePreparation
 
 from qcc.quantum import to_qubits
 from qcc.quantum.qiskit.shift import Shift
+from qcc.quantum.qiskit.mac import MultiplyAndAccumulate
 
 if TYPE_CHECKING:
     from typing import Sequence
@@ -109,7 +109,7 @@ class Convolution(Gate):
         # ==== MAC ==== #
         kernel_qubits = qc.qregs[-len(self.kernel_dims) :]
         kernel_qubits = [qubit for qreg in kernel_qubits for qubit in qreg]
-        MAC = StatePreparation(np.conj(self.params), inverse=True, normalize=True)
+        MAC = MultiplyAndAccumulate(self.params)
         qc.compose(MAC, qubits=kernel_qubits, inplace=True)
 
         self.definition = qc
