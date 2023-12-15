@@ -44,14 +44,13 @@ def _shift(qc: QuantumCircuit, k: int = 1, num_ctrl_qubits: int = 0) -> None:
             continue
 
         # ==== shift by ±1, see [::-sgn] ==== #
-        targets_i = targets[i:]
-        for j in range(len(targets_i))[::-sgn]:
-            ctrls_j = controls + targets_i[:j]
+        for j, target in tuple(enumerate(targets[i:]))[::-sgn]:
+            ctrls_j = controls + targets[i : i + j]
 
             if len(ctrls_j) == 0:
-                qc.x(targets_i[j])
+                qc.x(target)
             else:
-                qc.mcx(ctrls_j, targets_i[j])
+                qc.mcx(ctrls_j, target)
 
 
 class Shift(Gate):
