@@ -1,8 +1,4 @@
-"""
-Use this file as a template for implementing new gates in Qiskit
-
-See <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.Gate> for IBM's documentation
-"""
+"""Classical-to-Quantum (C2Q) Arbitrary State Synthesis"""
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
@@ -10,35 +6,29 @@ from typing import TYPE_CHECKING
 from qiskit.circuit.gate import Gate
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 
+from qcc.quantum import to_qubits
+from qcc.quantum.qiskit.mac import MultiplyAndAccumulate
+
 if TYPE_CHECKING:
-    pass
+    import numpy as np
+    from torch import Tensor
 
 
-def _new_gate(qc: QuantumCircuit, *args, **kwargs) -> None:
-    """Your gate as a function"""
-
-    pass
-
-
-class NewGate(Gate):
-    """Your quantum gate"""
+class C2Q(Gate):
+    """C2Q Operation"""
 
     def __init__(
         self,
-        num_qubits: int,
-        params: list,
+        params: np.ndarray | Tensor,
         label: str | None = None,
     ) -> None:
-        super().__init__("NewGate", num_qubits, params, label)
+        num_qubits = int(to_qubits(len(params)))
+        super().__init__("C2Q", num_qubits, params, label)
 
     def _define(self) -> None:
         qc = QuantumCircuit(self.num_qubits, name=self.name)
-
-        # Call your gate definition function here
-        _new_gate(qc)
-
+        qc.compose(self.inverse().inverse(), inplace=True)
         self.definition = qc
 
-    def inverse(self) -> Gate:
-        # Define an inverse of your gate if you are a nice person
-        pass
+    def inverse(self):
+        return MultiplyAndAccumulate(self.params)

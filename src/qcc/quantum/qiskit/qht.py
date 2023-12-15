@@ -27,7 +27,8 @@ def _quantum_haar_transform(
     method: str = "packet",
 ) -> None:
     dims_q = [to_qubits(x) for x in dims]
-    # TODO: Handle decomposition levels
+    if isinstance(decomposition_levels, Number):
+        decomposition_levels = [decomposition_levels] * len(dims)
 
     # ==== wavelet decomposition using Hadamard gates ==== #
     base = np.hstack(([0], np.cumsum(dims_q[:-1])))
@@ -43,7 +44,7 @@ def _quantum_haar_transform(
     # ==== packet ==== #
     top = np.cumsum(dims_q)
     for b, t, l in zip(base, top, decomposition_levels):
-        RoR = RotateRight(qc, t - b)
+        RoR = RotateRight(int(t - b))
         for i in range(l):
             qc.append(RoR, qargs=qc.qubits[b:t])
 
@@ -75,7 +76,7 @@ class QuantumHaarTransform(Gate):
         self.method = method
 
         num_qubits = sum(to_qubits(x) for x in self.dims)
-        super().__init__("QHT", num_qubits, list(), label)
+        super().__init__("QHT", int(num_qubits), list(), label)
 
     def _define(self) -> None:
         qc = QuantumCircuit(self.num_qubits, name=self.name)
