@@ -72,7 +72,7 @@ class FullyConnected(Ansatz):
 
     def _forward(self, result):
         # Get subset of output
-        norm = 2**self.qubits.total
+        norm = 2**self.feature_qubits.total
         result = norm * result[:, : self.num_classes]
         result = sqrt(result)
 

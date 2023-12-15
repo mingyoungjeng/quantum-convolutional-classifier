@@ -226,7 +226,7 @@ class MQCCLayer(Module):
         result = self.mqcc.forward(inputs)
 
         # Unnormalize output
-        result = (result.T / magnitudes).T
+        result = (result.T * magnitudes).T
 
         # Column-major correction (batch_size)
         result = result.moveaxis(0, -1)
@@ -342,7 +342,7 @@ class FullyConnectedLayer(Module):
         result = self.fc.forward(inputs)
 
         # Unnormalize output
-        result = (result.T / magnitudes).T
+        result = (result.T * magnitudes).T
 
         norm = self.get_parameter("norm").unsqueeze(0)
         result = result * norm
