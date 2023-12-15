@@ -59,8 +59,8 @@ def get_params(x_in: np.ndarray | Tensor):
             yield phi
 
         # ==== Ry angles ==== #
-        mag = abs(x)
-        theta = mag[0] + mag[1] * 1j
+        theta = abs(x)
+        theta = theta[0] + 1j * theta[1]
         theta = theta.angle() if hasattr(theta, "angle") else np.angle(theta)
         theta = 2 * theta
         yield theta
