@@ -243,7 +243,9 @@ class MQCCLayer(Module):
         dims = (dims[0], *(2 ** to_qubits(dims[1:])))
 
         result = reconstruct(result, dims, dims_out, fix_size=False)
-        result = result.T  # Return in row-major order
+
+        # Return in row-major order
+        result = result.permute(*range(result.ndim - 1, -1, -1))
 
         # Merge features into least-significant dimension
         # dims_out = (*dims_out[:-2], dims_out[-2] * dims_out[-1])

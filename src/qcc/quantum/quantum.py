@@ -68,7 +68,10 @@ def pad_array(arr: np.ndarray):
 def flatten_array(arr: np.ndarray, pad: bool = False):
     if pad:
         arr = pad_array(arr)
-    psi = arr.T.ravel()  # == arr.ravel(order="F") # but PyTorch compatible
+    if hasattr(arr, "permute"):  # PyTorch
+        psi = arr.permute(*range(arr.ndim - 1, -1, -1)).ravel()
+    else:  # NumPy
+        psi = arr.ravel(order="F")
 
     return psi
 
@@ -132,7 +135,10 @@ def reconstruct(
 
     if fix_size:
         size = [2 ** to_qubits(x) for x in size]
-    data = data.reshape(size[::-1]).T
+    if hasattr(data, "permute"):  # PyTorch
+        data = data.reshape(size[::-1]).permute(*range(len(size) - 1, -1, -1))
+    else:  # NumPy
+        data = data.reshape(size, order="F")
     data = data[tuple([slice(s) for s in size_out])]  # Remove padded zeroes
 
     return data
