@@ -156,10 +156,10 @@ def rotate_right(qc: QuantumCircuit, q1: int, q2: int):
 
 
 def quantum_no_pooling(
-    data: np.array,
+    data: np.ndarray,
     decomposition_levels: Iterable[int],
     noisy_execution: bool = True,
-) -> np.array:
+) -> np.ndarray:
     dims = data.shape
     if any(2**l > dim for dim, l in zip(dims, decomposition_levels)):
         raise RuntimeError("uwu")
@@ -200,10 +200,10 @@ def quantum_no_pooling(
 
 
 def quantum_average_pooling(
-    data: np.array,
+    data: np.ndarray,
     decomposition_levels: Iterable[int],
     noisy_execution: bool = True,
-) -> np.array:
+) -> np.ndarray:
     dims = data.shape
     if any(2**l > dim for dim, l in zip(dims, decomposition_levels)):
         raise RuntimeError("uwu")
@@ -263,7 +263,7 @@ def quantum_average_pooling(
 
 
 def quantum_euclidean_pooling(
-    data: np.array,
+    data: np.ndarray,
     decomposition_levels: Iterable[int],
     noisy_execution: bool = True,
 ):
@@ -325,7 +325,7 @@ def quantum_euclidean_pooling(
     return img
 
 
-def reconstruction(data: np.array, decomposition_levels: Iterable[int]):
+def reconstruction(data: np.ndarray, decomposition_levels: Iterable[int]):
     for i, l in enumerate(decomposition_levels):
         for _ in range(l):
             data = [data, dict(d=np.zeros_like(data))]
@@ -335,14 +335,14 @@ def reconstruction(data: np.array, decomposition_levels: Iterable[int]):
 
 
 def classical_no_pooling(
-    data: np.array,
+    data: np.ndarray,
     decomposition_levels: Iterable[int],
 ):
     return data
 
 
 def classical_average_pooling(
-    data: np.array,
+    data: np.ndarray,
     decomposition_levels: Iterable[int],
 ):
     dims = data.shape
@@ -356,7 +356,7 @@ def classical_average_pooling(
 
 
 def classical_euclidean_pooling(
-    data: np.array,
+    data: np.ndarray,
     decomposition_levels: Iterable[int],
 ):
     return np.sqrt(classical_average_pooling(data**2, decomposition_levels))

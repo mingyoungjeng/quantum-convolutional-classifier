@@ -249,8 +249,8 @@ def _import_file(filename: Path):
 
 
 def quantum_convolution(
-    data: np.array,
-    kernel: np.array,
+    data: np.ndarray,
+    kernel: np.ndarray,
     noisy_execution: bool = True,
 ):
     npad = tuple((0, 2 ** int(np.ceil(np.log2(N))) - N) for N in kernel.shape)

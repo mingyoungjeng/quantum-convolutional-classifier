@@ -7,6 +7,7 @@ See <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.Gate> for IBM's docu
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import numpy as np
 from qiskit.circuit.gate import Gate
 from qiskit.circuit.quantumcircuit import QuantumCircuit
 
@@ -20,16 +21,16 @@ def _new_gate(qc: QuantumCircuit, *args, **kwargs) -> None:
     pass
 
 
-class NewGate(Gate):
-    """Your quantum gate"""
+class Convolution(Gate):
+    """Multidimensional Convolution Operation"""
 
     def __init__(
         self,
         num_qubits: int,
-        params: list,
+        params: np.ndarray,
         label: str | None = None,
     ) -> None:
-        super().__init__("NewGate", num_qubits, params, label)
+        super().__init__("convolution", num_qubits, params, label)
 
     def _define(self) -> None:
         qc = QuantumCircuit(self.num_qubits, name=self.name)

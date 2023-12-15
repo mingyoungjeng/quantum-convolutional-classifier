@@ -16,20 +16,20 @@ if TYPE_CHECKING:
 
 # TODO: padding, dilation
 def convolution(
-    img_data: np.array,
-    kernel: np.array,
+    img_data: np.ndarray,
+    kernel: np.ndarray,
     stride: int | Sequence[int] = 1,
     padding: int | Sequence[int] = 0,
     dilation: int | Sequence[int] = 1,
     bounds: tuple[Number, Number] | None = None,
     use_abs: bool = True,
-) -> np.array:
+) -> np.ndarray:
     """
     Direct implementation of convolution
 
     Args:
-        img_data (np.array): Input (multidimensinal) data
-        kernel (np.array): Input (multidimensinal) filter/kernel
+        img_data (np.ndarray): Input (multidimensinal) data
+        kernel (np.ndarray): Input (multidimensinal) filter/kernel
         stride (int | Sequence[int]): Distance to shift each window. Defaults to 1.
         padding (int | Sequence[int]): NOT IMPLEMENTED. Defaults to 0.
         dilation (int | Sequence[int]): NOT IMPLEMENTED. Defaults to 1.
@@ -37,7 +37,7 @@ def convolution(
         use_abs (bool): Takes the magnitude of result - needed for quantum compatibility. Defaults to True.
 
     Returns:
-        np.array: Output (multidimensinal) data
+        np.ndarray: Output (multidimensinal) data
     """
     shape_out = update_dims(
         img_data.shape,
@@ -162,7 +162,7 @@ def update_dims(
     return new_dims
 
 
-def avg_filter(N: int, dim: int = 1) -> np.array:
+def avg_filter(N: int, dim: int = 1) -> np.ndarray:
     """
     Square averaging filter
 
@@ -171,13 +171,13 @@ def avg_filter(N: int, dim: int = 1) -> np.array:
         dim (int, optional): Number of dimensions. Defaults to 1.
 
     Returns:
-        np.array: Averaging filter
+        np.ndarray: Averaging filter
     """
 
     return np.ones([N for _ in range(dim)]) / (N**dim)
 
 
-def sobel_filter(N: int, dim: int = 2, axis: int = 0) -> np.array:
+def sobel_filter(N: int, dim: int = 2, axis: int = 0) -> np.ndarray:
     """
     Sobel filter and its extensions
 
@@ -187,7 +187,7 @@ def sobel_filter(N: int, dim: int = 2, axis: int = 0) -> np.array:
         axis (int): Axis of edge detection. Defaults to 0.
 
     Returns:
-        np.array: edge detection filter
+        np.ndarray: edge detection filter
     """
 
     kernel = np.zeros([N for _ in range(dim)])
@@ -225,7 +225,7 @@ def normal(x: float, sigma: int = 1):
     return np.exp(-((x / sigma) ** 2) / 2) / np.sqrt(2 * np.pi * sigma**2)
 
 
-def gaussian_blur(N: int, sigma=1, dim: int = 2) -> np.array:
+def gaussian_blur(N: int, sigma=1, dim: int = 2) -> np.ndarray:
     """
     Square Gaussian blur filter
 
@@ -235,7 +235,7 @@ def gaussian_blur(N: int, sigma=1, dim: int = 2) -> np.array:
         dim (int): Number of dimensions. Defaults to 2.
 
     Returns:
-        np.array: Gaussian blur filter
+        np.ndarray: Gaussian blur filter
     """
     centre = (N - 1) / 2
     kernel = np.zeros([N for _ in range(dim)])
@@ -248,7 +248,7 @@ def gaussian_blur(N: int, sigma=1, dim: int = 2) -> np.array:
     return kernel
 
 
-def laplacian_of_gaussian(N: int, sigma=0.6, dim: int = 2) -> np.array:
+def laplacian_of_gaussian(N: int, sigma=0.6, dim: int = 2) -> np.ndarray:
     """
     Square Laplacian / Outline filter derived from Gaussian blue
 
@@ -258,7 +258,7 @@ def laplacian_of_gaussian(N: int, sigma=0.6, dim: int = 2) -> np.array:
         dim (int): Number of dimensions. Defaults to 2.
 
     Returns:
-        np.array: outline filter
+        np.ndarray: outline filter
     """
 
     center = (N - 1) / 2
@@ -279,7 +279,7 @@ def laplacian_of_gaussian(N: int, sigma=0.6, dim: int = 2) -> np.array:
 
 
 # TODO: only works for odd right now
-def laplacian_approx(N: int, dim: int = 2) -> np.array:
+def laplacian_approx(N: int, dim: int = 2) -> np.ndarray:
     """
     Integer approximation of Laplacian outline
 
@@ -288,7 +288,7 @@ def laplacian_approx(N: int, dim: int = 2) -> np.array:
         dim (int): Number of dimensions. Defaults to 2.
 
     Returns:
-        np.array
+        np.ndarray
     """
     centre = (N - 1) // 2
     kernel = np.ones([N for _ in range(dim)])
