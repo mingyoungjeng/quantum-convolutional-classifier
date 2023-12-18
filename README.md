@@ -89,3 +89,4 @@ TBD
   - [ ] Graph (plotly)
 - [ ] Major project: research method of unifying Qiskit and Pennylane quantum gates
 - [ ] There is a good chance I typed some Sequences as Iterables. Check this.
+- [ ] Add bias terms using quantum
