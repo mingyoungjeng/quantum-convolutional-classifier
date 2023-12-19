@@ -23,7 +23,7 @@ dependencies = [
     "plotly",
     "kaleido",
     "PyWavelets",
-    "PySoundFile",
+    "soundfile",
     "librosa",
     "spectral",
 ]

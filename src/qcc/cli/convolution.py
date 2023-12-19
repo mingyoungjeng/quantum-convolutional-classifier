@@ -111,7 +111,7 @@ def _convolution(
         filename = filename.with_suffix(suffix)
 
         quantum_data = quantum_convolution(data, kernel, not noise_free)
-        classical_data = convolution(data, kernel)
+        classical_data = convolution(data, kernel, padding=1)
 
         # Save results
         save(filename, write_fn(quantum_data))

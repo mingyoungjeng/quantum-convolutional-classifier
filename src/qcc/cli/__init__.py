@@ -407,7 +407,7 @@ def _classify_pool(cmds: Iterable[Classify]):
     help="Output directory",
 )
 @click.option(
-    "--noisefree/--noisy",
+    "--noise_free/--noisy",
     default=True,
     required=True,
 )
@@ -467,11 +467,11 @@ def pooling(ctx, **kwargs):
     help="Output directory",
 )
 @click.option(
-    "--noisefree/--noisy",
+    "--noise_free/--noisy",
     default=True,
     required=True,
 )
-def convolution(**kwargs):
+def convolution(ctx, **kwargs):
     """Multilevel, multidimensional convolution"""
     _convolution(**kwargs)
 
