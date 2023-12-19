@@ -23,6 +23,9 @@ dependencies = [
     "plotly",
     "kaleido",
     "PyWavelets",
+    "PySoundFile",
+    "librosa",
+    "spectral",
 ]
 
 [project.optional-dependencies]

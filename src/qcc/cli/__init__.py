@@ -12,13 +12,13 @@ from ast import literal_eval
 from fnmatch import fnmatch
 from pathlib import Path
 import logging
-import traceback
 from multiprocessing import Pool, set_start_method
 
 import click
 
 from .ml import Classify
 from .pooling import DimensionReduction, _pooling
+from .convolution import Filters, _convolution
 from qcc.experiment import Experiment
 
 if TYPE_CHECKING:
@@ -407,13 +407,73 @@ def _classify_pool(cmds: Iterable[Classify]):
     help="Output directory",
 )
 @click.option(
-    "--noiseless/--noisy",
+    "--noisefree/--noisy",
     default=True,
     required=True,
 )
 def pooling(ctx, **kwargs):
     """Multilevel, multidimensional pooling / dimension reduction / downsampling"""
     _pooling(**kwargs)
+
+
+# ==== convolution ==== #
+@cli.command()
+@click.pass_context
+@click.option(
+    "--filter",
+    "filter_name",
+    type=click.Choice(
+        [e.value for e in Filters],
+        case_sensitive=False,
+    ),
+)
+@click.option(
+    "-s",
+    "--shape",
+    "filter_dims",
+    type=int,
+    multiple=True,
+    default=[3, 3],
+)
+@click.option(
+    "-i",
+    "--inputs",
+    required=True,
+    type=click.Path(
+        exists=True,
+        path_type=Path,
+        resolve_path=True,
+        file_okay=False,
+        writable=True,
+    ),
+    default=Path.cwd() / "data",
+    show_default=False,
+    help="Input data",
+)
+@click.option(
+    "-o",
+    "--output_dir",
+    required=True,
+    type=click.Path(
+        exists=True,
+        path_type=Path,
+        resolve_path=True,
+        file_okay=False,
+        writable=True,
+    ),
+    default=Path.cwd(),
+    show_default=False,
+    callback=create_results,
+    help="Output directory",
+)
+@click.option(
+    "--noisefree/--noisy",
+    default=True,
+    required=True,
+)
+def convolution(**kwargs):
+    """Multilevel, multidimensional convolution"""
+    _convolution(**kwargs)
 
 
 if __name__ == "__main__":

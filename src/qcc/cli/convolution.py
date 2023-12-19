@@ -14,8 +14,6 @@ from enum import StrEnum
 from pathlib import Path
 from functools import partial
 
-import click
-
 import numpy as np
 from PIL import Image
 import soundfile as sf
@@ -23,7 +21,7 @@ from librosa.display import waveshow
 from spectral import save_rgb
 import matplotlib.pyplot as plt
 from polars import DataFrame
-from qiskit import QuantumCircuit, Aer, execute
+from qiskit import QuantumCircuit
 
 from qcc.file import (
     save,
@@ -43,26 +41,12 @@ from qcc.quantum import (
     normalize,
     to_qubits,
     from_counts,
-    reconstruct,
     get_fidelity,
 )
-from qcc.quantum.qiskit import shift, c2q
+from qcc.quantum.qiskit import Convolution, execute
 
 if TYPE_CHECKING:
-    pass
-
-
-@click.group()
-@click.pass_context
-def cli(ctx: click.Context):
-    # Set context settings
-    ctx.show_default = True
-
-
-def create_results(ctx, param, value):
-    results_dir = value / "results"
-    results_dir.mkdir(parents=True, exist_ok=True)
-    return results_dir
+    from typing import Sequence
 
 
 class Filters(StrEnum):
@@ -73,70 +57,12 @@ class Filters(StrEnum):
     LAPLACIAN = "laplacian"
 
 
-@cli.command()
-@click.pass_context
-@click.option(
-    "--filter",
-    "filter_name",
-    type=click.Choice(
-        [e.value for e in Filters],
-        case_sensitive=False,
-    ),
-)
-@click.option(
-    "--filter_size",
-    type=int,
-    default=3,
-)
-@click.option(
-    "--dim",
-    type=int,
-    default=2,
-)
-@click.option(
-    "-i",
-    "--inputs",
-    required=True,
-    type=click.Path(
-        exists=True,
-        path_type=Path,
-        resolve_path=True,
-        file_okay=False,
-        writable=True,
-    ),
-    default=Path.cwd() / "data",
-    show_default=False,
-    help="Input data",
-)
-@click.option(
-    "-o",
-    "--output_dir",
-    required=True,
-    type=click.Path(
-        exists=True,
-        path_type=Path,
-        resolve_path=True,
-        file_okay=False,
-        writable=True,
-    ),
-    default=Path.cwd(),
-    show_default=False,
-    callback=create_results,
-    help="Output directory",
-)
-@click.option(
-    "--noiseless/--noisy",
-    default=True,
-    required=True,
-)
-def run(
-    ctx,
+def _convolution(
     filter_name,
-    filter_size: int,
-    dim: int,
+    filter_dims: Sequence[int],
     inputs: Path,
     output_dir: Path,
-    noiseless: bool,
+    noise_free: bool,
 ):
     df = load_dataframe_from_csv(output_dir / "results.csv")
     if df is None:
@@ -145,11 +71,15 @@ def run(
                 ("mode", str),
                 ("data_size", str),
                 ("filter", str),
-                ("noiseless", bool),
+                ("noise_free", bool),
                 ("fidelity", float),
             ]
         )
     atexit.register(save_dataframe_as_csv, output_dir / "results.csv", df)
+
+    # TODO: this is temp
+    filter_size = filter_dims[0]
+    dim = len(filter_dims)
 
     match filter_name:
         case Filters.AVG:
@@ -165,7 +95,7 @@ def run(
         case _:
             raise AttributeError(f"Invalid filter selected: {filter_name}")
 
-    filter_dims = "x".join(str(i) for i in kernel.shape)
+    filter_dims = "x".join(str(i) for i in filter_dims)
     name = f"{filter_name}_{filter_dims}"
 
     for filename in inputs.glob("**/*"):
@@ -177,10 +107,10 @@ def run(
         dims = "x".join(str(i) for i in data.shape)
 
         filename = output_dir / "data" / mode / dims / name
-        filename = filename_labels(filename, "noiseless" if noiseless else "noisy")
+        filename = filename_labels(filename, "noise_free" if noise_free else "noisy")
         filename = filename.with_suffix(suffix)
 
-        quantum_data = quantum_convolution(data, kernel, not noiseless)
+        quantum_data = quantum_convolution(data, kernel, not noise_free)
         classical_data = convolution(data, kernel)
 
         # Save results
@@ -197,12 +127,13 @@ def run(
         fidelity = get_fidelity(quantum_data, classical_data)
         print(f"{name}, {dims}, {mode}: {fidelity=:.3%}")
 
-        row = DataFrame([[mode, dims, name, noiseless, fidelity]], df.schema)
+        row = DataFrame([[mode, dims, name, noise_free, fidelity]], df.schema)
         df.vstack(row, in_place=True)
 
 
 def _import_file(filename: Path):
-    try:  # Images
+    # ==== rgb images ==== #
+    try:
         data = Image.open(filename, "r")
         mode = data.mode
         if mode == "L":
@@ -217,29 +148,31 @@ def _import_file(filename: Path):
     except IOError:
         pass
 
-    try:  # Audio
+    # ==== audio ==== #
+    try:
         with open(filename, "rb") as f:
             data, samplerate = sf.read(f)
 
         mode = "audio"
-        # suffix = ".png"
-        # write_fn = partial(_write_audio_as_img, samplerate=samplerate)
+        suffix = ".png"
+        write_fn = partial(_write_audio_as_img, samplerate=samplerate)
 
-        suffix = ".flac"
-        write_fn = partial(_write_audio, samplerate=samplerate)
+        # suffix = ".flac"
+        # write_fn = partial(_write_audio, samplerate=samplerate)
 
         return data, mode, suffix, write_fn
     except (TypeError, RuntimeError):
         pass
 
-    try:  # Hyperspectral
+    # ==== hyperspectral images ==== #
+    try:
         data = np.load(filename).astype(float)
         mode = "hyperspectral"
-        # suffix = ".png"
-        # write_fn = _write_hyperspectral_as_img
+        suffix = ".png"
+        write_fn = _write_hyperspectral_as_img
 
-        suffix = ".npy"
-        write_fn = _write_hyperspectral
+        # suffix = ".npy"
+        # write_fn = _write_hyperspectral
 
         return data, mode, suffix, write_fn
     except Exception as e:
@@ -265,65 +198,19 @@ def quantum_convolution(
     num_qubits = sum(dims_q)
     num_states = 2**num_qubits
 
-    kernel_shape_q = [
-        int(np.ceil(np.log2(filter_size))) for filter_size in kernel.shape
-    ]
-    num_kernel = sum(kernel_shape_q)
-    total_qubits = num_qubits + num_kernel
+    kernel_shape_q = [to_qubits(filter_size) for filter_size in kernel.shape]
+    num_kernel_qubits = sum(kernel_shape_q)
+    total_qubits = num_qubits + num_kernel_qubits
 
     qc = QuantumCircuit(total_qubits)
-    qc.initialize(psi, qc.qubits[:-num_kernel])
+    qc.initialize(psi, qc.qubits[:-num_kernel_qubits])
 
-    for i, (dim, fq) in enumerate(zip(dims_q[: kernel.ndim], kernel_shape_q)):
-        kernel_qubits = num_qubits + sum(kernel_shape_q[:i]) + np.arange(fq)
-        qc.h(kernel_qubits)
+    convolution_gate = Convolution(dims, kernel)
+    qc.compose(convolution_gate, inplace=True)
 
-        # Shift operation
-        qubits = list(sum(dims_q[:i]) + np.arange(dim))
-        for i, control_qubit in enumerate(kernel_qubits):
-            shift(qc, -1, targets=qubits[i:], control=control_qubit)
+    # ==== run ==== #
 
-    params, kernel_mag = normalize(kernel.flatten(order="F"), include_magnitude=True)
-
-    roots = np.concatenate(
-        [np.zeros(1, dtype=int), np.cumsum(dims_q[: kernel.ndim - 1])]
-    )  # base
-    kernel_qubits = np.array(
-        [root + np.arange(fq) for root, fq in zip(roots, kernel_shape_q)], dtype=int
-    ).flatten()
-
-    swap_targets = np.array(
-        [
-            num_qubits + sum(kernel_shape_q[:i]) + np.arange(fq)
-            for i, fq in enumerate(kernel_shape_q)
-        ],
-        dtype=int,
-    ).flatten()
-
-    for a, b in zip(kernel_qubits, swap_targets):
-        qc.swap(a, b)
-
-    c2q(qc, params, targets=swap_targets, transpose=True)
-
-    # ==== Run ==== #
-
-    backend = Aer.get_backend("aer_simulator")
-    shots = backend.configuration().max_shots
-
-    if noisy_execution:
-        qc.measure_all()
-    else:
-        qc.save_statevector()
-
-    job = execute(qc, backend=backend, shots=shots, seed_simulator=42069)
-
-    result = job.result()
-
-    if noisy_execution:
-        counts = result.get_counts(qc)
-        psi_out = from_counts(counts, shots=shots, num_qubits=total_qubits)
-    else:
-        psi_out = result.get_statevector(qc).data
+    psi_out = execute(qc, noisy_execution=noisy_execution)
 
     # dims = dims[:2]
     # num_states = np.prod(dims)
@@ -331,7 +218,7 @@ def quantum_convolution(
     # ==== Construct image ==== #
     i = 0
     data = psi_out.data[i * num_states : (i + 1) * num_states]
-    norm = mag * kernel_mag * np.sqrt(2**num_kernel)
+    norm = mag * convolution_gate.kernel_norm * np.sqrt(2**num_kernel_qubits)
     data = norm * data
 
     new_dims = [2 ** to_qubits(x) for x in dims]
@@ -344,7 +231,7 @@ def quantum_convolution(
 
 def _write_image(data: np.ndarray):
     # Convert data type
-    data = data.astype(np.uint8)
+    data = np.abs(data).astype(np.uint8)
 
     # Create Image
     img = Image.fromarray(data)

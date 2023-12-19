@@ -10,9 +10,7 @@ from itertools import zip_longest
 import numpy as np
 from PIL import Image
 from polars import DataFrame
-from qiskit import QuantumCircuit, Aer, execute, ClassicalRegister
-
-# from qiskit.quantum_info import partial_trace
+from qiskit import QuantumCircuit
 from pywt import wavedecn, waverecn
 
 from qcc.file import (
@@ -26,18 +24,15 @@ from qcc.quantum import (
     flatten_array,
     normalize,
     to_qubits,
-    from_counts,
     reconstruct,
     get_fidelity,
     partial_measurement,
     remove_bits,
 )
+from qcc.quantum.qiskit import QuantumHaarTransform, execute
 
 if TYPE_CHECKING:
     from typing import Iterable
-
-backend = Aer.get_backend("aer_simulator")
-shots = 32000  # backend.configuration().max_shots
 
 
 class DimensionReduction(StrEnum):
@@ -51,7 +46,7 @@ def _pooling(
     decomposition_levels: Iterable[int],
     inputs: Path,
     output_dir: Path,
-    noiseless: bool,
+    noise_free: bool,
 ):
     df = load_dataframe_from_csv(output_dir / "results.csv")
     if df is None:
@@ -60,7 +55,7 @@ def _pooling(
                 ("mode", str),
                 ("data_size", str),
                 ("dimension_reduction", str),
-                ("noiseless", bool),
+                ("noise_free", bool),
                 ("fidelity", float),
             ]
         )
@@ -103,11 +98,11 @@ def _pooling(
         dims = "x".join(str(i) for i in data.shape)
 
         filename = output_dir / "data" / mode / dims / name
-        filename = filename_labels(filename, "noiseless" if noiseless else "noisy")
+        filename = filename_labels(filename, "noise_free" if noise_free else "noisy")
         filename = filename.with_suffix(suffix)
 
         quantum_data = quantum_dimension_reduction(
-            data, decomposition_levels, not noiseless
+            data, decomposition_levels, not noise_free
         )
         if decomposition_type != DimensionReduction.NONE:
             quantum_data = reconstruction(quantum_data, decomposition_levels)
@@ -130,7 +125,7 @@ def _pooling(
         fidelity = get_fidelity(quantum_data, classical_data)
         print(f"{name}, {dims}, {mode}: {fidelity=:.3%}")
 
-        row = DataFrame([[mode, dims, name, noiseless, fidelity]], df.schema)
+        row = DataFrame([[mode, dims, name, noise_free, fidelity]], df.schema)
         df.vstack(row, in_place=True)
 
         # save_dataframe_as_csv(output_dir / "results.csv", df)
@@ -148,11 +143,6 @@ def _import_file(filename: Path):
     write_fn = save_numpy_as_image
 
     return data, mode, suffix, write_fn
-
-
-def rotate_right(qc: QuantumCircuit, q1: int, q2: int):
-    for i in range(q1, q2 - 1):
-        qc.swap(i, i + 1)
 
 
 def quantum_no_pooling(
@@ -175,26 +165,11 @@ def quantum_no_pooling(
 
     # ==== run ==== #
 
-    if noisy_execution:
-        qc.measure_all()
-    else:
-        qc.save_statevector()
-
-    job = execute(qc, backend=backend, shots=shots)
-
-    result = job.result()
-
-    if noisy_execution:
-        counts = result.get_counts(qc)
-        psi_out = from_counts(counts, shots=shots, num_qubits=num_qubits)
-    else:
-        psi_out = result.get_statevector(qc).data
+    psi_out = execute(qc, noisy_execution=noisy_execution)
 
     # ==== construct image ==== #
 
-    img = psi_out.data
-
-    img = reconstruct(mag * img, dims)
+    img = reconstruct(mag * psi_out, dims)
 
     return img
 
@@ -220,33 +195,12 @@ def quantum_average_pooling(
     qc = QuantumCircuit(num_qubits)
     qc.initialize(psi)
 
-    base = np.hstack(([0], np.cumsum(dims_q[:-1])))
-    top = np.cumsum(dims_q)
-
-    for q, l in zip(base, decomposition_levels):
-        if l > 0:
-            qc.h(qc.qubits[q : q + l])
-
-    for b, t, l in zip(base, top, decomposition_levels):
-        for i in range(l):
-            rotate_right(qc, b, t - i)
+    qht = QuantumHaarTransform(dims, decomposition_levels)
+    qc.compose(qht, inplace=True)
 
     # ==== run ==== #
 
-    if noisy_execution:
-        qc.measure_all()
-    else:
-        qc.save_statevector()
-
-    job = execute(qc, backend=backend, shots=shots)
-
-    result = job.result()
-
-    if noisy_execution:
-        counts = result.get_counts(qc)
-        psi_out = from_counts(counts, shots=shots, num_qubits=num_qubits)
-    else:
-        psi_out = result.get_statevector(qc).data
+    psi_out = execute(qc, noisy_execution=noisy_execution)
 
     # ==== construct image ==== #
 
@@ -294,22 +248,9 @@ def quantum_euclidean_pooling(
 
     # ==== run ==== #
 
-    if noisy_execution:
-        creg = ClassicalRegister(len(meas))
-        qc.add_register(creg)
-        qc.measure(meas, creg)
-    else:
-        qc.save_statevector()
+    psi_out = execute(qc, noisy_execution=noisy_execution, meas=meas)
 
-    job = execute(qc, backend=backend, shots=shots)
-
-    result = job.result()
-
-    if noisy_execution:
-        counts = result.get_counts(qc)
-        psi_out = from_counts(counts, shots=shots, num_qubits=len(meas))
-    else:
-        psi_out = result.get_statevector(qc).data
+    if not noisy_execution:
         psi_out = partial_measurement(psi_out, trace)
         psi_out = remove_bits(psi_out, trace)
         # psi_out = partial_trace(psi_out, trace)

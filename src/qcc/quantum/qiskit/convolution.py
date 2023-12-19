@@ -22,10 +22,11 @@ if TYPE_CHECKING:
 class Convolution(Gate):
     """Multidimensional Convolution Operation"""
 
-    __slots__ = "dims", "kernel_dims"
+    __slots__ = "dims", "kernel_dims", "kernel_norm"
 
     dims: Sequence[int]
     kernel_dims: Sequence[int]
+    kernel_norm: float
 
     def __init__(
         self,
@@ -35,6 +36,11 @@ class Convolution(Gate):
     ) -> None:
         self.dims = [dims] if isinstance(dims, Number) else dims
         self.kernel_dims = kernel.shape
+
+        if hasattr(kernel, "norm"):
+            self.kernel_norm = kernel.norm()
+        else:
+            self.kernel_norm = np.linalg.norm(kernel)
 
         num_data_qubits = sum(self._dims_q)
         num_kernel_qubits = sum(self._kernel_dims_q)
