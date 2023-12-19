@@ -23,6 +23,6 @@ conda activate $QCC/.env
 echo "running QCC $1"
 
 cd $QCC/test
-qcc load $1 --parallel -o ./2023-10-26/
+qcc load $1 -o ./2023-12-18/
 
 date
