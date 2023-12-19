@@ -29,6 +29,7 @@ from qcc.quantum.pennylane.c2q import (
     ConvolutionFilter,
 )
 from qcc.quantum.pennylane.ansatz import FullyConnected
+from qcc.quantum.pennylane.ansatz.mqcc import PoolingMode
 
 if TYPE_CHECKING:
     from qcc.quantum.pennylane import Unitary
@@ -161,6 +162,7 @@ class MQCCLayer(Module):
         padding: int | Iterable[int],
         dilation: int | Iterable[int],
         pooling: bool = False,
+        pooling_mode: str = "euclidean",
         bias: bool = False,
         U_kernel: type[Unitary] = ConvolutionAngleFilter,
         ansatz=MQCC,
@@ -191,6 +193,7 @@ class MQCCLayer(Module):
             "out_channels": out_channels,
             "U_fully_connected": None,
             "pooling": pooling,
+            "pooling_mode": pooling_mode,
             "kernel_shape": self.kernel_size,
         }
 
@@ -232,11 +235,13 @@ class MQCCLayer(Module):
         result = result.moveaxis(0, -1)
 
         dims_out = self.update_dims(*dims)
-        dims = update_dims(
-            2 ** to_qubits(dims),
-            kernel_size=self.mqcc.pooling,
-            stride=self.mqcc.pooling,
-        )
+        dims = 2 ** to_qubits(dims)
+        if self.mqcc.pooling_mode == PoolingMode.EUCLIDEAN:
+            dims = update_dims(
+                dims,
+                kernel_size=self.mqcc.pooling,
+                stride=self.mqcc.pooling,
+            )
 
         dims_out = (batch_size, *dims_out, self.mqcc.num_features)
         dims = (batch_size, *dims, self.mqcc.num_features)

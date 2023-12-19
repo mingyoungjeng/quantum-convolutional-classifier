@@ -1,9 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from torch import sqrt
-
 from pennylane import Hadamard, Select
+from enum import StrEnum
 
 from qcc.quantum import to_qubits
 from qcc.quantum.pennylane import Convolution, Qubits, QubitsProperty
@@ -17,6 +16,11 @@ if TYPE_CHECKING:
     from qcc.quantum.pennylane import Parameters, Unitary
 
 
+class PoolingMode(StrEnum):
+    AVG = "avg"
+    EUCLIDEAN = "euclidean"
+
+
 class MQCC(Ansatz):
     """Multidimensional Quantum Convolutional Classifier"""
 
@@ -28,6 +32,7 @@ class MQCC(Ansatz):
         "U_fully_connected",
         "kernel_shape",
         "pooling",
+        "pooling_mode",
     )
 
     data_qubits: Qubits = QubitsProperty(slots=True)
@@ -42,6 +47,7 @@ class MQCC(Ansatz):
     U_fully_connected: type[Unitary] | None
 
     pooling: Iterable[int]
+    pooling_mode: PoolingMode
 
     def __init__(
         self,
@@ -54,7 +60,8 @@ class MQCC(Ansatz):
         kernel_shape: Iterable[int] = (2, 2),
         U_kernel: type[Unitary] = define_filter(num_layers=4),
         U_fully_connected: type[Unitary] | None = Pyramid,
-        pooling: Iterable[int] | bool = False,
+        pooling: Iterable[int] | int | bool = False,
+        pooling_mode: PoolingMode = PoolingMode.EUCLIDEAN,
     ):
         self._num_layers = num_layers
         self.in_channels = in_channels
@@ -64,13 +71,16 @@ class MQCC(Ansatz):
         self.U_kernel = U_kernel  # pylint: disable=invalid-name
         self.U_fully_connected = U_fully_connected  # pylint: disable=invalid-name
 
-        if isinstance(pooling, bool):
-            pooling = [1 + int(pooling) if f > 1 else 1 for f in kernel_shape]
-        self.pooling = pooling
-
         if len(kernel_shape) > len(qubits):
             msg = f"Filter dimensionality ({len(kernel_shape)}) is greater than data dimensionality ({len(qubits)})"
             raise ValueError(msg)
+
+        self.pooling_mode = pooling_mode
+        if isinstance(pooling, bool):
+            pooling = 1 + int(pooling)
+        if isinstance(pooling, int):
+            pooling = [pooling if f > 1 else 1 for f in kernel_shape]
+        self.pooling = pooling
 
         # Setup feature and kernel qubits
         qubits = self._setup_qubits(Qubits(qubits))
@@ -98,15 +108,19 @@ class MQCC(Ansatz):
             Convolution.shift(kernel_shape_q, qubits)
 
             # ==== filter ==== #
-            params = self._filter(params, qubits)
+            params = self._kernel(params, qubits)
 
             # ==== permute ==== #
             Convolution.permute(kernel_shape_q, qubits)
 
             # ==== pooling ==== #
-            pooling_q = to_qubits(self.pooling)
-            for j, pq in enumerate(pooling_q):
-                data_qubits[j] = data_qubits[j][pq:]
+            match self.pooling_mode:
+                case PoolingMode.AVG:
+                    self._pooling_avg(data_qubits)
+                case PoolingMode.EUCLIDEAN:
+                    self._pooling_euclidean(data_qubits)
+                case _:
+                    pass
 
         # Fully connected layer
         meas = Qubits(data_qubits + self.feature_qubits)
@@ -151,7 +165,7 @@ class MQCC(Ansatz):
         norm = norm // 2 ** (self.num_layers * sum(pooling_q))
 
         result = norm * result[:, :num_states]
-        result = sqrt(result + 1e-8)
+        result = (result + 1e-8).sqrt()
 
         return result
 
@@ -193,19 +207,36 @@ class MQCC(Ansatz):
         in_channel_qubits = self.feature_qubits.flatten()[: to_qubits(self.in_channels)]
         return self.data_qubits.flatten() + in_channel_qubits
 
-    def _filter(self, params, qubits: Qubits):
-        """Wrapper around self.U_kernel that replaces Convolution.filter"""
+    def _kernel(self, params, qubits: Qubits):
+        """Wrapper around self.U_kernel that replaces Convolution.kernel"""
 
         # Setup params
         qubits = Qubits(q[:fsq] for q, fsq in zip(qubits, to_qubits(self.kernel_shape)))
         num_params = self.out_channels * self.U_kernel.shape(qubits.total)
-        filter_params, params = params[:num_params], params[num_params:]
-        shape = (self.out_channels, len(filter_params) // self.out_channels)
-        filter_params = filter_params.reshape(shape)
+        kernel_params, params = params[:num_params], params[num_params:]
+        shape = (self.out_channels, len(kernel_params) // self.out_channels)
+        kernel_params = kernel_params.reshape(shape)
 
         # Apply filter
         wires = qubits.flatten()
-        filters = tuple(self.U_kernel(fp, wires=wires) for fp in filter_params)
-        Select(filters, self.feature_qubits.flatten()[: to_qubits(self.out_channels)])
+        kernels = tuple(self.U_kernel(fp, wires=wires) for fp in kernel_params)
+        Select(kernels, self.feature_qubits.flatten()[: to_qubits(self.out_channels)])
 
         return params  # Leftover parameters
+
+    def _pooling_avg(self, qubits: Qubits):
+        pooling_q = to_qubits(self.pooling)
+        for j, pq in enumerate(pooling_q):
+            high_frequency = qubits[j][:pq]
+            low_frequency = qubits[j][pq:]
+
+            for qubit in high_frequency:  # Haar Wavelet
+                Hadamard(wires=qubit)
+
+            # Perfect Shuffle
+            qubits[j] = low_frequency + high_frequency
+
+    def _pooling_euclidean(self, qubits: Qubits):
+        pooling_q = to_qubits(self.pooling)
+        for j, pq in enumerate(pooling_q):  # Partial Measurement
+            qubits[j] = qubits[j][pq:]

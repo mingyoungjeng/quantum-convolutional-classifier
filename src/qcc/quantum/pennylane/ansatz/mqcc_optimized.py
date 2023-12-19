@@ -1,15 +1,14 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from torch import sqrt
-
 from pennylane import Hadamard, Select
 
 from qcc.quantum import to_qubits
 from qcc.quantum.pennylane import Convolution, Qubits, QubitsProperty
-from qcc.quantum.pennylane.ansatz import Ansatz
 from qcc.quantum.pennylane.pyramid import Pyramid
 from qcc.quantum.pennylane.local import define_filter
+from qcc.quantum.pennylane.ansatz import Ansatz
+from qcc.quantum.pennylane.ansatz.mqcc import PoolingMode
 
 if TYPE_CHECKING:
     from typing import Iterable
@@ -42,6 +41,7 @@ class MQCCOptimized(Ansatz):
     U_fully_connected: type[Unitary] | None
 
     pooling: Iterable[int]
+    pooling_mode: PoolingMode
 
     def __init__(
         self,
@@ -54,7 +54,8 @@ class MQCCOptimized(Ansatz):
         kernel_shape: Iterable[int] = (2, 2),
         U_kernel: type[Unitary] = define_filter(num_layers=4),
         U_fully_connected: type[Unitary] | None = Pyramid,
-        pooling: Iterable[int] | bool = False,
+        pooling: Iterable[int] | int | bool = False,
+        pooling_mode: PoolingMode = PoolingMode.EUCLIDEAN,
     ):
         self._num_layers = num_layers
         self.in_channels = in_channels
@@ -64,13 +65,16 @@ class MQCCOptimized(Ansatz):
         self.U_kernel = U_kernel  # pylint: disable=invalid-name
         self.U_fully_connected = U_fully_connected  # pylint: disable=invalid-name
 
-        if isinstance(pooling, bool):
-            pooling = [1 + int(pooling) if f > 1 else 1 for f in kernel_shape]
-        self.pooling = pooling
-
         if len(kernel_shape) > len(qubits):
             msg = f"Filter dimensionality ({len(kernel_shape)}) is greater than data dimensionality ({len(qubits)})"
             raise ValueError(msg)
+
+        self.pooling_mode = pooling_mode
+        if isinstance(pooling, bool):
+            pooling = 1 + int(pooling)
+        if isinstance(pooling, int):
+            pooling = [pooling if f > 1 else 1 for f in kernel_shape]
+        self.pooling = pooling
 
         # Setup feature and kernel qubits
         qubits = self._setup_qubits(Qubits(qubits))
@@ -93,9 +97,13 @@ class MQCCOptimized(Ansatz):
         # Convolution layers
         for i in range(self.num_layers):
             # ==== pooling ==== #
-            pooling_q = to_qubits(self.pooling)
-            for j, pq in enumerate(pooling_q):
-                data_qubits[j] = data_qubits[j][pq:]
+            match self.pooling_mode:
+                case PoolingMode.AVG:
+                    self._pooling_avg(data_qubits)
+                case PoolingMode.EUCLIDEAN:
+                    self._pooling_euclidean(data_qubits)
+                case _:
+                    pass
 
             if data_qubits.total == 0:
                 break
@@ -154,7 +162,7 @@ class MQCCOptimized(Ansatz):
         norm = norm // 2 ** (self.num_layers * sum(pooling_q))
 
         result = norm * result[:, :num_states]
-        result = sqrt(result + 1e-8)
+        result = (result + 1e-8).sqrt()
 
         return result
 
@@ -212,3 +220,20 @@ class MQCCOptimized(Ansatz):
         Select(kernels, self.feature_qubits.flatten()[: to_qubits(self.out_channels)])
 
         return params  # Leftover parameters
+
+    def _pooling_avg(self, qubits: Qubits):
+        pooling_q = to_qubits(self.pooling)
+        for j, pq in enumerate(pooling_q):
+            high_frequency = qubits[j][:pq]
+            low_frequency = qubits[j][pq:]
+
+            for qubit in high_frequency:  # Haar Wavelet
+                Hadamard(wires=qubit)
+
+            # Perfect Shuffle
+            qubits[j] = low_frequency + high_frequency
+
+    def _pooling_euclidean(self, qubits: Qubits):
+        pooling_q = to_qubits(self.pooling)
+        for j, pq in enumerate(pooling_q):  # Partial Measurement
+            qubits[j] = qubits[j][pq:]

@@ -47,7 +47,7 @@ class DimensionReduction(StrEnum):
 
 
 def _pooling(
-    decomposition_type,
+    decomposition_type: DimensionReduction,
     decomposition_levels: Iterable[int],
     inputs: Path,
     output_dir: Path,
