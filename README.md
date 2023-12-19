@@ -91,3 +91,5 @@ TBD
 - [ ] There is a good chance I typed some Sequences as Iterables. Check this.
 - [ ] Add bias terms using quantum
 - [ ] Update config with better test set
+- [ ] Why is mqcc_layer.ipynb returning different results than convolution.ipynb>
+  - [ ] i think it is pennylane vs qiskit?

@@ -35,12 +35,13 @@ from qcc.filters import (
     sobel_filter,
     gaussian_blur,
     laplacian_approx,
+    update_dims,
 )
 from qcc.quantum import (
     flatten_array,
     normalize,
     to_qubits,
-    from_counts,
+    reconstruct,
     get_fidelity,
 )
 from qcc.quantum.qiskit import Convolution, potato
@@ -106,12 +107,13 @@ def _convolution(
 
         dims = "x".join(str(i) for i in data.shape)
 
-        filename = output_dir / "data" / mode / dims / name
+        filename = output_dir / "data" / mode / dims / f"{filename.stem}_{name}"
         filename = filename_labels(filename, "noise_free" if noise_free else "noisy")
         filename = filename.with_suffix(suffix)
 
         quantum_data = quantum_convolution(data, kernel, not noise_free)
-        classical_data = convolution(data, kernel, padding=1)
+        classical_data = convolution(data, kernel)
+        # print(quantum_data.shape, classical_data.shape)
 
         # Save results
         save(filename, write_fn(quantum_data))
@@ -186,10 +188,12 @@ def quantum_convolution(
     kernel: np.ndarray,
     noisy_execution: bool = True,
 ):
+    dims = data.shape
+    dims_out = update_dims(dims, kernel_size=kernel.shape, stride=1)
+
     npad = tuple((0, 2 ** int(np.ceil(np.log2(N))) - N) for N in kernel.shape)
     kernel = np.pad(kernel, pad_width=npad, mode="constant", constant_values=0)
 
-    dims = data.shape
     psi = flatten_array(data, pad=True)
     psi, mag = normalize(psi, include_magnitude=True)
 
@@ -219,12 +223,8 @@ def quantum_convolution(
     i = 0
     data = psi_out.data[i * num_states : (i + 1) * num_states]
     norm = mag * convolution_gate.kernel_norm * np.sqrt(2**num_kernel_qubits)
-    data = norm * data
 
-    new_dims = [2 ** to_qubits(x) for x in dims]
-    data = np.abs(data)
-    data = data.reshape(new_dims, order="F")
-    data = data[tuple([slice(s) for s in dims])]  # Remove padded zeroes
+    data = reconstruct(norm * data, dims, dims_out)
 
     return data
 

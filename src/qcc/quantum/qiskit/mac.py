@@ -48,7 +48,7 @@ def get_params(x_in: np.ndarray | Tensor):
     for i in range(num_qubits):
         x = p.reshape((len(p) // 2, 2))
         p = x.norm(dim=1) if hasattr(x, "norm") else np.linalg.norm(x, axis=1)
-        x = (x / (p[:, None] + 1e-12)).T
+        x = (x / (p[:, None] + 1e-12)).T  # TODO: do the [1, 0] replacement
 
         # ==== Rz angles ==== #
         if i == 0:

@@ -165,7 +165,7 @@ class MQCC(Ansatz):
         norm = norm // 2 ** (self.num_layers * sum(pooling_q))
 
         result = norm * result[:, :num_states]
-        result = (result + 1e-8).sqrt()
+        result = result.sqrt()
 
         return result
 
