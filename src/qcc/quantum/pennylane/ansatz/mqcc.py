@@ -224,7 +224,7 @@ class MQCC(Ansatz):
 
         return params  # Leftover parameters
 
-    def _pooling_avg(self, qubits: Qubits):
+    def _pooling_avg(self, qubits: Qubits) -> Qubits:
         pooling_q = to_qubits(self.pooling)
         for j, pq in enumerate(pooling_q):
             high_frequency = qubits[j][:pq]
@@ -236,7 +236,11 @@ class MQCC(Ansatz):
             # Perfect Shuffle
             qubits[j] = low_frequency + high_frequency
 
-    def _pooling_euclidean(self, qubits: Qubits):
+        return qubits
+
+    def _pooling_euclidean(self, qubits: Qubits) -> Qubits:
         pooling_q = to_qubits(self.pooling)
         for j, pq in enumerate(pooling_q):  # Partial Measurement
             qubits[j] = qubits[j][pq:]
+
+        return qubits

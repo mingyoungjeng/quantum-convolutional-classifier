@@ -56,8 +56,8 @@ class MQCCHybrid(nn.Sequential):
         bias: bool = False,
         U_kernel: type[Unitary] = ConvolutionAngleFilter,
         U_fully_connected: type[Unitary] | None = None,
+        pooling: str | None = "euclidean",
         ansatz=MQCC,
-        pool="euclidean",
     ):
         *dims, channels = dims
 
@@ -70,7 +70,8 @@ class MQCCHybrid(nn.Sequential):
                 dims,
                 in_channels=channels if i == 0 else num_features,
                 out_channels=num_features,
-                pooling=(pool == "euclidean"),
+                pooling=(pooling is not None),
+                pooling_mode=pooling,
                 U_kernel=U_kernel,
                 bias=bias,
                 ansatz=ansatz,
@@ -78,11 +79,6 @@ class MQCCHybrid(nn.Sequential):
 
             lst += [mqcc]
             dims = mqcc.update_dims(*dims)
-
-            if (pool == "avg") or (pool == "average"):
-                pool_layer = Layer(nn.AvgPool2d, stride=2)
-                lst += [pool_layer()]
-                dims = pool_layer.update_dims(*dims)
 
             # ReLU
             if relu:
@@ -118,6 +114,7 @@ class MQCCNonHybrid(MQCCHybrid):
         num_classes: int = 2,
         U_kernel: type[Unitary] = ConvolutionAngleFilter,
         U_fully_connected: type[Unitary] = ConvolutionAngleFilter,
+        pooling: str | None = "euclidean",
         ansatz=MQCC,
     ):
         super().__init__(
@@ -129,6 +126,7 @@ class MQCCNonHybrid(MQCCHybrid):
             bias=False,
             U_kernel=U_kernel,
             U_fully_connected=U_fully_connected,
+            pooling=pooling,
             ansatz=ansatz,
         )
 
