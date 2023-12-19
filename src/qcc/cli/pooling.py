@@ -29,7 +29,7 @@ from qcc.quantum import (
     partial_measurement,
     remove_bits,
 )
-from qcc.quantum.qiskit import QuantumHaarTransform, execute
+from qcc.quantum.qiskit import QuantumHaarTransform, potato
 
 if TYPE_CHECKING:
     from typing import Iterable
@@ -165,7 +165,7 @@ def quantum_no_pooling(
 
     # ==== run ==== #
 
-    psi_out = execute(qc, noisy_execution=noisy_execution)
+    psi_out = potato(qc, noisy_execution=noisy_execution)
 
     # ==== construct image ==== #
 
@@ -200,7 +200,7 @@ def quantum_average_pooling(
 
     # ==== run ==== #
 
-    psi_out = execute(qc, noisy_execution=noisy_execution)
+    psi_out = potato(qc, noisy_execution=noisy_execution)
 
     # ==== construct image ==== #
 
@@ -248,7 +248,7 @@ def quantum_euclidean_pooling(
 
     # ==== run ==== #
 
-    psi_out = execute(qc, noisy_execution=noisy_execution, meas=meas)
+    psi_out = potato(qc, noisy_execution=noisy_execution, meas=meas)
 
     if not noisy_execution:
         psi_out = partial_measurement(psi_out, trace)

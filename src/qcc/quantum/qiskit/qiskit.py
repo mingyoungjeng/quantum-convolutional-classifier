@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from typing import Sequence
 
 
-def execute(
+def potato(
     qc: QuantumCircuit,
     backend=None,
     shots: int | None = None,

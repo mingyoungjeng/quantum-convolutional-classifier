@@ -11,4 +11,4 @@ from .mac import MultiplyAndAccumulate
 from .c2q import C2Q
 from .convolution import Convolution
 from .qht import QuantumHaarTransform
-from .qiskit import execute
+from .qiskit import potato

@@ -43,7 +43,7 @@ from qcc.quantum import (
     from_counts,
     get_fidelity,
 )
-from qcc.quantum.qiskit import Convolution, execute
+from qcc.quantum.qiskit import Convolution, potato
 
 if TYPE_CHECKING:
     from typing import Sequence
@@ -210,7 +210,7 @@ def quantum_convolution(
 
     # ==== run ==== #
 
-    psi_out = execute(qc, noisy_execution=noisy_execution)
+    psi_out = potato(qc, noisy_execution=noisy_execution)
 
     # dims = dims[:2]
     # num_states = np.prod(dims)
