@@ -214,7 +214,7 @@ def quantum_convolution(
 
     # ==== run ==== #
 
-    psi_out = potato(qc, noisy_execution=noisy_execution)
+    psi_out = potato(qc, noisy_execution=noisy_execution, shots=32000)
 
     # dims = dims[:2]
     # num_states = np.prod(dims)
@@ -257,7 +257,7 @@ def _write_audio(data: np.ndarray, samplerate: int = 44100):
 def _write_audio_as_img(data: np.ndarray, samplerate: int = 44100):
     plt.cla()
     plt.figure(figsize=(4, 4))
-    waveshow(data, sr=samplerate, color="#37b6f0")
+    waveshow(data.astype(float), sr=samplerate, color="#37b6f0")
     plt.axis("off")
 
     return partial(plt.savefig, dpi=300, bbox_inches="tight", pad_inches=0)

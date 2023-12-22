@@ -31,7 +31,7 @@ def _quantum_haar_transform(
         decomposition_levels = [decomposition_levels] * len(dims)
 
     # ==== wavelet decomposition using Hadamard gates ==== #
-    base = np.hstack(([0], np.cumsum(dims_q[:-1])))
+    base = np.hstack(([0], np.cumsum(dims_q[:-1], dtype=int)))
     for q, l in zip(base, decomposition_levels):
         qc.h(qc.qubits[q : q + l])
 

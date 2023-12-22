@@ -102,7 +102,7 @@ def save_dataframe_as_csv(filename: Path, df: DataFrame, overwrite=True) -> None
     return save(filename, fn=df.write_csv, overwrite=overwrite)
 
 
-def load_dataframe_from_csv(filename: Path) -> None:
+def load_dataframe_from_csv(filename: Path) -> DataFrame | None:
     if not isinstance(filename, Path):
         filename = Path(filename)
     filename = filename.with_suffix(".csv")

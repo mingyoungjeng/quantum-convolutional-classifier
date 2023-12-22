@@ -46,7 +46,8 @@ def potato(
 
     if noisy_execution:
         counts = result.get_counts(qc)
-        psi_out = from_counts(counts, shots=shots, num_qubits=qc.num_qubits)
+        num_meas = qc.num_qubits if meas is None else len(meas)
+        psi_out = from_counts(counts, shots=shots, num_qubits=num_meas)
     else:
         psi_out = result.get_statevector(qc).data
 

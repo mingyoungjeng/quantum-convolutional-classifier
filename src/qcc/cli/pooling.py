@@ -8,7 +8,7 @@ from pathlib import Path
 from itertools import zip_longest
 
 import numpy as np
-from PIL import Image
+import polars as pl
 from polars import DataFrame
 from qiskit import QuantumCircuit
 from pywt import wavedecn, waverecn
@@ -30,6 +30,7 @@ from qcc.quantum import (
     remove_bits,
 )
 from qcc.quantum.qiskit import QuantumHaarTransform, potato
+from .convolution import _import_file
 
 if TYPE_CHECKING:
     from typing import Iterable
@@ -59,6 +60,8 @@ def _pooling(
                 ("fidelity", float),
             ]
         )
+    else:
+        df = df.with_columns(pl.col("data_size").cast(str))
     atexit.register(save_dataframe_as_csv, output_dir / "results.csv", df)
 
     match decomposition_type:
@@ -123,26 +126,12 @@ def _pooling(
         # classical_data = classical_data[: np.prod(data.shape[:2])]
 
         fidelity = get_fidelity(quantum_data, classical_data)
-        print(f"{name}, {dims}, {mode}: {fidelity=:.3%}")
+        print(f"{name}, {dims}, {mode}, {fidelity=:.3%}")
 
         row = DataFrame([[mode, dims, name, noise_free, fidelity]], df.schema)
         df.vstack(row, in_place=True)
 
         # save_dataframe_as_csv(output_dir / "results.csv", df)
-
-
-def _import_file(filename: Path):
-    data = Image.open(filename, "r")
-    mode = data.mode
-    if mode == "L":
-        mode = "BW"
-
-    data = np.asarray(data, float)
-
-    suffix = ".png"
-    write_fn = save_numpy_as_image
-
-    return data, mode, suffix, write_fn
 
 
 def quantum_no_pooling(
@@ -237,8 +226,8 @@ def quantum_euclidean_pooling(
     qc = QuantumCircuit(num_qubits)
     qc.initialize(psi)
 
-    base = np.hstack(([0], np.cumsum(dims_q[:-1])))
-    top = np.cumsum(dims_q)
+    base = np.hstack(([0], np.cumsum(dims_q[:-1], dtype=int)))
+    top = np.cumsum(dims_q, dtype=int)
 
     meas = []
     trace = []
