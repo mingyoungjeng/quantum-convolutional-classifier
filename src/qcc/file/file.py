@@ -102,12 +102,12 @@ def save_dataframe_as_csv(filename: Path, df: DataFrame, overwrite=True) -> None
     return save(filename, fn=df.write_csv, overwrite=overwrite)
 
 
-def load_dataframe_from_csv(filename: Path) -> DataFrame | None:
+def load_dataframe_from_csv(filename: Path, **kwargs) -> DataFrame | None:
     if not isinstance(filename, Path):
         filename = Path(filename)
     filename = filename.with_suffix(".csv")
 
-    return read_csv(filename) if filename.is_file() else None
+    return read_csv(filename, **kwargs) if filename.is_file() else None
 
 
 def draw(

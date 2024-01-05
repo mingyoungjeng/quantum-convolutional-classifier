@@ -29,7 +29,7 @@ from qcc.quantum import (
     partial_measurement,
     remove_bits,
 )
-from qcc.quantum.qiskit import QuantumHaarTransform, potato
+from qcc.quantum.qiskit import QuantumHaarTransform, exec_qc
 from .convolution import _import_file
 
 if TYPE_CHECKING:
@@ -49,19 +49,16 @@ def _pooling(
     output_dir: Path,
     noise_free: bool,
 ):
-    df = load_dataframe_from_csv(output_dir / "results.csv")
+    schema = dict(
+        mode=str,
+        data_size=str,
+        dimension_reduction=str,
+        noise_free=bool,
+        fidelity=float,
+    )
+    df = load_dataframe_from_csv(output_dir / "results.csv", dtypes=schema)
     if df is None:
-        df = DataFrame(
-            schema=[
-                ("mode", str),
-                ("data_size", str),
-                ("dimension_reduction", str),
-                ("noise_free", bool),
-                ("fidelity", float),
-            ]
-        )
-    else:
-        df = df.with_columns(pl.col("data_size").cast(str))
+        df = DataFrame(schema=schema)
     atexit.register(save_dataframe_as_csv, output_dir / "results.csv", df)
 
     match decomposition_type:
@@ -107,12 +104,12 @@ def _pooling(
         quantum_data = quantum_dimension_reduction(
             data, decomposition_levels, not noise_free
         )
-        if decomposition_type != DimensionReduction.NONE:
-            quantum_data = reconstruction(quantum_data, decomposition_levels)
+        # if decomposition_type != DimensionReduction.NONE:
+        #     quantum_data = reconstruction(quantum_data, decomposition_levels)
 
         classical_data = classical_dimension_reduction(data, decomposition_levels)
-        if decomposition_type != DimensionReduction.NONE:
-            classical_data = reconstruction(classical_data, decomposition_levels)
+        # if decomposition_type != DimensionReduction.NONE:
+        #     classical_data = reconstruction(classical_data, decomposition_levels)
 
         # Save results
         save(filename, write_fn(quantum_data))
@@ -121,7 +118,7 @@ def _pooling(
         save(classical_filename, write_fn(classical_data))
 
         quantum_data = np.asarray(quantum_data).flatten(order="F")
-        classical_data = np.asarray(data).flatten(order="F")
+        classical_data = np.asarray(classical_data).flatten(order="F")
 
         # classical_data = classical_data[: np.prod(data.shape[:2])]
 
@@ -154,7 +151,7 @@ def quantum_no_pooling(
 
     # ==== run ==== #
 
-    psi_out = potato(qc, noisy_execution=noisy_execution)
+    psi_out = exec_qc(qc, noisy_execution=noisy_execution, shots=32000)
 
     # ==== construct image ==== #
 
@@ -189,7 +186,7 @@ def quantum_average_pooling(
 
     # ==== run ==== #
 
-    psi_out = potato(qc, noisy_execution=noisy_execution)
+    psi_out = exec_qc(qc, noisy_execution=noisy_execution, shots=32000)
 
     # ==== construct image ==== #
 
@@ -237,7 +234,7 @@ def quantum_euclidean_pooling(
 
     # ==== run ==== #
 
-    psi_out = potato(qc, noisy_execution=noisy_execution, meas=meas)
+    psi_out = exec_qc(qc, noisy_execution=noisy_execution, meas=meas, shots=32000)
 
     if not noisy_execution:
         psi_out = partial_measurement(psi_out, trace)

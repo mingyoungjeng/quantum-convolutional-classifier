@@ -44,7 +44,7 @@ from qcc.quantum import (
     reconstruct,
     get_fidelity,
 )
-from qcc.quantum.qiskit import Convolution, potato
+from qcc.quantum.qiskit import Convolution, exec_qc
 
 if TYPE_CHECKING:
     from typing import Sequence
@@ -155,12 +155,19 @@ def _import_file(filename: Path):
         with open(filename, "rb") as f:
             data, samplerate = sf.read(f)
 
+        minimum = np.min(data)
+        data = data - minimum
+
         mode = "audio"
         suffix = ".png"
-        write_fn = partial(_write_audio_as_img, samplerate=samplerate)
+        write_fn = lambda data: partial(_write_audio_as_img, samplerate=samplerate)(
+            data + minimum
+        )
 
         # suffix = ".flac"
-        # write_fn = partial(_write_audio, samplerate=samplerate)
+        # write_fn = lambda data: partial(_write_audio, samplerate=samplerate)(
+        # data + minimum
+        # )
 
         return data, mode, suffix, write_fn
     except (TypeError, RuntimeError):
@@ -214,7 +221,7 @@ def quantum_convolution(
 
     # ==== run ==== #
 
-    psi_out = potato(qc, noisy_execution=noisy_execution, shots=32000)
+    psi_out = exec_qc(qc, noisy_execution=noisy_execution, shots=32000)
 
     # dims = dims[:2]
     # num_states = np.prod(dims)
@@ -244,9 +251,9 @@ def _write_audio(data: np.ndarray, samplerate: int = 44100):
     if len(data.shape) == 1:
         data = np.expand_dims(data, 1)
 
-    fn = lambda data: partial(
+    fn = partial(
         sf.write,
-        data=data,
+        data=data.astype(float),
         samplerate=samplerate,
     )
 
@@ -268,4 +275,8 @@ def _write_hyperspectral(data: np.ndarray):
 
 
 def _write_hyperspectral_as_img(data: np.ndarray):
+    if len(data.shape) == 3:
+        if data.shape[-1] == 2:
+            data = np.pad(data, ((0, 0), (0, 0), (0, 1)), "constant")
+
     return partial(save_rgb, data=data)

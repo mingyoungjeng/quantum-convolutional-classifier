@@ -5,7 +5,8 @@ _summary_
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from qiskit import QuantumCircuit, Aer, execute, ClassicalRegister
+import numpy as np
+from qiskit import QuantumCircuit, Aer, ClassicalRegister, execute
 from qiskit.tools import job_monitor
 
 from qcc.quantum import from_counts
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
     from typing import Sequence
 
 
-def potato(
+def exec_qc(
     qc: QuantumCircuit,
     backend=None,
     shots: int | None = None,
@@ -32,20 +33,23 @@ def potato(
         if meas is None:
             qc.measure_all()
         else:
+            if len(meas) == 0:
+                return np.ones(1)
+
             creg = ClassicalRegister(len(meas))
             qc.add_register(creg)
             qc.measure(meas, creg)
     else:
         qc.save_statevector()
 
-    job = execute(qc, backend=backend, shots=shots, seed_simulator=seed)
+    job = exec(qc, backend=backend, shots=shots, seed_simulator=seed)
     if monitor_job:
         job_monitor(job)
 
     result = job.result()
 
     if noisy_execution:
-        counts = result.get_counts(qc)
+        counts = result.get_counts()
         num_meas = qc.num_qubits if meas is None else len(meas)
         psi_out = from_counts(counts, shots=shots, num_qubits=num_meas)
     else:
